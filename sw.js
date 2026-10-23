@@ -1,9 +1,10 @@
-const CACHE_NAME = 'vietsun-tms-v9';
+const CACHE_NAME = 'vietsun-tms-v10';
 const ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './icon.svg'
+  './icon.svg',
+  './logoVietsunColor.png'
 ];
 
 self.addEventListener('install', (event) => {

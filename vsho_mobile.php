@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * VIETSUN TMS MOBILE - STANDALONE HOSTING EDITION
  * Hoáº¡t Ä‘á»™ng Ä‘á»™c láº­p 100% trÃªn Domain / Hosting riÃªng cá»§a báº¡n.
@@ -1302,14 +1302,14 @@ if (isset($_GET['api'])) {
       <div class="login-logo-box">VS</div>
       <div style="text-align:center;margin-bottom:18px;">
         <div style="font-size:18px;font-weight:800;color:#0f172a;">VIETSUN TMS MOBILE</div>
-        <div style="font-size:12.5px;color:#64748b;margin-top:3px;">ÄÄƒng nháº­p báº±ng tÃ i khoáº£n TMS cá»§a báº¡n</div>
+        <div style="font-size:12.5px;color:#64748b;margin-top:3px;">Đăng nhập bằng tài khoản TMS của bạn</div>
       </div>
 
       <div class="login-error" id="loginErrorBox"></div>
 
       <form onsubmit="submitLoginScreen(event)">
         <div class="form-group" style="margin-bottom:12px;">
-          <label>ðŸ‘¤ TÃ i khoáº£n TMS (Username)</label>
+          <label>👤 Tài khoản TMS (Username)</label>
           <input
             type="text"
             class="form-control"
@@ -1321,19 +1321,19 @@ if (isset($_GET['api'])) {
         </div>
 
         <div class="form-group" style="margin-bottom:14px;">
-          <label>ðŸ”‘ Máº­t kháº©u (Password)</label>
+          <label>🔑 Mật khẩu (Password)</label>
           <input
             type="password"
             class="form-control"
             id="loginPassword"
-            placeholder="Nháº­p máº­t kháº©u..."
+            placeholder="Nhập mật khẩu..."
             autocomplete="current-password"
             required
           />
         </div>
 
         <button type="submit" class="btn-primary-lg" id="btnLoginSubmit" style="width:100%;padding:12px;">
-          ðŸ” ÄÄ‚NG NHáº¬P Há»† THá»NG
+          🔐 ĐĂNG NHẬP HỆ THỐNG
         </button>
       </form>
     </div>
@@ -1348,37 +1348,37 @@ if (isset($_GET['api'])) {
           <div class="brand-title">VIETSUN TMS</div>
           <div class="brand-sub">
             <span class="status-dot" id="connDot"></span>
-            <span id="syncTimeLabel">Äang táº£i...</span>
+            <span id="syncTimeLabel">Đang tải...</span>
           </div>
         </div>
       </div>
       <div class="header-actions">
-        <button class="icon-btn" id="btnInstallPwa" style="display:none;" onclick="installPWA()" title="CÃ i App ra mÃ n hÃ¬nh chÃ­nh">
-          ðŸ“² CÃ i
+        <button class="icon-btn" id="btnInstallPwa" style="display:none;" onclick="installPWA()" title="Cài App ra màn hình chính">
+          📲 Cài
         </button>
-        <button class="icon-btn" onclick="openAccountModal()" title="TÃ i khoáº£n & CÃ i Ä‘áº·t">
-          ðŸ‘¤ <span id="userLabel">TK</span>
+        <button class="icon-btn" onclick="openAccountModal()" title="Tài khoản & Cài đặt">
+          👤 <span id="userLabel">TK</span>
         </button>
-        <button class="icon-btn" onclick="refreshData(true)" title="Táº£i láº¡i dá»¯ liá»‡u má»›i nháº¥t">
-          ðŸ”„ Má»›i
+        <button class="icon-btn" onclick="refreshData(true)" title="Tải lại dữ liệu mới nhất">
+          🔄 Mới
         </button>
       </div>
     </div>
 
     <div class="search-row">
       <div class="search-box">
-        <span class="search-icon">ðŸ”</span>
+        <span class="search-icon">🔍</span>
         <input
           type="search"
           id="searchInput"
-          placeholder="TÃ¬m Sá»‘ Cont, Biá»ƒn sá»‘ xe, KhÃ¡ch hÃ ng, Kho, Seal..."
+          placeholder="Tìm Số Cont, Biển số xe, Khách hàng, Kho, Seal..."
           autocomplete="off"
           oninput="onSearchInput()"
         />
-        <button class="clear-search" id="btnClearSearch" onclick="clearSearch()">âœ•</button>
+        <button class="clear-search" id="btnClearSearch" onclick="clearSearch()">✕</button>
       </div>
       <button class="filter-toggle-btn" onclick="toggleAdvancedFilters()">
-        <span>âš¡ Lá»c</span>
+        <span>⚡ Lọc</span>
         <span class="filter-badge" id="activeFilterCount">1</span>
       </button>
     </div>
@@ -1388,59 +1388,59 @@ if (isset($_GET['api'])) {
   <section class="filter-section">
     <!-- Quick Date Chips -->
     <div class="quick-tabs" id="quickDateTabs">
-      <button class="chip active" data-date-mode="today" onclick="setQuickDate('today')">ðŸ“… HÃ´m nay</button>
-      <button class="chip" data-date-mode="tomorrow" onclick="setQuickDate('tomorrow')">â­ï¸ NgÃ y mai</button>
-      <button class="chip" data-date-mode="yesterday" onclick="setQuickDate('yesterday')">â®ï¸ HÃ´m qua</button>
-      <button class="chip" data-date-mode="3days" onclick="setQuickDate('3days')">ðŸ“† Â±3 ngÃ y</button>
-      <button class="chip" data-date-mode="unset" onclick="setQuickDate('unset')">âš ï¸ ChÆ°a xáº¿p ngÃ y</button>
-      <button class="chip" data-date-mode="all" onclick="setQuickDate('all')">ðŸ—‚ï¸ Táº¥t cáº£ (30 ngÃ y)</button>
+      <button class="chip active" data-date-mode="today" onclick="setQuickDate('today')">📅 Hôm nay</button>
+      <button class="chip" data-date-mode="tomorrow" onclick="setQuickDate('tomorrow')">⏭️ Ngày mai</button>
+      <button class="chip" data-date-mode="yesterday" onclick="setQuickDate('yesterday')">⏮️ Hôm qua</button>
+      <button class="chip" data-date-mode="3days" onclick="setQuickDate('3days')">📆 ±3 ngày</button>
+      <button class="chip" data-date-mode="unset" onclick="setQuickDate('unset')">⚠️ Chưa xếp ngày</button>
+      <button class="chip" data-date-mode="all" onclick="setQuickDate('all')">🗂️ Tất cả (30 ngày)</button>
     </div>
 
     <!-- Collapsible Advanced Filters -->
     <div class="advanced-filters" id="advancedFilters">
       <div class="filter-grid">
         <div class="filter-field">
-          <label>Lá»c theo loáº¡i ngÃ y</label>
+          <label>Lọc theo loại ngày</label>
           <select id="filterDateType" onchange="applyFilters()">
-            <option value="ngayTraHang">NgÃ y ÄÃ³ng / Giao hÃ ng</option>
-            <option value="ngayTauChayPo">NgÃ y TÃ u cháº¡y / cáº­p</option>
+            <option value="ngayTraHang">Ngày Đóng / Giao hàng</option>
+            <option value="ngayTauChayPo">Ngày Tàu chạy / cập</option>
           </select>
         </div>
         <div class="filter-field">
-          <label>Tráº¡ng thÃ¡i Ä‘iá»u xe</label>
+          <label>Trạng thái điều xe</label>
           <select id="filterTruckStatus" onchange="applyFilters()">
-            <option value="ALL">-- Táº¥t cáº£ tráº¡ng thÃ¡i --</option>
-            <option value="NO_TRUCK">âš ï¸ ChÆ°a cÃ³ sá»‘ xe</option>
-            <option value="HAS_TRUCK">âœ… ÄÃ£ gÃ¡n sá»‘ xe</option>
-            <option value="NO_CONT">âš ï¸ ChÆ°a cÃ³ sá»‘ Cont</option>
+            <option value="ALL">-- Tất cả trạng thái --</option>
+            <option value="NO_TRUCK">⚠️ Chưa có số xe</option>
+            <option value="HAS_TRUCK">✅ Đã gán số xe</option>
+            <option value="NO_CONT">⚠️ Chưa có số Cont</option>
           </select>
         </div>
         <div class="filter-field">
-          <label>Tá»« ngÃ y</label>
+          <label>Từ ngày</label>
           <input type="date" id="filterFromDate" onchange="onCustomDateChange()" />
         </div>
         <div class="filter-field">
-          <label>Äáº¿n ngÃ y</label>
+          <label>Đến ngày</label>
           <input type="date" id="filterToDate" onchange="onCustomDateChange()" />
         </div>
         <div class="filter-field">
-          <label>ÄÆ¡n vá»‹ váº­n táº£i (Vendor)</label>
+          <label>Đơn vị vận tải (Vendor)</label>
           <select id="filterVendor" onchange="applyFilters()">
-            <option value="ALL">-- Táº¥t cáº£ ÄVVT --</option>
+            <option value="ALL">-- Tất cả ĐVVT --</option>
           </select>
         </div>
         <div class="filter-field">
-          <label>Tá»‰nh / Khu vá»±c</label>
+          <label>Tỉnh / Khu vực</label>
           <select id="filterProvince" onchange="applyFilters()">
-            <option value="ALL">-- Táº¥t cáº£ Tá»‰nh --</option>
+            <option value="ALL">-- Tất cả Tỉnh --</option>
           </select>
         </div>
       </div>
       <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:4px;">
-        <span style="font-size:11.5px; color:#64748b;" id="serverDateInfo">Má»‘c dá»¯ liá»‡u API: HÃ´m nay</span>
+        <span style="font-size:11.5px; color:#64748b;" id="serverDateInfo">Mốc dữ liệu API: Hôm nay</span>
         <div style="display:flex; gap:6px;">
-          <button class="mini-btn" onclick="resetAllFilters()">Äáº·t láº¡i bá»™ lá»c</button>
-          <button class="mini-btn" style="background:#0284c7;color:#fff;border-color:#0284c7;" onclick="promptApiDate()">Äá»•i ngÃ y gá»‘c API</button>
+          <button class="mini-btn" onclick="resetAllFilters()">Đặt lại bộ lọc</button>
+          <button class="mini-btn" style="background:#0284c7;color:#fff;border-color:#0284c7;" onclick="promptApiDate()">Đổi ngày gốc API</button>
         </div>
       </div>
     </div>
@@ -1457,7 +1457,7 @@ if (isset($_GET['api'])) {
   <div class="summary-strip">
     <div class="stat-card" id="statAll" onclick="setTruckQuickFilter('ALL')">
       <div class="stat-val" id="countTotal">0</div>
-      <div class="stat-lbl">Tá»•ng LÃ´/Cont</div>
+      <div class="stat-lbl">Tổng Lô/Cont</div>
     </div>
     <div class="stat-card" id="stat2040">
       <div class="stat-val" style="color:#0284c7;" id="count2040">0 / 0</div>
@@ -1465,11 +1465,11 @@ if (isset($_GET['api'])) {
     </div>
     <div class="stat-card" id="statHasTruck" onclick="setTruckQuickFilter('HAS_TRUCK')">
       <div class="stat-val" style="color:#16a34a;" id="countHasTruck">0</div>
-      <div class="stat-lbl">ÄÃ£ cÃ³ xe</div>
+      <div class="stat-lbl">Đã có xe</div>
     </div>
     <div class="stat-card" id="statNoTruck" onclick="setTruckQuickFilter('NO_TRUCK')">
       <div class="stat-val" style="color:#d97706;" id="countNoTruck">0</div>
-      <div class="stat-lbl">ChÆ°a cÃ³ xe</div>
+      <div class="stat-lbl">Chưa có xe</div>
     </div>
   </div>
 
@@ -1477,28 +1477,28 @@ if (isset($_GET['api'])) {
   <main class="list-container" id="poListContainer">
     <div class="state-box">
       <div class="spinner"></div>
-      <div style="font-weight:700; color:#334155;">Äang táº£i dá»¯ liá»‡u xuáº¥t nháº­p tá»« Vietsun TMS...</div>
-      <div style="font-size:12px; margin-top:4px;">Káº¿t ná»‘i https://vsho.vietsunlogistics.com</div>
+      <div style="font-weight:700; color:#334155;">Đang tải dữ liệu xuất nhập từ Vietsun TMS...</div>
+      <div style="font-size:12px; margin-top:4px;">Kết nối https://vsho.vietsunlogistics.com</div>
     </div>
   </main>
 
   <!-- BOTTOM NAVIGATION (XUAT / NHAP SWITCHER) -->
   <nav class="bottom-nav">
     <button class="nav-item active" data-xn="ALL" onclick="setXuatNhapFilter('ALL')">
-      <span class="nav-icon">ðŸ“‹</span>
-      <span>Táº¥t cáº£ (<span id="navCountAll">0</span>)</span>
+      <span class="nav-icon">📋</span>
+      <span>Tất cả (<span id="navCountAll">0</span>)</span>
     </button>
     <button class="nav-item" data-xn="X" onclick="setXuatNhapFilter('X')">
-      <span class="nav-icon">ðŸ“¤</span>
-      <span>HÃ ng Xuáº¥t (<span id="navCountX">0</span>)</span>
+      <span class="nav-icon">📤</span>
+      <span>Hàng Xuất (<span id="navCountX">0</span>)</span>
     </button>
     <button class="nav-item" data-xn="N" onclick="setXuatNhapFilter('N')">
-      <span class="nav-icon">ðŸ“¥</span>
-      <span>HÃ ng Nháº­p (<span id="navCountN">0</span>)</span>
+      <span class="nav-icon">📥</span>
+      <span>Hàng Nhập (<span id="navCountN">0</span>)</span>
     </button>
     <button class="nav-item" data-xn="NO_TRUCK" onclick="setXuatNhapFilter('NO_TRUCK')">
-      <span class="nav-icon">ðŸš›</span>
-      <span>Chá» Ä‘iá»u xe (<span id="navCountWait">0</span>)</span>
+      <span class="nav-icon">🚛</span>
+      <span>Chờ điều xe (<span id="navCountWait">0</span>)</span>
     </button>
   </nav>
 
@@ -1507,16 +1507,16 @@ if (isset($_GET['api'])) {
     <div class="bottom-sheet">
       <div class="sheet-header">
         <div class="sheet-title">
-          <span id="modalBadgeType" class="badge badge-xuat">XUáº¤T</span>
-          <span id="modalTitleText">Cáº­p nháº­t LÃ´ hÃ ng #210165</span>
+          <span id="modalBadgeType" class="badge badge-xuat">XUẤT</span>
+          <span id="modalTitleText">Cập nhật Lô hàng #210165</span>
         </div>
-        <button class="sheet-close" onclick="closeEditModal()">âœ•</button>
+        <button class="sheet-close" onclick="closeEditModal()">✕</button>
       </div>
 
       <div class="sheet-body">
         <div class="info-banner">
           <div class="info-banner-title" id="modalCustomerName">Cty Dynaplast</div>
-          <div id="modalRouteSub" style="color:#475569;">TÃ u: VIETSUN DYNAMIC (1236N) â€¢ Chá»§ hÃ ng: LOG</div>
+          <div id="modalRouteSub" style="color:#475569;">Tàu: VIETSUN DYNAMIC (1236N) • Chủ hàng: LOG</div>
         </div>
 
         <form id="editPoForm" onsubmit="saveAllChanges(event)">
@@ -1525,15 +1525,15 @@ if (isset($_GET['api'])) {
           <input type="hidden" id="editXuatNhapPo" />
 
           <div class="form-section-title">
-            <span>1. Äiá»u Váº­n & PhÆ°Æ¡ng Tiá»‡n</span>
-            <span style="font-size:11px; color:#64748b; font-weight:600;">Tá»± Ä‘á»™ng lÆ°u khi Ä‘á»•i hoáº·c báº¥m LÆ°u</span>
+            <span>1. Điều Vận & Phương Tiện</span>
+            <span style="font-size:11px; color:#64748b; font-weight:600;">Tự động lưu khi đổi hoặc bấm Lưu</span>
           </div>
 
           <div class="form-grid">
             <!-- NGAY GIAO / DONG HANG -->
             <div class="form-group full">
               <label>
-                <span id="lblNgayTraHang">ðŸ“… NgÃ y ÄÃ³ng / Giao HÃ ng</span>
+                <span id="lblNgayTraHang">📅 Ngày Đóng / Giao Hàng</span>
                 <span id="status_ngayTraHang" style="font-size:11px;"></span>
               </label>
               <input
@@ -1543,17 +1543,17 @@ if (isset($_GET['api'])) {
                 onchange="onFieldChanged('ngayTraHang')"
               />
               <div class="quick-date-btns">
-                <button type="button" class="mini-btn" onclick="setModalDate(0)">HÃ´m nay</button>
-                <button type="button" class="mini-btn" onclick="setModalDate(1)">NgÃ y mai</button>
-                <button type="button" class="mini-btn" onclick="setModalDate(2)">+2 ngÃ y</button>
-                <button type="button" class="mini-btn" style="color:#dc2626;" onclick="setModalDate(null)">ChÆ°a xáº¿p ngÃ y</button>
+                <button type="button" class="mini-btn" onclick="setModalDate(0)">Hôm nay</button>
+                <button type="button" class="mini-btn" onclick="setModalDate(1)">Ngày mai</button>
+                <button type="button" class="mini-btn" onclick="setModalDate(2)">+2 ngày</button>
+                <button type="button" class="mini-btn" style="color:#dc2626;" onclick="setModalDate(null)">Chưa xếp ngày</button>
               </div>
             </div>
 
             <!-- SO CONT -->
             <div class="form-group">
               <label>
-                <span>ðŸ“¦ Sá»‘ Container</span>
+                <span>📦 Số Container</span>
                 <span id="isoCheckBadge" class="iso-badge"></span>
               </label>
               <input
@@ -1570,7 +1570,7 @@ if (isset($_GET['api'])) {
             <!-- SO SEAL -->
             <div class="form-group">
               <label>
-                <span>ðŸ”’ Sá»‘ Seal (ChÃ¬)</span>
+                <span>🔒 Số Seal (Chì)</span>
                 <span id="status_soSealPo" style="font-size:11px;"></span>
               </label>
               <input
@@ -1585,7 +1585,7 @@ if (isset($_GET['api'])) {
             <!-- SO XE VAN TAI -->
             <div class="form-group">
               <label>
-                <span>ðŸš› Sá»‘ Xe Váº­n Táº£i</span>
+                <span>🚛 Số Xe Vận Tải</span>
                 <span id="status_soXePo" style="font-size:11px;"></span>
               </label>
               <input
@@ -1596,7 +1596,7 @@ if (isset($_GET['api'])) {
                 autocorrect="off"
                 autocapitalize="characters"
                 spellcheck="false"
-                placeholder="GÃµ biá»ƒn sá»‘ (VD: 61H...)"
+                placeholder="Gõ biển số (VD: 61H...)"
                 style="text-transform:uppercase;"
                 onfocus="showTruckSuggestions()"
                 oninput="onTruckInput()"
@@ -1608,7 +1608,7 @@ if (isset($_GET['api'])) {
             <!-- DON VI VAN TAI -->
             <div class="form-group">
               <label>
-                <span>ðŸ¢ ÄÆ¡n Vá»‹ Váº­n Táº£i</span>
+                <span>🏢 Đơn Vị Vận Tải</span>
                 <span id="status_donViVcPo" style="font-size:11px;"></span>
               </label>
               <input
@@ -1619,7 +1619,7 @@ if (isset($_GET['api'])) {
                 autocorrect="off"
                 autocapitalize="characters"
                 spellcheck="false"
-                placeholder="Chá»n hoáº·c gÃµ Vendor..."
+                placeholder="Chọn hoặc gõ Vendor..."
                 style="text-transform:uppercase;"
                 onfocus="showVendorSuggestions()"
                 oninput="showVendorSuggestions()"
@@ -1632,21 +1632,21 @@ if (isset($_GET['api'])) {
             <div class="form-group full" id="driverInfoBox" style="display:none; margin-bottom:4px;">
               <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:8px 12px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
                 <div style="font-size:12.5px; color:#166534;">
-                  <div style="font-weight:800;" id="drvNameText">ðŸ‘¨â€âœˆï¸ TÃ i xáº¿: --</div>
-                  <div style="font-size:11.5px; margin-top:2px;" id="drvSubText">ðŸ“ž SÄT: --</div>
+                  <div style="font-weight:800;" id="drvNameText">👨‍✈️ Tài xế: --</div>
+                  <div style="font-size:11.5px; margin-top:2px;" id="drvSubText">📞 SĐT: --</div>
                 </div>
-                <a href="#" id="drvCallBtn" class="btn-card btn-call" style="padding:6px 10px; font-size:12px;">ðŸ“ž Gá»i TX</a>
+                <a href="#" id="drvCallBtn" class="btn-card btn-call" style="padding:6px 10px; font-size:12px;">📞 Gọi TX</a>
               </div>
             </div>
           </div>
 
           <div class="form-section-title">
-            <span>2. BÃ£i / Cáº£ng & Káº¿t Há»£p</span>
+            <span>2. Bãi / Cảng & Kết Hợp</span>
           </div>
 
           <div class="form-grid">
             <div class="form-group">
-              <label><span>ðŸ—ï¸ NÆ¡i láº¥y cont / rá»—ng</span></label>
+              <label><span>🏗️ Nơi lấy cont / rỗng</span></label>
               <input
                 type="text"
                 class="form-control"
@@ -1657,18 +1657,18 @@ if (isset($_GET['api'])) {
             </div>
 
             <div class="form-group">
-              <label><span>âš“ Cáº£ng Ä‘i / Háº¡ cont</span></label>
+              <label><span>⚓ Cảng đi / Hạ cont</span></label>
               <input
                 type="text"
                 class="form-control"
                 id="inp_cangDiPo"
-                placeholder="VD: Báº¾N NGHÃ‰"
+                placeholder="VD: BẾN NGHÉ"
                 onchange="onFieldChanged('cangDiPo')"
               />
             </div>
 
             <div class="form-group">
-              <label><span>ðŸš¢ Cáº£ng Ä‘áº¿n (PhÃ­a Báº¯c)</span></label>
+              <label><span>🚢 Cảng đến (Phía Bắc)</span></label>
               <input
                 type="text"
                 class="form-control"
@@ -1680,21 +1680,21 @@ if (isset($_GET['api'])) {
             </div>
 
             <div class="form-group">
-              <label><span>ðŸ”„ HÃ¬nh thá»©c káº¿t há»£p</span></label>
+              <label><span>🔄 Hình thức kết hợp</span></label>
               <input
                 type="text"
                 class="form-control"
                 id="inp_hinhThucKHopPo"
                 list="dlKetHop"
-                placeholder="VD: 80%, Káº¿t há»£p, Háº¡ rá»—ng"
+                placeholder="VD: 80%, Kết hợp, Hạ rỗng"
                 onchange="onFieldChanged('hinhThucKHopPo')"
               />
             </div>
 
             <div class="form-group">
               <label>
-                <span>â±ï¸ Thá»i gian háº¡ cont</span>
-                <button type="button" class="mini-btn" style="padding:1px 5px;font-size:10px;" onclick="setPortTimeNow()">Giá» hiá»‡n táº¡i</button>
+                <span>⏱️ Thời gian hạ cont</span>
+                <button type="button" class="mini-btn" style="padding:1px 5px;font-size:10px;" onclick="setPortTimeNow()">Giờ hiện tại</button>
               </label>
               <input
                 type="text"
@@ -1707,12 +1707,12 @@ if (isset($_GET['api'])) {
           </div>
 
           <div class="form-section-title">
-            <span>3. Kho HÃ ng, Äá»‹a Chá»‰ & LiÃªn Há»‡</span>
+            <span>3. Kho Hàng, Địa Chỉ & Liên Hệ</span>
           </div>
 
           <div class="form-grid">
             <div class="form-group">
-              <label><span>ðŸ­ Kho Ä‘Ã³ng / tráº£ hÃ ng</span></label>
+              <label><span>🏭 Kho đóng / trả hàng</span></label>
               <input
                 type="text"
                 class="form-control"
@@ -1722,7 +1722,7 @@ if (isset($_GET['api'])) {
             </div>
 
             <div class="form-group">
-              <label><span>ðŸ“ Tá»‰nh / ThÃ nh phá»‘</span></label>
+              <label><span>📍 Tỉnh / Thành phố</span></label>
               <input
                 type="text"
                 class="form-control"
@@ -1733,7 +1733,7 @@ if (isset($_GET['api'])) {
             </div>
 
             <div class="form-group full">
-              <label><span>ðŸ—ºï¸ Äá»‹a chá»‰ chi tiáº¿t</span></label>
+              <label><span>🗺️ Địa chỉ chi tiết</span></label>
               <input
                 type="text"
                 class="form-control"
@@ -1743,7 +1743,7 @@ if (isset($_GET['api'])) {
             </div>
 
             <div class="form-group full">
-              <label><span>ðŸ“ž NgÆ°á»i liÃªn há»‡ & SÄT</span></label>
+              <label><span>📞 Người liên hệ & SĐT</span></label>
               <input
                 type="text"
                 class="form-control"
@@ -1756,14 +1756,50 @@ if (isset($_GET['api'])) {
       </div>
 
       <div class="sheet-footer">
-        <button type="button" class="btn-secondary-lg" onclick="copyCurrentPoToZalo(2)" title="Copy THÃ”NG TIN GIAO HÃ€NG (kÃ¨m TÃ i xáº¿ & SÄT)">
-          ðŸš› Copy Giao HÃ ng
+        <button type="button" class="btn-secondary-lg" onclick="copyCurrentPoToZalo(2)" title="Copy THÔNG TIN GIAO HÀNG (kèm Tài xế & SĐT)">
+          🚛 Giao Hàng
         </button>
-        <button type="button" class="btn-secondary-lg" onclick="copyCurrentPoToZalo(1)" title="Copy THÃ”NG BÃO HÃ€NG Äáº¾N / ÄÃ“NG HÃ€NG">
-          ðŸ’¬ Copy TB
+        <button type="button" class="btn-secondary-lg" onclick="copyCurrentPoToZalo(1)" title="Copy THÔNG BÁO HÀNG ĐẾN / ĐÓNG HÀNG">
+          💬 Copy TB
+        </button>
+        <button type="button" class="btn-secondary-lg" id="btnModalPkl" style="display:none;background:#ecfdf5;color:#047857;border-color:#a7f3d0;" onclick="openPklFromEditModal()" title="Xuất / In Phiếu PKL Vào Cổng">
+          📄 Phiếu PKL
         </button>
         <button type="button" class="btn-primary-lg" id="btnSaveAll" onclick="saveAllChanges(event)">
-          ðŸ’¾ LÆ°u TMS
+          💾 Lưu TMS
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PKL (PACKING LIST) PREVIEW & PDF EXPORT MODAL -->
+  <div class="modal-backdrop" id="pklModal" onclick="if(event.target===this) closePklModal()">
+    <div class="bottom-sheet" style="max-height:94vh;">
+      <div class="sheet-header">
+        <div>
+          <div class="sheet-title" id="pklModalTitle">📄 Phiếu PKL Hạ Cảng (Packing List)</div>
+          <div id="pklModalSub" style="font-size:12px;color:#475569;margin-top:2px;">Tự động trích xuất trực tiếp từ dữ liệu Hàng Xuất TMS</div>
+        </div>
+        <button class="sheet-close" onclick="closePklModal()">✕</button>
+      </div>
+      <div class="sheet-body" style="padding:12px 14px;">
+        <div id="pklStatusBanner" style="font-size:12.5px;font-weight:600;color:#047857;background:#ecfdf5;border:1px solid #a7f3d0;padding:8px 12px;border-radius:9px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span id="pklStatusText">✅ Đã tạo phiếu PKL trực tiếp từ TMS!</span>
+          <button type="button" class="mini-btn" style="background:#fff;color:#0369a1;border:1px solid #bae6fd;" onclick="fetchPklFromGoogleSheet()">🔄 Lấy từ Sheet PKL cũ</button>
+        </div>
+        <div style="width:100%;overflow:auto;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;box-shadow:inset 0 2px 6px rgba(0,0,0,0.05);">
+          <canvas id="pklCanvas" style="width:100%;height:auto;display:block;background:#fff;"></canvas>
+        </div>
+      </div>
+      <div class="sheet-footer">
+        <button type="button" class="btn-secondary-lg" style="background:#f3e8ff;color:#6b21a8;border-color:#d8b4fe;" onclick="sharePklPdf()">
+          📤 Gửi Zalo / Chia sẻ
+        </button>
+        <button type="button" class="btn-secondary-lg" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0;" onclick="downloadPklPdf()">
+          📥 Tải PDF
+        </button>
+        <button type="button" class="btn-primary-lg" onclick="printPklCanvas()">
+          🖨️ In Phiếu PKL
         </button>
       </div>
     </div>
@@ -1773,47 +1809,47 @@ if (isset($_GET['api'])) {
   <div class="modal-backdrop" id="accountModal" onclick="if(event.target===this) closeAccountModal()">
     <div class="bottom-sheet">
       <div class="sheet-header">
-        <div class="sheet-title">ðŸ” TÃ i Khoáº£n & Káº¿t Ná»‘i Vietsun TMS</div>
-        <button class="sheet-close" onclick="closeAccountModal()">âœ•</button>
+        <div class="sheet-title">🔐 Tài Khoản & Kết Nối Vietsun TMS</div>
+        <button class="sheet-close" onclick="closeAccountModal()">✕</button>
       </div>
       <div class="sheet-body">
         <div class="form-group">
-          <label>TÃ i khoáº£n Ä‘Äƒng nháº­p (Username)</label>
+          <label>Tài khoản đăng nhập (Username)</label>
           <input type="text" class="form-control" id="cfgUsername" value="trucking14" />
         </div>
         <div class="form-group">
-          <label>Máº­t kháº©u (Password)</label>
+          <label>Mật khẩu (Password)</label>
           <input type="password" class="form-control" id="cfgPassword" value="1" />
         </div>
         <div class="form-group">
-          <label>Chuá»—i phiÃªn lÃ m viá»‡c (userString)</label>
+          <label>Chuỗi phiên làm việc (userString)</label>
           <input type="text" class="form-control" id="cfgUserString" value="trucking14<<|7<<|a0b923820d<<|1<<|0.0.0.0.0.0.1.0.1.1.0.1.0.1." style="font-size:11.5px; font-family:monospace;" />
         </div>
         <div class="form-group">
-          <label>NgÃ y má»‘c láº¥y dá»¯ liá»‡u API (return_json.php?ngay=)</label>
+          <label>Ngày mốc lấy dữ liệu API (return_json.php?ngay=)</label>
           <input type="date" class="form-control" id="cfgApiDate" />
         </div>
         <div class="info-banner" style="margin-top:10px;background:#f0fdf4;border-color:#bbf7d0;color:#166534;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-            <strong>ðŸš› Äá»“ng bá»™ Äá»™i xe TMS & Vendor (Google Sheet):</strong>
-            <button type="button" class="mini-btn" style="background:#16a34a;color:#fff;border:none;" onclick="syncLiveDriverDatabase(true)">â†» Äá»“ng bá»™ ngay</button>
+            <strong>🚛 Đồng bộ Đội xe TMS & Vendor (Google Sheet):</strong>
+            <button type="button" class="mini-btn" style="background:#16a34a;color:#fff;border:none;" onclick="syncLiveDriverDatabase(true)">↻ Đồng bộ ngay</button>
           </div>
           <div id="driverSyncStatusText" style="margin-top:4px;font-size:12px;">
-            Tá»± Ä‘á»™ng cáº­p nháº­t Äá»™i xe VIETSUN tá»« TMS & Äá»™i xe Vendor tá»« Google Sheet má»—i láº§n má»Ÿ App.
+            Tự động cập nhật Đội xe VIETSUN từ TMS & Đội xe Vendor từ Google Sheet mỗi lần mở App.
           </div>
           <div style="margin-top:4px;font-size:11.5px;">
-            ðŸ“„ <a href="https://docs.google.com/spreadsheets/d/13ndQsSmBsKlHjIRQR0S0MO5BPqqL6J4CECBAYfQi1oo/edit?gid=1046738475#gid=1046738475" target="_blank" style="color:#15803d;font-weight:700;text-decoration:underline;">Má»Ÿ báº£ng Google Sheet Äá»™i xe Vendor</a>
+            📄 <a href="https://docs.google.com/spreadsheets/d/13ndQsSmBsKlHjIRQR0S0MO5BPqqL6J4CECBAYfQi1oo/edit?gid=1046738475#gid=1046738475" target="_blank" style="color:#15803d;font-weight:700;text-decoration:underline;">Mở bảng Google Sheet Đội xe Vendor</a>
           </div>
         </div>
         <div class="info-banner" style="margin-top:10px;">
-          <strong>HÆ°á»›ng dáº«n cÃ i App trÃªn Äiá»‡n thoáº¡i:</strong><br/>
-          â€¢ <strong>Android (Chrome):</strong> Báº¥m nÃºt <strong>"ðŸ“² CÃ i App"</strong> trÃªn thanh tiÃªu Ä‘á».<br/>
-          â€¢ <strong>iPhone (Safari):</strong> Báº¥m nÃºt <strong>Chia sáº» (â¬†ï¸)</strong> âž” <em>"ThÃªm vÃ o MH chÃ­nh"</em>.
+          <strong>Hướng dẫn cài App trên Điện thoại:</strong><br/>
+          • <strong>Android (Chrome):</strong> Bấm nút <strong>"📲 Cài App"</strong> trên thanh tiêu đề.<br/>
+          • <strong>iPhone (Safari):</strong> Bấm nút <strong>Chia sẻ (⬆️)</strong> ➔ <em>"Thêm vào MH chính"</em>.
         </div>
       </div>
       <div class="sheet-footer">
-        <button type="button" class="btn-secondary-lg" style="color:#dc2626;border-color:#fecaca;background:#fef2f2;" onclick="logoutAccount()">ðŸšª ÄÄƒng xuáº¥t / Äá»•i TK</button>
-        <button type="button" class="btn-primary-lg" onclick="saveAccountSettings()">âœ… LÆ°u & Äá»“ng bá»™</button>
+        <button type="button" class="btn-secondary-lg" style="color:#dc2626;border-color:#fecaca;background:#fef2f2;" onclick="logoutAccount()">🚪 Đăng xuất / Đổi TK</button>
+        <button type="button" class="btn-primary-lg" onclick="saveAccountSettings()">✅ Lưu & Đồng bộ</button>
       </div>
     </div>
   </div>
@@ -1830,8 +1866,8 @@ if (isset($_GET['api'])) {
   <datalist id="dlKetHop">
     <option value="80%"></option>
     <option value="100%"></option>
-    <option value="Káº¿t há»£p"></option>
-    <option value="Háº¡ rá»—ng"></option>
+    <option value="Kết hợp"></option>
+    <option value="Hạ rỗng"></option>
   </datalist>
 
   <script>
@@ -1852,87 +1888,87 @@ if (isset($_GET['api'])) {
       "50E54092","50E53813","50E52617","50E54447","50E52920","50F21358","50F21525","50F21764","50F23020"
     ];
 
-    // Database TÃ i xáº¿, SÄT, CCCD, GPLX Äá»™i xe VIETSUN tá»« TMS
+    // Database Tài xế, SĐT, CCCD, GPLX Đội xe VIETSUN từ TMS
     const VIETSUN_DRIVER_DB = {
-      "50H91309":{"cccd":"079097000590  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790152274557 NÆ¡i cáº¥p:Sá»ž GTVT","name":"HUá»²NH THANH TÃ™NG","phone":"0356601380"},
-      "50H67772":{"cccd":"075082015319  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"740113002170 NÆ¡i cáº¥p:Sá»ž GTVT","name":"NGUYá»„N VÄ‚N PHÆ¯Æ NG","phone":"0931249725"},
-      "50H91554":{"cccd":"044082006183  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790105007335 NÆ¡i cáº¥p:sá»Ÿ GTVT","name":"NGUYá»„N VÄ‚N TUáº¤N","phone":"0378857982"},
-      "50E52975":{"cccd":"038085016388  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790152206084 NÆ¡i cáº¥p:Sá»ž GTVT","name":"NGUYá»„N TRá»ŒNG TRÆ¯á»œNG","phone":"0974533635"},
-      "50H10121":{"cccd":"037089000509  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790144799134 NÆ¡i cáº¥p:Sá»ž GTVT","name":"PHAN VÄ‚N HUYNH","phone":"0987437351"},
-      "50H76073":{"cccd":"075092005970  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790219058674 NÆ¡i cáº¥p:Bá»˜ CÃ”NG AN","name":"NGUYá»„N VÄ‚N THANH","phone":"0914210965"},
-      "50H10152":{"cccd":"017084008865  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"310162850107 NÆ¡i cáº¥p:sá»Ÿ GTVT","name":"QUáº¢N VÄ‚N NGá»ŒC","phone":"0975075027"},
-      "50H05689":{"cccd":"094086003131  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"740114002180 NÆ¡i cáº¥p:Sá»ž GTVT","name":"NGÃ” MINH TRá»ŒNG","phone":"0985955580"},
-      "50H10035":{"cccd":"075089026187  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"750130023874 NÆ¡i cáº¥p:Sá»Ÿ GTVT","name":"TRáº¦N TRÃ TÃ€I","phone":"0919480367"},
-      "50H05455":{"cccd":"035074010129  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790146894437 NÆ¡i cáº¥p:Sá»ž GTVT","name":"NGUYá»„N THÃI CÆ ","phone":"0986192693"},
-      "50H68309":{"cccd":"094085000613  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790133745151 NÆ¡i cáº¥p:Sá»ž GTVT","name":"LÃŠ VÄ‚N NGOAN","phone":"0795884070"},
-      "50E14550":{"cccd":"080093000650  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790159130760 NÆ¡i cáº¥p:Sá»ž GTVT","name":"LÃŠ HOÃ€NG Ã‚N","phone":"0966464917"},
-      "50E14009":{"cccd":"087201009730  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790206185040 NÆ¡i cáº¥p:bá»™ cÃ´ng an","name":"NGUYá»„N MINH TRIáº¾T","phone":"0364334382"},
-      "50E53597":{"cccd":"077089005508  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790110015510 NÆ¡i cáº¥p:Sá»ž GTVT","name":"NGUYá»„N VÄ‚N TÃ€I","phone":"0335946252"},
-      "50E52920":{"cccd":"080093006093  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790160094374 NÆ¡i cáº¥p:Sá»ž GTVT","name":"Äá»– MINH PHá»¤NG","phone":"0967799542"},
-      "50H10017":{"cccd":"080081000387  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790156088701 NÆ¡i cáº¥p:Bá»˜ GTVT","name":"NGUYá»„N VÆ¯Æ NG QUá»C","phone":"0936736236"},
-      "50H68333":{"cccd":"038085020371  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790159210491 NÆ¡i cáº¥p:Sá»ž GTVT","name":"HOÃ€NG VÄ‚N Lá»°C","phone":"0902856068"},
-      "50H10011":{"cccd":"079201021731  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790204030139 NÆ¡i cáº¥p:Sá»ž GTVT","name":"PHAN HOÃ€NG HÃ™NG","phone":"0707231297"},
-      "50E15217":{"cccd":"080074000416  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790966004092 NÆ¡i cáº¥p:Sá»ž GTVT","name":"HUá»²NH THANH TÃ‚M","phone":"0937373731"},
-      "50H76816":{"cccd":"079078002279  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790152151977 NÆ¡i cáº¥p:Sá»ž GTVT","name":"PHAN VÄ‚N TÃš","phone":"0904334484"},
-      "50H90600":{"cccd":"079074022039  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790009228687 NÆ¡i cáº¥p:Sá»ž GTVT","name":"DÆ¯Æ NG HIáº¾U HÃ’A","phone":"0796449644"},
-      "51D03966":{"cccd":"075082009103  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"750053003841 NÆ¡i cáº¥p:Cá»¥c Cáº£nh sÃ¡t giao thÃ´ng","name":"TRANG MINH Háº¬U","phone":"0979577801"},
-      "50H68200":{"cccd":"042080010369  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790106009000 NÆ¡i cáº¥p:Sá»ž GTVT","name":"NGUYá»„N VIáº¾T XUÃ‚N","phone":"0979483434"},
-      "50H90144":{"cccd":"075091024017  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790171923030 NÆ¡i cáº¥p:BCA","name":"PHáº M VÄ‚N BÃŒNH","phone":"0909092471"},
-      "50H10208":{"cccd":"030062009674  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"750100001394 NÆ¡i cáº¥p:Sá»ž GTVT","name":"NGUYá»„N Äá»¨C TRIá»†U","phone":"0938025734"},
-      "50H91424":{"cccd":"079077005704  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790135410947 NÆ¡i cáº¥p:sá»Ÿ GTVT","name":"Äá»– THÃ€NH HÆ¯NG","phone":"0916597944"},
-      "50E48301":{"cccd":"084083014543  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790101006837 NÆ¡i cáº¥p:Sá»ž GTVT","name":"NGUYá»„N Há»®U TÆ¯á»œNG","phone":"0933943550"},
-      "50H05535":{"cccd":"054088010647  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"540111812711 NÆ¡i cáº¥p:Sá»ž GTVT","name":"LÃ‚M Tá»¬ TY","phone":"0961191339"},
-      "50E14112":{"cccd":"074078009227  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"740044000054 NÆ¡i cáº¥p:sá»Ÿ GTVT","name":"NGUYá»„N VÄ‚N XUÃ‚N","phone":"0964337309"},
-      "50H10224":{"cccd":"093098001120  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790163115562 NÆ¡i cáº¥p:BCA","name":"NGUYá»„N VÄ‚N Háº¬U","phone":"0938234301"},
-      "50H76406":{"cccd":"038082023809  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"740086003914 NÆ¡i cáº¥p:sá»Ÿ GTVT","name":"Äá»– VÄ‚N TUáº¤N","phone":"0906534154"},
-      "50E54493":{"cccd":"075090016892  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790137778023 NÆ¡i cáº¥p:Sá»ž GTVT","name":"NGUYá»„N TUáº¤N ANH","phone":"0979222556"},
-      "50H91213":{"cccd":"091085002627  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790102029798 NÆ¡i cáº¥p:Sá»ž GTVT","name":"HUá»²NH VÄ‚N Sá»¬","phone":"0908727855"},
-      "50H91917":{"cccd":"040086020171  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"750087003158 NÆ¡i cáº¥p:Sá»ž GTVT","name":"TRáº¦N DUY BÃŒNH","phone":"0973607075"},
-      "50E54092":{"cccd":"046083015082  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790107001117 NÆ¡i cáº¥p:Sá»ž GTVT","name":"PHAN THáº¾ MINH SÆ N","phone":"0889243552"},
-      "50E52617":{"cccd":"084096005671  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"840164002355 NÆ¡i cáº¥p:Sá»ž GTVT","name":"HUá»²NH VÄ‚N Táº¤N Äáº T","phone":"0974891088"},
-      "50H05658":{"cccd":"042090011523  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"310176002813 NÆ¡i cáº¥p:Sá»ž GTVT","name":"HOÃ€NG Há»®U LONG","phone":"0971772771"},
-      "50E14029":{"cccd":"038081001711  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790168165517 NÆ¡i cáº¥p:sá»Ÿ GTVT","name":"HÃ€ VÄ‚N LUáº¬T","phone":"0961535776"},
-      "50H05808":{"cccd":"040081035050  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"420098000382 NÆ¡i cáº¥p:Sá»ž GTVT","name":"NGUYá»„N THÃ€NH TRUNG","phone":"0973029550"},
-      "50H76226":{"cccd":"079089006263  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790115230930 NÆ¡i cáº¥p:Sá»ž GTVT","name":"ÄOÃ€N TÃN THÃ€NH","phone":"0903379977"},
-      "50H76364":{"cccd":"094085015886  NÆ¡i cáº¥p: cuc QL HC & TTXH","gplx":"310150041834 NÆ¡i cáº¥p:Sá»Ÿ GTVT","name":"LÃŠ MINH HIá»‚N","phone":"0902484393"},
-      "50E54447":{"cccd":"052088013362  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790148929197 NÆ¡i cáº¥p:Sá»ž GTVT","name":"LÃŠ TRá»ŒNG NHÅ¨","phone":"0985468603"},
-      "50H76548":{"cccd":"084093004347  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790185182027 NÆ¡i cáº¥p:Sá»ž GTVT","name":"HUá»²NH VÄ‚N CHÃ NGUYá»†N","phone":"0327348324"},
-      "50H67574":{"cccd":"087084012933  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790135004317 NÆ¡i cáº¥p:BCA","name":"HUá»²NH VÄ‚N TÃ‚M","phone":"0934044395"},
-      "50E13972":{"cccd":"084083011298  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790154124087 NÆ¡i cáº¥p:Sá»ž GTVT","name":"TRÆ¯Æ NG HOÃ€NG TÃ‚M","phone":"0933436783"},
-      "50H76100":{"cccd":"038087010115  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790111019706 NÆ¡i cáº¥p:sá»Ÿ GTVT","name":"NGUYá»„N VÄ‚N TUáº¤N","phone":"0932636166"},
-      "50H75037":{"cccd":"038090000713  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790159083060 NÆ¡i cáº¥p:sá»Ÿ GTVT","name":"HÃ€ VÄ‚N HUá»²NH","phone":"0962595828"},
-      "50H91136":{"cccd":"075084012309  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"740103000597 NÆ¡i cáº¥p:Sá»ž GTVT","name":"NGUYá»„N VÄ‚N LÃ‚M","phone":"0907451526"},
-      "50H91077":{"cccd":"084078005598  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790133026546 NÆ¡i cáº¥p:Sá»ž GTVT","name":"NGUYá»„N VÄ‚N VINH","phone":"0939534848"},
-      "50H75631":{"cccd":"040094035935  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790158168344 NÆ¡i cáº¥p:Sá»ž GTVT","name":"PHáº M VÄ‚N HOÃ€I","phone":"0987130446"},
-      "50H76822":{"cccd":"092068002539  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"740100001386 NÆ¡i cáº¥p:Sá»ž GTVT","name":"ÄOÃ€N VÄ‚N KHÃ”I","phone":"07074042920"},
-      "50H91025":{"cccd":"096085012314  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"960104002204 NÆ¡i cáº¥p:Sá»ž GTVT","name":"LÃŠ CHÃ BÃ‰","phone":"0949325326"},
-      "50H91065":{"cccd":"084087008097  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790120002234 NÆ¡i cáº¥p:sá»Ÿ GTVT","name":"LÃŠ VÄ‚N Lá»Œ","phone":"0931781902"},
-      "50H90495":{"cccd":"038087003353  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790135394702 NÆ¡i cáº¥p:sá»Ÿ GTVT","name":"HÃ€ VÄ‚N NAM","phone":"0962156417"},
-      "50H76011":{"cccd":"052086008837  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"520098005953 NÆ¡i cáº¥p:sá»Ÿ GTVT","name":"BÃ™I QUá»C Báº¢O","phone":"0984771750"},
-      "50E53813":{"cccd":"070090005753  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"700140007614 NÆ¡i cáº¥p:Sá»ž GTVT","name":"BÃ™I THáº¾ PHONG","phone":"0919412472"},
-      "50H75942":{"cccd":"038079021380  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790156178864 NÆ¡i cáº¥p:sá»Ÿ GTVT","name":"HÃ€ VÄ‚N QUÃ‚N","phone":"0968858255"},
-      "50H10039":{"cccd":"046086012096  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"460070000841 NÆ¡i cáº¥p:BCA","name":"TRáº¦N QUá»C THANH","phone":"0344275975"},
-      "50H67809":{"cccd":"019064000138  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"740109000223 NÆ¡i cáº¥p:Sá»ž GTVT","name":"Äáº¶NG VÄ‚N GIANG","phone":"0986779164"},
-      "50H10106":{"cccd":"051093007367  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790144963131 NÆ¡i cáº¥p:Sá»ž GTVT","name":"ÄOÃ€N TRUNG ÄIá»†P","phone":"0966469601"},
-      "50H75270":{"cccd":"051086015636  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790116256113 NÆ¡i cáº¥p:sá»Ÿ GTVT","name":"TRáº¦N VÄ‚N CHIáº¾N","phone":"0908491943"},
-      "50H05806":{"cccd":"042072019464  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"740138003479 NÆ¡i cáº¥p:sá»Ÿ GTVT","name":"NGUYá»„N VÄ‚N HÃ€","phone":"0976404108"},
-      "50H10056":{"cccd":"080084015762  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"800072000197 NÆ¡i cáº¥p:BCA","name":"LÃŠ Báº¢O QUá»C","phone":"0946070660"},
-      "50H05545":{"cccd":"040086034549  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"400138010216 NÆ¡i cáº¥p:Sá»ž GTVT","name":"NGUYá»„N VÄ‚N QUANG","phone":"0919960266"},
-      "50E52957":{"cccd":"084080010693  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790118015806 NÆ¡i cáº¥p:Sá»ž GTVT","name":"NGUYá»„N VÄ‚N CHIáº¾N","phone":"0933893216"},
-      "50H75167":{"cccd":"084088003267  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790121231718 NÆ¡i cáº¥p:Sá»ž GTVT","name":"NGUYá»„N VÄ‚N KHOA","phone":"0937773854"},
-      "50H76863":{"cccd":"093094003991  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"930172002271 NÆ¡i cáº¥p:Sá»ž GTVT","name":"PHáº M TUáº¤N KHANH","phone":"0832385658"},
-      "50H90045":{"cccd":"079072041145  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790109010227 NÆ¡i cáº¥p:Sá»ž GTVT","name":"Há»’ NGá»ŒC THANH","phone":"0908067972"},
-      "50E53620":{"cccd":"086094004600  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790140976232 NÆ¡i cáº¥p:Sá»ž GTVT","name":"TRÆ¯Æ NG NGá»ŒC ÄÃ”NG","phone":"0707200832"},
-      "50H76757":{"cccd":"096079008895  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790101005351 NÆ¡i cáº¥p:Sá»ž GTVT","name":"NGUYá»„N VÄ‚N GIÃ€U","phone":"0943998978"},
-      "50H91113":{"cccd":"093091008061  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790161177742 NÆ¡i cáº¥p:sá»Ÿ GTVT","name":"NGUYá»„N KIM TÆ¯","phone":"0933989655"},
-      "50H90944":{"cccd":"044073008800  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"740107007134 NÆ¡i cáº¥p:Sá»ž GTVT","name":"Äá»– Há»’NG TUYáº¾N","phone":"0918569137"},
-      "50H91272":{"cccd":"038078006397  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790106000982 NÆ¡i cáº¥p:sá»Ÿ GTVT","name":"VÅ¨ QUANG TUÃ‚N","phone":"0937823360"},
-      "50H10031":{"cccd":"087078013673  NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH","gplx":"790064018256 NÆ¡i cáº¥p:Sá»Ÿ GTVT","name":"NGUYá»„N VÄ¨NH PHÆ¯á»šC","phone":"0939454501"},
-      "50H68711":{"cccd":"","gplx":"","name":"NGUYá»„N VÆ¯Æ NG QUá»C","phone":"0936736236"}
+      "50H91309":{"cccd":"079097000590  Nơi cấp: Cục QLHC & TTXH","gplx":"790152274557 Nơi cấp:SỞ GTVT","name":"HUỲNH THANH TÙNG","phone":"0356601380"},
+      "50H67772":{"cccd":"075082015319  Nơi cấp: Cục QLHC & TTXH","gplx":"740113002170 Nơi cấp:SỞ GTVT","name":"NGUYỄN VĂN PHƯƠNG","phone":"0931249725"},
+      "50H91554":{"cccd":"044082006183  Nơi cấp: Cục QLHC & TTXH","gplx":"790105007335 Nơi cấp:sở GTVT","name":"NGUYỄN VĂN TUẤN","phone":"0378857982"},
+      "50E52975":{"cccd":"038085016388  Nơi cấp: Cục QLHC & TTXH","gplx":"790152206084 Nơi cấp:SỞ GTVT","name":"NGUYỄN TRỌNG TRƯỜNG","phone":"0974533635"},
+      "50H10121":{"cccd":"037089000509  Nơi cấp: Cục QLHC & TTXH","gplx":"790144799134 Nơi cấp:SỞ GTVT","name":"PHAN VĂN HUYNH","phone":"0987437351"},
+      "50H76073":{"cccd":"075092005970  Nơi cấp: Cục QLHC & TTXH","gplx":"790219058674 Nơi cấp:BỘ CÔNG AN","name":"NGUYỄN VĂN THANH","phone":"0914210965"},
+      "50H10152":{"cccd":"017084008865  Nơi cấp: Cục QLHC & TTXH","gplx":"310162850107 Nơi cấp:sở GTVT","name":"QUẢN VĂN NGỌC","phone":"0975075027"},
+      "50H05689":{"cccd":"094086003131  Nơi cấp: Cục QLHC & TTXH","gplx":"740114002180 Nơi cấp:SỞ GTVT","name":"NGÔ MINH TRỌNG","phone":"0985955580"},
+      "50H10035":{"cccd":"075089026187  Nơi cấp: Cục QLHC & TTXH","gplx":"750130023874 Nơi cấp:Sở GTVT","name":"TRẦN TRÍ TÀI","phone":"0919480367"},
+      "50H05455":{"cccd":"035074010129  Nơi cấp: Cục QLHC & TTXH","gplx":"790146894437 Nơi cấp:SỞ GTVT","name":"NGUYỄN THÁI CƠ","phone":"0986192693"},
+      "50H68309":{"cccd":"094085000613  Nơi cấp: Cục QLHC & TTXH","gplx":"790133745151 Nơi cấp:SỞ GTVT","name":"LÊ VĂN NGOAN","phone":"0795884070"},
+      "50E14550":{"cccd":"080093000650  Nơi cấp: Cục QLHC & TTXH","gplx":"790159130760 Nơi cấp:SỞ GTVT","name":"LÊ HOÀNG ÂN","phone":"0966464917"},
+      "50E14009":{"cccd":"087201009730  Nơi cấp: Cục QLHC & TTXH","gplx":"790206185040 Nơi cấp:bộ công an","name":"NGUYỄN MINH TRIẾT","phone":"0364334382"},
+      "50E53597":{"cccd":"077089005508  Nơi cấp: Cục QLHC & TTXH","gplx":"790110015510 Nơi cấp:SỞ GTVT","name":"NGUYỄN VĂN TÀI","phone":"0335946252"},
+      "50E52920":{"cccd":"080093006093  Nơi cấp: Cục QLHC & TTXH","gplx":"790160094374 Nơi cấp:SỞ GTVT","name":"ĐỖ MINH PHỤNG","phone":"0967799542"},
+      "50H10017":{"cccd":"080081000387  Nơi cấp: Cục QLHC & TTXH","gplx":"790156088701 Nơi cấp:BỘ GTVT","name":"NGUYỄN VƯƠNG QUỐC","phone":"0936736236"},
+      "50H68333":{"cccd":"038085020371  Nơi cấp: Cục QLHC & TTXH","gplx":"790159210491 Nơi cấp:SỞ GTVT","name":"HOÀNG VĂN LỰC","phone":"0902856068"},
+      "50H10011":{"cccd":"079201021731  Nơi cấp: Cục QLHC & TTXH","gplx":"790204030139 Nơi cấp:SỞ GTVT","name":"PHAN HOÀNG HÙNG","phone":"0707231297"},
+      "50E15217":{"cccd":"080074000416  Nơi cấp: Cục QLHC & TTXH","gplx":"790966004092 Nơi cấp:SỞ GTVT","name":"HUỲNH THANH TÂM","phone":"0937373731"},
+      "50H76816":{"cccd":"079078002279  Nơi cấp: Cục QLHC & TTXH","gplx":"790152151977 Nơi cấp:SỞ GTVT","name":"PHAN VĂN TÚ","phone":"0904334484"},
+      "50H90600":{"cccd":"079074022039  Nơi cấp: Cục QLHC & TTXH","gplx":"790009228687 Nơi cấp:SỞ GTVT","name":"DƯƠNG HIẾU HÒA","phone":"0796449644"},
+      "51D03966":{"cccd":"075082009103  Nơi cấp: Cục QLHC & TTXH","gplx":"750053003841 Nơi cấp:Cục Cảnh sát giao thông","name":"TRANG MINH HẬU","phone":"0979577801"},
+      "50H68200":{"cccd":"042080010369  Nơi cấp: Cục QLHC & TTXH","gplx":"790106009000 Nơi cấp:SỞ GTVT","name":"NGUYỄN VIẾT XUÂN","phone":"0979483434"},
+      "50H90144":{"cccd":"075091024017  Nơi cấp: Cục QLHC & TTXH","gplx":"790171923030 Nơi cấp:BCA","name":"PHẠM VĂN BÌNH","phone":"0909092471"},
+      "50H10208":{"cccd":"030062009674  Nơi cấp: Cục QLHC & TTXH","gplx":"750100001394 Nơi cấp:SỞ GTVT","name":"NGUYỄN ĐỨC TRIỆU","phone":"0938025734"},
+      "50H91424":{"cccd":"079077005704  Nơi cấp: Cục QLHC & TTXH","gplx":"790135410947 Nơi cấp:sở GTVT","name":"ĐỖ THÀNH HƯNG","phone":"0916597944"},
+      "50E48301":{"cccd":"084083014543  Nơi cấp: Cục QLHC & TTXH","gplx":"790101006837 Nơi cấp:SỞ GTVT","name":"NGUYỄN HỮU TƯỜNG","phone":"0933943550"},
+      "50H05535":{"cccd":"054088010647  Nơi cấp: Cục QLHC & TTXH","gplx":"540111812711 Nơi cấp:SỞ GTVT","name":"LÂM TỬ TY","phone":"0961191339"},
+      "50E14112":{"cccd":"074078009227  Nơi cấp: Cục QLHC & TTXH","gplx":"740044000054 Nơi cấp:sở GTVT","name":"NGUYỄN VĂN XUÂN","phone":"0964337309"},
+      "50H10224":{"cccd":"093098001120  Nơi cấp: Cục QLHC & TTXH","gplx":"790163115562 Nơi cấp:BCA","name":"NGUYỄN VĂN HẬU","phone":"0938234301"},
+      "50H76406":{"cccd":"038082023809  Nơi cấp: Cục QLHC & TTXH","gplx":"740086003914 Nơi cấp:sở GTVT","name":"ĐỖ VĂN TUẤN","phone":"0906534154"},
+      "50E54493":{"cccd":"075090016892  Nơi cấp: Cục QLHC & TTXH","gplx":"790137778023 Nơi cấp:SỞ GTVT","name":"NGUYỄN TUẤN ANH","phone":"0979222556"},
+      "50H91213":{"cccd":"091085002627  Nơi cấp: Cục QLHC & TTXH","gplx":"790102029798 Nơi cấp:SỞ GTVT","name":"HUỲNH VĂN SỬ","phone":"0908727855"},
+      "50H91917":{"cccd":"040086020171  Nơi cấp: Cục QLHC & TTXH","gplx":"750087003158 Nơi cấp:SỞ GTVT","name":"TRẦN DUY BÌNH","phone":"0973607075"},
+      "50E54092":{"cccd":"046083015082  Nơi cấp: Cục QLHC & TTXH","gplx":"790107001117 Nơi cấp:SỞ GTVT","name":"PHAN THẾ MINH SƠN","phone":"0889243552"},
+      "50E52617":{"cccd":"084096005671  Nơi cấp: Cục QLHC & TTXH","gplx":"840164002355 Nơi cấp:SỞ GTVT","name":"HUỲNH VĂN TẤN ĐẠT","phone":"0974891088"},
+      "50H05658":{"cccd":"042090011523  Nơi cấp: Cục QLHC & TTXH","gplx":"310176002813 Nơi cấp:SỞ GTVT","name":"HOÀNG HỮU LONG","phone":"0971772771"},
+      "50E14029":{"cccd":"038081001711  Nơi cấp: Cục QLHC & TTXH","gplx":"790168165517 Nơi cấp:sở GTVT","name":"HÀ VĂN LUẬT","phone":"0961535776"},
+      "50H05808":{"cccd":"040081035050  Nơi cấp: Cục QLHC & TTXH","gplx":"420098000382 Nơi cấp:SỞ GTVT","name":"NGUYỄN THÀNH TRUNG","phone":"0973029550"},
+      "50H76226":{"cccd":"079089006263  Nơi cấp: Cục QLHC & TTXH","gplx":"790115230930 Nơi cấp:SỞ GTVT","name":"ĐOÀN TÍN THÀNH","phone":"0903379977"},
+      "50H76364":{"cccd":"094085015886  Nơi cấp: cuc QL HC & TTXH","gplx":"310150041834 Nơi cấp:Sở GTVT","name":"LÊ MINH HIỂN","phone":"0902484393"},
+      "50E54447":{"cccd":"052088013362  Nơi cấp: Cục QLHC & TTXH","gplx":"790148929197 Nơi cấp:SỞ GTVT","name":"LÊ TRỌNG NHŨ","phone":"0985468603"},
+      "50H76548":{"cccd":"084093004347  Nơi cấp: Cục QLHC & TTXH","gplx":"790185182027 Nơi cấp:SỞ GTVT","name":"HUỲNH VĂN CHÍ NGUYỆN","phone":"0327348324"},
+      "50H67574":{"cccd":"087084012933  Nơi cấp: Cục QLHC & TTXH","gplx":"790135004317 Nơi cấp:BCA","name":"HUỲNH VĂN TÂM","phone":"0934044395"},
+      "50E13972":{"cccd":"084083011298  Nơi cấp: Cục QLHC & TTXH","gplx":"790154124087 Nơi cấp:SỞ GTVT","name":"TRƯƠNG HOÀNG TÂM","phone":"0933436783"},
+      "50H76100":{"cccd":"038087010115  Nơi cấp: Cục QLHC & TTXH","gplx":"790111019706 Nơi cấp:sở GTVT","name":"NGUYỄN VĂN TUẤN","phone":"0932636166"},
+      "50H75037":{"cccd":"038090000713  Nơi cấp: Cục QLHC & TTXH","gplx":"790159083060 Nơi cấp:sở GTVT","name":"HÀ VĂN HUỲNH","phone":"0962595828"},
+      "50H91136":{"cccd":"075084012309  Nơi cấp: Cục QLHC & TTXH","gplx":"740103000597 Nơi cấp:SỞ GTVT","name":"NGUYỄN VĂN LÂM","phone":"0907451526"},
+      "50H91077":{"cccd":"084078005598  Nơi cấp: Cục QLHC & TTXH","gplx":"790133026546 Nơi cấp:SỞ GTVT","name":"NGUYỄN VĂN VINH","phone":"0939534848"},
+      "50H75631":{"cccd":"040094035935  Nơi cấp: Cục QLHC & TTXH","gplx":"790158168344 Nơi cấp:SỞ GTVT","name":"PHẠM VĂN HOÀI","phone":"0987130446"},
+      "50H76822":{"cccd":"092068002539  Nơi cấp: Cục QLHC & TTXH","gplx":"740100001386 Nơi cấp:SỞ GTVT","name":"ĐOÀN VĂN KHÔI","phone":"07074042920"},
+      "50H91025":{"cccd":"096085012314  Nơi cấp: Cục QLHC & TTXH","gplx":"960104002204 Nơi cấp:SỞ GTVT","name":"LÊ CHÍ BÉ","phone":"0949325326"},
+      "50H91065":{"cccd":"084087008097  Nơi cấp: Cục QLHC & TTXH","gplx":"790120002234 Nơi cấp:sở GTVT","name":"LÊ VĂN LỌ","phone":"0931781902"},
+      "50H90495":{"cccd":"038087003353  Nơi cấp: Cục QLHC & TTXH","gplx":"790135394702 Nơi cấp:sở GTVT","name":"HÀ VĂN NAM","phone":"0962156417"},
+      "50H76011":{"cccd":"052086008837  Nơi cấp: Cục QLHC & TTXH","gplx":"520098005953 Nơi cấp:sở GTVT","name":"BÙI QUỐC BẢO","phone":"0984771750"},
+      "50E53813":{"cccd":"070090005753  Nơi cấp: Cục QLHC & TTXH","gplx":"700140007614 Nơi cấp:SỞ GTVT","name":"BÙI THẾ PHONG","phone":"0919412472"},
+      "50H75942":{"cccd":"038079021380  Nơi cấp: Cục QLHC & TTXH","gplx":"790156178864 Nơi cấp:sở GTVT","name":"HÀ VĂN QUÂN","phone":"0968858255"},
+      "50H10039":{"cccd":"046086012096  Nơi cấp: Cục QLHC & TTXH","gplx":"460070000841 Nơi cấp:BCA","name":"TRẦN QUỐC THANH","phone":"0344275975"},
+      "50H67809":{"cccd":"019064000138  Nơi cấp: Cục QLHC & TTXH","gplx":"740109000223 Nơi cấp:SỞ GTVT","name":"ĐẶNG VĂN GIANG","phone":"0986779164"},
+      "50H10106":{"cccd":"051093007367  Nơi cấp: Cục QLHC & TTXH","gplx":"790144963131 Nơi cấp:SỞ GTVT","name":"ĐOÀN TRUNG ĐIỆP","phone":"0966469601"},
+      "50H75270":{"cccd":"051086015636  Nơi cấp: Cục QLHC & TTXH","gplx":"790116256113 Nơi cấp:sở GTVT","name":"TRẦN VĂN CHIẾN","phone":"0908491943"},
+      "50H05806":{"cccd":"042072019464  Nơi cấp: Cục QLHC & TTXH","gplx":"740138003479 Nơi cấp:sở GTVT","name":"NGUYỄN VĂN HÀ","phone":"0976404108"},
+      "50H10056":{"cccd":"080084015762  Nơi cấp: Cục QLHC & TTXH","gplx":"800072000197 Nơi cấp:BCA","name":"LÊ BẢO QUỐC","phone":"0946070660"},
+      "50H05545":{"cccd":"040086034549  Nơi cấp: Cục QLHC & TTXH","gplx":"400138010216 Nơi cấp:SỞ GTVT","name":"NGUYỄN VĂN QUANG","phone":"0919960266"},
+      "50E52957":{"cccd":"084080010693  Nơi cấp: Cục QLHC & TTXH","gplx":"790118015806 Nơi cấp:SỞ GTVT","name":"NGUYỄN VĂN CHIẾN","phone":"0933893216"},
+      "50H75167":{"cccd":"084088003267  Nơi cấp: Cục QLHC & TTXH","gplx":"790121231718 Nơi cấp:SỞ GTVT","name":"NGUYỄN VĂN KHOA","phone":"0937773854"},
+      "50H76863":{"cccd":"093094003991  Nơi cấp: Cục QLHC & TTXH","gplx":"930172002271 Nơi cấp:SỞ GTVT","name":"PHẠM TUẤN KHANH","phone":"0832385658"},
+      "50H90045":{"cccd":"079072041145  Nơi cấp: Cục QLHC & TTXH","gplx":"790109010227 Nơi cấp:SỞ GTVT","name":"HỒ NGỌC THANH","phone":"0908067972"},
+      "50E53620":{"cccd":"086094004600  Nơi cấp: Cục QLHC & TTXH","gplx":"790140976232 Nơi cấp:SỞ GTVT","name":"TRƯƠNG NGỌC ĐÔNG","phone":"0707200832"},
+      "50H76757":{"cccd":"096079008895  Nơi cấp: Cục QLHC & TTXH","gplx":"790101005351 Nơi cấp:SỞ GTVT","name":"NGUYỄN VĂN GIÀU","phone":"0943998978"},
+      "50H91113":{"cccd":"093091008061  Nơi cấp: Cục QLHC & TTXH","gplx":"790161177742 Nơi cấp:sở GTVT","name":"NGUYỄN KIM TƯ","phone":"0933989655"},
+      "50H90944":{"cccd":"044073008800  Nơi cấp: Cục QLHC & TTXH","gplx":"740107007134 Nơi cấp:SỞ GTVT","name":"ĐỖ HỒNG TUYẾN","phone":"0918569137"},
+      "50H91272":{"cccd":"038078006397  Nơi cấp: Cục QLHC & TTXH","gplx":"790106000982 Nơi cấp:sở GTVT","name":"VŨ QUANG TUÂN","phone":"0937823360"},
+      "50H10031":{"cccd":"087078013673  Nơi cấp: Cục QLHC & TTXH","gplx":"790064018256 Nơi cấp:Sở GTVT","name":"NGUYỄN VĨNH PHƯỚC","phone":"0939454501"},
+      "50H68711":{"cccd":"","gplx":"","name":"NGUYỄN VƯƠNG QUỐC","phone":"0936736236"}
     };
 
-    // Database Äá»™i xe VENDOR tá»« Google Sheet (Tá»± Ä‘á»™ng Ä‘á»“ng bá»™ live má»—i khi má»Ÿ App)
-    const INITIAL_VENDOR_DRIVER_DB = {"50E65375":{"vendor":"AN THANH PHAT","name":"LÆ¯Æ NG THáº¾ DUY","phone":"0888352428","cccd":"040093028954","gplx":"400131030660"},"50E65951":{"vendor":"AN THANH PHAT","name":"HUá»²NH VÄ‚N HOÃ€I","phone":"0356615616","cccd":"058085005988","gplx":"740116000256"},"50F09323":{"vendor":"BAO NAM PHAT","name":"CAO THANH HÃ€","phone":"0918959143","cccd":"044090013803","gplx":"440128001907"},"61H13200":{"vendor":"DUY LINH PHAT","name":"PHáº M NGá»ŒC SÃNG","phone":"0865150567","cccd":"042094002527","gplx":"740149000715"},"50E34934":{"vendor":"DUY LINH PHAT","name":"PHáº M TRUNG THÃ€NH","phone":"0962678328","cccd":"042091005641","gplx":"Äang Cáº­p Nháº­t"},"50E36061":{"vendor":"DUY LINH PHAT","name":"TRáº¦N HOÃ€I NAM","phone":"0979345291","cccd":"042086007623","gplx":"Äang Cáº­p Nháº­t"},"50E65255":{"vendor":"HOANG LONG PHAT","name":"TRÆ¯Æ NG VÄ‚N VÆ¯Æ NG","phone":"0377111572","cccd":"040095005341","gplx":"310187036636"},"50E65490":{"vendor":"HOANG LONG PHAT","name":"VÃ• QUANG TRÃ€","phone":"0962199166","cccd":"44090000239","gplx":"740155014797"},"50E32542":{"vendor":"HOANG LONG PHAT","name":"HOÃ€NG VÄ‚N Háº NH","phone":"0377526846","cccd":"40084026157","gplx":"790140907355"},"50H90438":{"vendor":"HOANG LONG PHAT","name":"TRáº¦N KIM HOÃ€NG","phone":"0962655237","cccd":"40091018132","gplx":"750123004257"},"50E47317":{"vendor":"HOANG LONG PHAT","name":"NGUYá»„N XUÃ‚N THÃ€NH","phone":"0973101711","cccd":"40083012978","gplx":"310160865442"},"61H16670":{"vendor":"HOANG LONG PHAT","name":"HOÃ€NG VÄ‚N HIáº¾U","phone":"0988339961","cccd":"40082015118","gplx":"Äang Cáº­p Nháº­t"},"61H17260":{"vendor":"HOANG LONG PHAT","name":"HOÃ€NG TÃ™NG HIÃŠN","phone":"0908520359","cccd":"40081035719","gplx":"790148939862"},"50E39861":{"vendor":"HOANG LONG PHAT","name":"BÃ™I VÄ‚N Vá»¸","phone":"0869308684","cccd":"40084024922","gplx":"400149029045"},"50E48367":{"vendor":"HOANG LONG PHAT","name":"LÃŠ ÄÄ‚NG HIáº¾U","phone":"0988753861","cccd":"40090027025","gplx":"740151016368"},"51C12474":{"vendor":"LONG DAT","name":"PHáº M TUáº¤N PHONG","phone":"0901473423","cccd":"075078015607","gplx":"Äang Cáº­p Nháº­t"},"50E81550":{"vendor":"NHAN BAO PHAT","name":"NGUYá»„N TRá»ŒNG TUáº¤N","phone":"0988062493","cccd":"042084009898","gplx":"740163007170"},"61H11280":{"vendor":"NHAT SON","name":"NÃ”NG THÃ€NH NHÆ N","phone":"0979193442","cccd":"019078012146","gplx":"740102000956"},"51C50602":{"vendor":"NHAT SON","name":"NÃ”NG Máº NH HÃ™NG","phone":"0938465862","cccd":"019091010032","gplx":"790131013629"},"50E31341":{"vendor":"NHAT SON","name":"LÃŠ Äá»¨C KHÃNH","phone":"0976713778","cccd":"042091006497","gplx":"790140962813"},"61H00804":{"vendor":"NHAT SON","name":"NGUYá»„N MINH Háº¢I","phone":"0971416122","cccd":"075086010901","gplx":"660118809593"},"50H76338":{"vendor":"NHAT SON","name":"NGUYá»„N VÄ‚N TÃM","phone":"0989411427","cccd":"038086031466","gplx":"790100004928"},"50H08207":{"vendor":"TAN HOANG QUANG","name":"VÅ¨ ÄÃŒNH QUANG","phone":"0941119990","cccd":"042074000729","gplx":"640152780236"},"50E44057":{"vendor":"AN THANH PHAT","name":"VÅ¨ ÄÃŒNH Äá»¨C","phone":"0967594486","cccd":"079070032340","gplx":"790126011573"},"50E64009":{"vendor":"NGOC SANG","name":"HOÃ€NG LIÃŠN SÆ N","phone":"0976044156","cccd":"40083031314","gplx":"709103005326"},"61H02908":{"vendor":"NGOC SANG","name":"HOÃ€NG LIÃŠN SÆ N","phone":"0976044156","cccd":"40083031314","gplx":"709103005326"},"61H18983":{"vendor":"NGOC SANG","name":"BIá»†N VÄ‚N Sá»¸","phone":"0984225866","cccd":"42089019684","gplx":"420117000487"},"61H18956":{"vendor":"NGOC SANG","name":"NGUYá»„N TIáº¾N NAM","phone":"0967676191","cccd":"66088007336","gplx":"660098801837"},"50E46727":{"vendor":"NGOC SANG","name":"TRáº¦N TRUNG ANH","phone":"0365766107","cccd":"40095005664","gplx":"790186088997"},"51C92758":{"vendor":"TRANCO","name":"PHáº M XUÃ‚N THÃ€NH","phone":"0919920606","cccd":"34078006055","gplx":"790108009813"},"50E64511":{"vendor":"TRANCO","name":"PHAN THANH Háº¢I","phone":"0936713738","cccd":"094091002766","gplx":"790151084638"},"51D49674":{"vendor":"TRANCO","name":"CA CHÃ LINH","phone":"0945111033","cccd":"95085001585","gplx":"740116010976"},"50H44818":{"vendor":"TRANCO","name":"CA CHÃ LUÃ‚N","phone":"0938525450","cccd":"95090005271","gplx":"790155186369"},"50H91518":{"vendor":"TRANCO","name":"PHáº M VÄ‚N HIá»‚N","phone":"0932035841","cccd":"082088018626","gplx":"790176107446"},"51D14461":{"vendor":"TRANCO","name":"VÃ• VÄ‚N Cá»ŒP","phone":"0984932852","cccd":"094093008021","gplx":"940122000105"},"51D44303":{"vendor":"TRANCO","name":"NGUYá»„N Táº¤N THÃ€NH","phone":"0355977727","cccd":"92093005581","gplx":"790140987564"},"50E76112":{"vendor":"PHUC AN","name":"MAI THANH TUáº¤N","phone":"0764153826","cccd":"51084007153","gplx":"790122230314"},"51C24203":{"vendor":"PHUC AN","name":"PHáº M VÄ‚N THáº®NG","phone":"0332609828","cccd":"37073011281","gplx":"790063005376"},"50H63178":{"vendor":"PHUC AN","name":"Vá»Ž NGá»ŒC CHÃNH","phone":"0909589764","cccd":"51085007848","gplx":"079117234884"},"61E03747":{"vendor":"NHAT SON","name":"NGUYá»„N VÄ‚N HÆ¯NG","phone":"0972284449","cccd":"42081007010","gplx":"740108001690"},"61H20933":{"vendor":"NHAT SON","name":"CAO VÄ‚N HIáº¾U","phone":"0703368267","cccd":"44093012924","gplx":"440149000565"},"61H12006":{"vendor":"NHAT SON","name":"NGUYá»„N ÄÃŒNH LÆ¯U","phone":"0962938537","cccd":"40093012668","gplx":"790136757755"},"61C41926":{"vendor":"NHAT SON","name":"CAO Äá»¨C SÆ N","phone":"0394423593","cccd":"44093004938","gplx":"440116002897"},"61C41405":{"vendor":"NHAT SON","name":"LÆ¯Æ NG VÄ‚N LONG","phone":"0347068826","cccd":"038090043631","gplx":"790197296879"},"61H10617":{"vendor":"NHAT SON","name":"TRáº¦N BÃ NAM","phone":"0963871670","cccd":"4409601067","gplx":"790223014918"},"61H18984":{"vendor":"NHAT SON","name":"NGUYá»„N VÄ‚N Äáº O","phone":"0869607757","cccd":"44096002563","gplx":"790174083630"},"50H71376":{"vendor":"TUAN HUNG","name":"PHAN HÃ’A VINH","phone":"0972609079","cccd":"66093011471","gplx":"660164016143"},"51C70823":{"vendor":"TUAN HUNG","name":"LÃŠ TRá»ŒNG THáº®NG","phone":"0373455800","cccd":"4008702238","gplx":"790111227327"},"50E60924":{"vendor":"VUONG PHAT","name":"TRáº¦N Há»®U TINH","phone":"0339676007","cccd":"42075015762","gplx":"660101001809"},"50E64826":{"vendor":"VUONG PHAT","name":"TRáº¦N Háº¢I NAM","phone":"0862768559","cccd":"044098006799","gplx":"790213015459"},"50H67539":{"vendor":"VUONG PHAT","name":"CAO NGá»ŒC LÃŠ","phone":"0366189811","cccd":"0440930310422","gplx":"750228035374"},"50E67400":{"vendor":"VUONG PHAT","name":"PHáº M VÄ‚N KÃ","phone":"0975334334","cccd":"042088007658","gplx":"740156006283"},"61C15993":{"vendor":"PHUC TRUONG AN","name":"LÃŠ NGá»ŒC NGÃ€","phone":"0964298181","cccd":"66087103543","gplx":"640093006558"},"50E31803":{"vendor":"PHUC TRUONG AN","name":"NGUYá»„N NGá»ŒC CÃ”NG THÃ€NH","phone":"0971787679","cccd":"040084015706","gplx":"790178119715"},"61H00797":{"vendor":"PHUC TRUONG AN","name":"NGUYá»„N VÄ‚N TÃ™NG","phone":"0975200338","cccd":"042093019869","gplx":"420145004091"},"61E03709":{"vendor":"PHUC TRUONG AN","name":"Äáº¶NG Sá»¸ Háº¢I","phone":"0899335116","cccd":"040081024057","gplx":"740149013045"},"61H11121":{"vendor":"PHUC TRUONG AN","name":"PHáº M VÄ‚N HUY","phone":"0784868678","cccd":"042086005529","gplx":"740103017148"},"50E88503":{"vendor":"NHAN BAO PHAT","name":"NGUYá»„N VÄ‚N HUY","phone":"0975664423","cccd":"042083002403","gplx":"790117003088"},"50E90884":{"vendor":"NHAN BAO PHAT","name":"NGUYá»„N VÄ‚N QUÃ","phone":"0968368665","cccd":"042075001054","gplx":"790104003725"},"38H03141":{"vendor":"NHAN BAO PHAT","name":"NGUYá»„N VÄ‚N Háº¢I","phone":"0963236546","cccd":"042080012499","gplx":"420107000370"},"50E80187":{"vendor":"NHAN BAO PHAT","name":"NGUYá»„N VÄ‚N THUáº¬N","phone":"0929919298","cccd":"070096003624","gplx":"680199000717"},"37H00745":{"vendor":"ANH DUC","name":"PHáº M VÄ‚N TÃ€I","phone":"0367308298","cccd":"40091027080","gplx":"400121016449"},"50H46207":{"vendor":"GIA KHANG","name":"NGÃ” NGá»ŒC TRUNG","phone":"0387618457","cccd":"77094004769","gplx":"790164019380"},"50F09314":{"vendor":"THIEN PHUC PHAT","name":"NGUYá»„N TRá»ŒNG PHÃšC","phone":"0901464743","cccd":"42085015705","gplx":"790108009499"},"50F07996":{"vendor":"THIEN PHUC PHAT","name":"NGUYá»„N NGá»ŒC HÃ€","phone":"0333470682","cccd":"79078001175","gplx":"790026241939"},"50F07610":{"vendor":"THIEN PHUC PHAT","name":"HUá»²NH THANH TÃš","phone":"0333376115","cccd":"52085019130","gplx":"790159221192"},"61H16720":{"vendor":"NGOC SANG","name":"VÃ• HOÃ€NG VÄ‚N","phone":"0971891362","cccd":"009409317243","gplx":"790171925001"},"50H47386":{"vendor":"GIA KHANG","name":"NGUYá»„N VÄ‚N LÃ‚U","phone":"0938327078","cccd":"077092006919","gplx":"790144904325"},"50H70989":{"vendor":"GIA KHANG","name":"PHáº M PHÃš KIÃŠN","phone":"0932636387","cccd":"082097002570","gplx":"820154004437"},"50H47265":{"vendor":"GIA KHANG","name":"VÄ‚N THANH HÃ™NG","phone":"0901455673","cccd":"060072000200","gplx":"740125002117"},"50H46817":{"vendor":"GIA KHANG","name":"TRáº¦N NGá»ŒC Tá»¨","phone":"0782482587","cccd":"070090004773","gplx":"790120256107"},"50E77282":{"vendor":"GIA KHANG","name":"NGUYá»„N CHÃ KIÃŠN","phone":"0788937807","cccd":"086086013500","gplx":"74013600710"},"50E32110":{"vendor":"TRANCO","name":"LÃŠ QUÃ SÆ N","phone":"0989322411","cccd":"079083008027","gplx":"790105016353"},"50E89021":{"vendor":"HOANG LONG PHAT","name":"NGUYá»„N QUá»C VIá»†T","phone":"0975322746","cccd":"044094000961","gplx":"440169000527"},"50E47942":{"vendor":"MAI NHAT ANH","name":"ÄOÃ€N QUá»C XIÃŠM","phone":"0764850270","cccd":"","gplx":""},"50E46720":{"vendor":"MAI NHAT ANH","name":"NGUYá»„N THÃ€NH ÄÆ¯á»¢C","phone":"0947395620","cccd":"","gplx":""},"50E48450":{"vendor":"MAI NHAT ANH","name":"NGUYá»„N CHÃ HÆ¯á»šNG","phone":"0777508000","cccd":"","gplx":""},"50E48074":{"vendor":"MAI NHAT ANH","name":"DÆ¯Æ NG Äáº I HÃ€O","phone":"0968065464","cccd":"","gplx":""},"50H25079":{"vendor":"DUONG NGUYEN","name":"KIá»€U GIA NGá»ŒC","phone":"0876450913","cccd":"058089001180","gplx":"790137788347"},"50H46638":{"vendor":"GIA KHANG","name":"PHáº M THÃ€NH NHÃ‚N","phone":"0939143102","cccd":"082096001875","gplx":"790155722714"},"50H16154":{"vendor":"GIA KHANG","name":"HUá»²NH VÄ‚N DUáº¨N","phone":"0777805689","cccd":"091085013755","gplx":"790106003330"},"50H24509":{"vendor":"DUONG NGUYEN","name":"NGUYá»„N TRUNG BÃŒNH","phone":"0903631292","cccd":"079070003223","gplx":"790143789279"},"50H24419":{"vendor":"DUONG NGUYEN","name":"PHáº M VÄ‚N THáº¢O","phone":"0962852047","cccd":"066091005627","gplx":"790126243611"},"61H07722":{"vendor":"NHAT SON","name":"VI THÃI BÃŒNH","phone":"0974411698","cccd":"038095014861","gplx":"790220087375"},"50E14850":{"vendor":"DUONG NGUYEN","name":"TRáº¦N QUANG BÃ‰","phone":"0986222784","cccd":"052068023764","gplx":"640132001962"},"50H91801":{"vendor":"DUONG NGUYEN","name":"NGUYá»„N THÃ€NH Háº¢I","phone":"0902897928","cccd":"080085009060","gplx":"790176015376"},"50H08622":{"vendor":"DUONG NGUYEN","name":"DÆ¯Æ NG THANH TÄ¨NH","phone":"0971213742","cccd":"054092009544","gplx":"790173082072"},"50H54182":{"vendor":"TRUC ANH","name":"LÃŠ VÄ‚N DÅ¨NG","phone":"0989667444","cccd":"044084012790","gplx":""},"50E14570":{"vendor":"DUONG NGUYEN","name":"KIá»€U GIA NGÃ€","phone":"0935584402","cccd":"058092005948","gplx":"790148026117"},"51D31338":{"vendor":"TRANCO","name":"NGÃ” ANH KIá»†T","phone":"0913683141","cccd":"079076014400","gplx":"790114015514"},"50E15514":{"vendor":"DUONG NGUYEN","name":"HÃ€ MINH Háº¬U","phone":"0388580088","cccd":"054085007992","gplx":""},"50H24580":{"vendor":"DUONG NGUYEN","name":"LÃŠ VÄ‚N GIÃ€U","phone":"0933363774","cccd":"092087004728","gplx":"790117233047"},"51D35878":{"vendor":"DUONG NGUYEN","name":"HUá»²NH NGá»ŒC TOÃ€N","phone":"0394797939","cccd":"060098008301","gplx":"790196274755"},"50E14613":{"vendor":"DUONG NGUYEN","name":"DÆ¯Æ NG ÄÃŒNH KHOA","phone":"0327155050","cccd":"183664365","gplx":"790163163208"},"50H44778":{"vendor":"DUONG NGUYEN","name":"TRáº¦N NGá»ŒC NGHÄ¨A","phone":"0971463239","cccd":"052091008859","gplx":"520135002804"},"51C40249":{"vendor":"HIEU THUAN THANH","name":"TRáº¦N VÄ‚N THÃI","phone":"0767599616","cccd":"040092039083","gplx":"790151215740"},"50H08397":{"vendor":"HIEU THUAN THANH","name":"VÃ• PHÃš TIáº¾N","phone":"0347344739","cccd":"094091007316","gplx":"740160001740"},"50H75283":{"vendor":"TRANCO","name":"VÃ• VÄ‚N HIáº¾U","phone":"0909409079","cccd":"094085003898","gplx":"790172020367"},"50H68351":{"vendor":"TRANCO","name":"NGUYá»„N NGá»ŒC THANH","phone":"0764754733","cccd":"079074028029","gplx":"790094010189"},"50H75912":{"vendor":"TRANCO","name":"NGUYá»„N VÄ‚N HIáº¾U","phone":"0947906767","cccd":"087084013978","gplx":"830151003470"},"50H47324":{"vendor":"GIA KHANG","name":"CHÃ‚U CHÃ THÃ€NH","phone":"0968018724","cccd":"084085005489","gplx":"790116022428"},"50H31241":{"vendor":"GIA KHANG","name":"TRáº¦N TUáº¤N THÃ€NH","phone":"0966921015","cccd":"082096007987","gplx":"790143967064"},"51C96068":{"vendor":"TRANCO","name":"NGUYá»„N KHáº®C DUY","phone":"0822678132","cccd":"087084017883","gplx":"790132399830"},"51C98819":{"vendor":"GIA BAO","name":"NGUYá»„N MINH SÄ¨","phone":"0967952544","cccd":"064093007650","gplx":""},"50E40521":{"vendor":"TRANCO","name":"PHAN VÄ‚N Háº¬U","phone":"0934038315","cccd":"082092009808","gplx":"790142806728"},"50H70423":{"vendor":"DUC HAI","name":"NGUYá»„N THANH Tá»ˆNH","phone":"0926381168","cccd":"042085000345","gplx":"7901060033790"},"67H04431":{"vendor":"DANG HUNG","name":"Äáº¶NG NGá»ŒC NHU","phone":"0973439438","cccd":"","gplx":"740123005536"},"50E14923":{"vendor":"DUONG NGUYEN","name":"TRáº¦N ÄÃŒNH Báº¢O","phone":"0909736747","cccd":"079092025653","gplx":"790159190467"},"51C48540":{"vendor":"GIA KHANG","name":"LÃŠ BÃ‰ LONG","phone":"0706336749","cccd":"092076003333","gplx":"790159088759"},"50H03656":{"vendor":"DUC HAI","name":"NGUYá»„N VÄ‚N KHIÃŠM","phone":"0908820932","cccd":"025075013027","gplx":"740117000239"},"50H75046":{"vendor":"TRANCO","name":"VÃ• VÄ‚N LÃ‚M","phone":"0937905891","cccd":"086086013218","gplx":"790121015060"},"50F09325":{"vendor":"THIEN PHUC PHAT","name":"LÃŠ KHáº®C HOáº T","phone":"0765876315","cccd":"038084012067","gplx":"790077010940"},"50H78733":{"vendor":"GIA BAO","name":"PHAN THANH THáº¢O","phone":"0966340732","cccd":"080093016662","gplx":""},"51D64911":{"vendor":"DUONG NGUYEN","name":"HUá»²NH VÄ‚N TUáº¤N","phone":"0336786549","cccd":"054099009789","gplx":"640225014484"},"50H78894":{"vendor":"GIA BAO","name":"NGUYá»„N HOÃ€NG ANH","phone":"0938723620","cccd":"080091009105","gplx":""},"51C91569":{"vendor":"DUONG NGUYEN","name":"PHáº M LONG BÃŒNH","phone":"0932041042","cccd":"079086017688","gplx":"790114027629"},"51C13223":{"vendor":"DUONG NGUYEN","name":"Há»’ VÄ‚N Sáº¼","phone":"0908330553","cccd":"083088015808","gplx":"790067231856"},"50H43304":{"vendor":"DUONG NGUYEN","name":"NGUYá»„N THÃ€NH Táº¤N","phone":"0363615064","cccd":"054091005727","gplx":"540140001708"}};
+    // Database Đội xe VENDOR từ Google Sheet (Tự động đồng bộ live mỗi khi mở App)
+    const INITIAL_VENDOR_DRIVER_DB = {"50E65375":{"vendor":"AN THANH PHAT","name":"LƯƠNG THẾ DUY","phone":"0888352428","cccd":"040093028954","gplx":"400131030660"},"50E65951":{"vendor":"AN THANH PHAT","name":"HUỲNH VĂN HOÀI","phone":"0356615616","cccd":"058085005988","gplx":"740116000256"},"50F09323":{"vendor":"BAO NAM PHAT","name":"CAO THANH HÀ","phone":"0918959143","cccd":"044090013803","gplx":"440128001907"},"61H13200":{"vendor":"DUY LINH PHAT","name":"PHẠM NGỌC SÁNG","phone":"0865150567","cccd":"042094002527","gplx":"740149000715"},"50E34934":{"vendor":"DUY LINH PHAT","name":"PHẠM TRUNG THÀNH","phone":"0962678328","cccd":"042091005641","gplx":"Đang Cập Nhật"},"50E36061":{"vendor":"DUY LINH PHAT","name":"TRẦN HOÀI NAM","phone":"0979345291","cccd":"042086007623","gplx":"Đang Cập Nhật"},"50E65255":{"vendor":"HOANG LONG PHAT","name":"TRƯƠNG VĂN VƯƠNG","phone":"0377111572","cccd":"040095005341","gplx":"310187036636"},"50E65490":{"vendor":"HOANG LONG PHAT","name":"VÕ QUANG TRÀ","phone":"0962199166","cccd":"44090000239","gplx":"740155014797"},"50E32542":{"vendor":"HOANG LONG PHAT","name":"HOÀNG VĂN HẠNH","phone":"0377526846","cccd":"40084026157","gplx":"790140907355"},"50H90438":{"vendor":"HOANG LONG PHAT","name":"TRẦN KIM HOÀNG","phone":"0962655237","cccd":"40091018132","gplx":"750123004257"},"50E47317":{"vendor":"HOANG LONG PHAT","name":"NGUYỄN XUÂN THÀNH","phone":"0973101711","cccd":"40083012978","gplx":"310160865442"},"61H16670":{"vendor":"HOANG LONG PHAT","name":"HOÀNG VĂN HIẾU","phone":"0988339961","cccd":"40082015118","gplx":"Đang Cập Nhật"},"61H17260":{"vendor":"HOANG LONG PHAT","name":"HOÀNG TÙNG HIÊN","phone":"0908520359","cccd":"40081035719","gplx":"790148939862"},"50E39861":{"vendor":"HOANG LONG PHAT","name":"BÙI VĂN VỸ","phone":"0869308684","cccd":"40084024922","gplx":"400149029045"},"50E48367":{"vendor":"HOANG LONG PHAT","name":"LÊ ĐĂNG HIẾU","phone":"0988753861","cccd":"40090027025","gplx":"740151016368"},"51C12474":{"vendor":"LONG DAT","name":"PHẠM TUẤN PHONG","phone":"0901473423","cccd":"075078015607","gplx":"Đang Cập Nhật"},"50E81550":{"vendor":"NHAN BAO PHAT","name":"NGUYỄN TRỌNG TUẤN","phone":"0988062493","cccd":"042084009898","gplx":"740163007170"},"61H11280":{"vendor":"NHAT SON","name":"NÔNG THÀNH NHƠN","phone":"0979193442","cccd":"019078012146","gplx":"740102000956"},"51C50602":{"vendor":"NHAT SON","name":"NÔNG MẠNH HÙNG","phone":"0938465862","cccd":"019091010032","gplx":"790131013629"},"50E31341":{"vendor":"NHAT SON","name":"LÊ ĐỨC KHÁNH","phone":"0976713778","cccd":"042091006497","gplx":"790140962813"},"61H00804":{"vendor":"NHAT SON","name":"NGUYỄN MINH HẢI","phone":"0971416122","cccd":"075086010901","gplx":"660118809593"},"50H76338":{"vendor":"NHAT SON","name":"NGUYỄN VĂN TÁM","phone":"0989411427","cccd":"038086031466","gplx":"790100004928"},"50H08207":{"vendor":"TAN HOANG QUANG","name":"VŨ ĐÌNH QUANG","phone":"0941119990","cccd":"042074000729","gplx":"640152780236"},"50E44057":{"vendor":"AN THANH PHAT","name":"VŨ ĐÌNH ĐỨC","phone":"0967594486","cccd":"079070032340","gplx":"790126011573"},"50E64009":{"vendor":"NGOC SANG","name":"HOÀNG LIÊN SƠN","phone":"0976044156","cccd":"40083031314","gplx":"709103005326"},"61H02908":{"vendor":"NGOC SANG","name":"HOÀNG LIÊN SƠN","phone":"0976044156","cccd":"40083031314","gplx":"709103005326"},"61H18983":{"vendor":"NGOC SANG","name":"BIỆN VĂN SỸ","phone":"0984225866","cccd":"42089019684","gplx":"420117000487"},"61H18956":{"vendor":"NGOC SANG","name":"NGUYỄN TIẾN NAM","phone":"0967676191","cccd":"66088007336","gplx":"660098801837"},"50E46727":{"vendor":"NGOC SANG","name":"TRẦN TRUNG ANH","phone":"0365766107","cccd":"40095005664","gplx":"790186088997"},"51C92758":{"vendor":"TRANCO","name":"PHẠM XUÂN THÀNH","phone":"0919920606","cccd":"34078006055","gplx":"790108009813"},"50E64511":{"vendor":"TRANCO","name":"PHAN THANH HẢI","phone":"0936713738","cccd":"094091002766","gplx":"790151084638"},"51D49674":{"vendor":"TRANCO","name":"CA CHÍ LINH","phone":"0945111033","cccd":"95085001585","gplx":"740116010976"},"50H44818":{"vendor":"TRANCO","name":"CA CHÍ LUÂN","phone":"0938525450","cccd":"95090005271","gplx":"790155186369"},"50H91518":{"vendor":"TRANCO","name":"PHẠM VĂN HIỂN","phone":"0932035841","cccd":"082088018626","gplx":"790176107446"},"51D14461":{"vendor":"TRANCO","name":"VÕ VĂN CỌP","phone":"0984932852","cccd":"094093008021","gplx":"940122000105"},"51D44303":{"vendor":"TRANCO","name":"NGUYỄN TẤN THÀNH","phone":"0355977727","cccd":"92093005581","gplx":"790140987564"},"50E76112":{"vendor":"PHUC AN","name":"MAI THANH TUẤN","phone":"0764153826","cccd":"51084007153","gplx":"790122230314"},"51C24203":{"vendor":"PHUC AN","name":"PHẠM VĂN THẮNG","phone":"0332609828","cccd":"37073011281","gplx":"790063005376"},"50H63178":{"vendor":"PHUC AN","name":"VỎ NGỌC CHÁNH","phone":"0909589764","cccd":"51085007848","gplx":"079117234884"},"61E03747":{"vendor":"NHAT SON","name":"NGUYỄN VĂN HƯNG","phone":"0972284449","cccd":"42081007010","gplx":"740108001690"},"61H20933":{"vendor":"NHAT SON","name":"CAO VĂN HIẾU","phone":"0703368267","cccd":"44093012924","gplx":"440149000565"},"61H12006":{"vendor":"NHAT SON","name":"NGUYỄN ĐÌNH LƯU","phone":"0962938537","cccd":"40093012668","gplx":"790136757755"},"61C41926":{"vendor":"NHAT SON","name":"CAO ĐỨC SƠN","phone":"0394423593","cccd":"44093004938","gplx":"440116002897"},"61C41405":{"vendor":"NHAT SON","name":"LƯƠNG VĂN LONG","phone":"0347068826","cccd":"038090043631","gplx":"790197296879"},"61H10617":{"vendor":"NHAT SON","name":"TRẦN BÁ NAM","phone":"0963871670","cccd":"4409601067","gplx":"790223014918"},"61H18984":{"vendor":"NHAT SON","name":"NGUYỄN VĂN ĐẠO","phone":"0869607757","cccd":"44096002563","gplx":"790174083630"},"50H71376":{"vendor":"TUAN HUNG","name":"PHAN HÒA VINH","phone":"0972609079","cccd":"66093011471","gplx":"660164016143"},"51C70823":{"vendor":"TUAN HUNG","name":"LÊ TRỌNG THẮNG","phone":"0373455800","cccd":"4008702238","gplx":"790111227327"},"50E60924":{"vendor":"VUONG PHAT","name":"TRẦN HỮU TINH","phone":"0339676007","cccd":"42075015762","gplx":"660101001809"},"50E64826":{"vendor":"VUONG PHAT","name":"TRẦN HẢI NAM","phone":"0862768559","cccd":"044098006799","gplx":"790213015459"},"50H67539":{"vendor":"VUONG PHAT","name":"CAO NGỌC LÊ","phone":"0366189811","cccd":"0440930310422","gplx":"750228035374"},"50E67400":{"vendor":"VUONG PHAT","name":"PHẠM VĂN KÝ","phone":"0975334334","cccd":"042088007658","gplx":"740156006283"},"61C15993":{"vendor":"PHUC TRUONG AN","name":"LÊ NGỌC NGÀ","phone":"0964298181","cccd":"66087103543","gplx":"640093006558"},"50E31803":{"vendor":"PHUC TRUONG AN","name":"NGUYỄN NGỌC CÔNG THÀNH","phone":"0971787679","cccd":"040084015706","gplx":"790178119715"},"61H00797":{"vendor":"PHUC TRUONG AN","name":"NGUYỄN VĂN TÙNG","phone":"0975200338","cccd":"042093019869","gplx":"420145004091"},"61E03709":{"vendor":"PHUC TRUONG AN","name":"ĐẶNG SỸ HẢI","phone":"0899335116","cccd":"040081024057","gplx":"740149013045"},"61H11121":{"vendor":"PHUC TRUONG AN","name":"PHẠM VĂN HUY","phone":"0784868678","cccd":"042086005529","gplx":"740103017148"},"50E88503":{"vendor":"NHAN BAO PHAT","name":"NGUYỄN VĂN HUY","phone":"0975664423","cccd":"042083002403","gplx":"790117003088"},"50E90884":{"vendor":"NHAN BAO PHAT","name":"NGUYỄN VĂN QUÝ","phone":"0968368665","cccd":"042075001054","gplx":"790104003725"},"38H03141":{"vendor":"NHAN BAO PHAT","name":"NGUYỄN VĂN HẢI","phone":"0963236546","cccd":"042080012499","gplx":"420107000370"},"50E80187":{"vendor":"NHAN BAO PHAT","name":"NGUYỄN VĂN THUẬN","phone":"0929919298","cccd":"070096003624","gplx":"680199000717"},"37H00745":{"vendor":"ANH DUC","name":"PHẠM VĂN TÀI","phone":"0367308298","cccd":"40091027080","gplx":"400121016449"},"50H46207":{"vendor":"GIA KHANG","name":"NGÔ NGỌC TRUNG","phone":"0387618457","cccd":"77094004769","gplx":"790164019380"},"50F09314":{"vendor":"THIEN PHUC PHAT","name":"NGUYỄN TRỌNG PHÚC","phone":"0901464743","cccd":"42085015705","gplx":"790108009499"},"50F07996":{"vendor":"THIEN PHUC PHAT","name":"NGUYỄN NGỌC HÀ","phone":"0333470682","cccd":"79078001175","gplx":"790026241939"},"50F07610":{"vendor":"THIEN PHUC PHAT","name":"HUỲNH THANH TÚ","phone":"0333376115","cccd":"52085019130","gplx":"790159221192"},"61H16720":{"vendor":"NGOC SANG","name":"VÕ HOÀNG VĂN","phone":"0971891362","cccd":"009409317243","gplx":"790171925001"},"50H47386":{"vendor":"GIA KHANG","name":"NGUYỄN VĂN LÂU","phone":"0938327078","cccd":"077092006919","gplx":"790144904325"},"50H70989":{"vendor":"GIA KHANG","name":"PHẠM PHÚ KIÊN","phone":"0932636387","cccd":"082097002570","gplx":"820154004437"},"50H47265":{"vendor":"GIA KHANG","name":"VĂN THANH HÙNG","phone":"0901455673","cccd":"060072000200","gplx":"740125002117"},"50H46817":{"vendor":"GIA KHANG","name":"TRẦN NGỌC TỨ","phone":"0782482587","cccd":"070090004773","gplx":"790120256107"},"50E77282":{"vendor":"GIA KHANG","name":"NGUYỄN CHÍ KIÊN","phone":"0788937807","cccd":"086086013500","gplx":"74013600710"},"50E32110":{"vendor":"TRANCO","name":"LÊ QUÝ SƠN","phone":"0989322411","cccd":"079083008027","gplx":"790105016353"},"50E89021":{"vendor":"HOANG LONG PHAT","name":"NGUYỄN QUỐC VIỆT","phone":"0975322746","cccd":"044094000961","gplx":"440169000527"},"50E47942":{"vendor":"MAI NHAT ANH","name":"ĐOÀN QUỐC XIÊM","phone":"0764850270","cccd":"","gplx":""},"50E46720":{"vendor":"MAI NHAT ANH","name":"NGUYỄN THÀNH ĐƯỢC","phone":"0947395620","cccd":"","gplx":""},"50E48450":{"vendor":"MAI NHAT ANH","name":"NGUYỄN CHÍ HƯỚNG","phone":"0777508000","cccd":"","gplx":""},"50E48074":{"vendor":"MAI NHAT ANH","name":"DƯƠNG ĐẠI HÀO","phone":"0968065464","cccd":"","gplx":""},"50H25079":{"vendor":"DUONG NGUYEN","name":"KIỀU GIA NGỌC","phone":"0876450913","cccd":"058089001180","gplx":"790137788347"},"50H46638":{"vendor":"GIA KHANG","name":"PHẠM THÀNH NHÂN","phone":"0939143102","cccd":"082096001875","gplx":"790155722714"},"50H16154":{"vendor":"GIA KHANG","name":"HUỲNH VĂN DUẨN","phone":"0777805689","cccd":"091085013755","gplx":"790106003330"},"50H24509":{"vendor":"DUONG NGUYEN","name":"NGUYỄN TRUNG BÌNH","phone":"0903631292","cccd":"079070003223","gplx":"790143789279"},"50H24419":{"vendor":"DUONG NGUYEN","name":"PHẠM VĂN THẢO","phone":"0962852047","cccd":"066091005627","gplx":"790126243611"},"61H07722":{"vendor":"NHAT SON","name":"VI THÁI BÌNH","phone":"0974411698","cccd":"038095014861","gplx":"790220087375"},"50E14850":{"vendor":"DUONG NGUYEN","name":"TRẦN QUANG BÉ","phone":"0986222784","cccd":"052068023764","gplx":"640132001962"},"50H91801":{"vendor":"DUONG NGUYEN","name":"NGUYỄN THÀNH HẢI","phone":"0902897928","cccd":"080085009060","gplx":"790176015376"},"50H08622":{"vendor":"DUONG NGUYEN","name":"DƯƠNG THANH TĨNH","phone":"0971213742","cccd":"054092009544","gplx":"790173082072"},"50H54182":{"vendor":"TRUC ANH","name":"LÊ VĂN DŨNG","phone":"0989667444","cccd":"044084012790","gplx":""},"50E14570":{"vendor":"DUONG NGUYEN","name":"KIỀU GIA NGÀ","phone":"0935584402","cccd":"058092005948","gplx":"790148026117"},"51D31338":{"vendor":"TRANCO","name":"NGÔ ANH KIỆT","phone":"0913683141","cccd":"079076014400","gplx":"790114015514"},"50E15514":{"vendor":"DUONG NGUYEN","name":"HÀ MINH HẬU","phone":"0388580088","cccd":"054085007992","gplx":""},"50H24580":{"vendor":"DUONG NGUYEN","name":"LÊ VĂN GIÀU","phone":"0933363774","cccd":"092087004728","gplx":"790117233047"},"51D35878":{"vendor":"DUONG NGUYEN","name":"HUỲNH NGỌC TOÀN","phone":"0394797939","cccd":"060098008301","gplx":"790196274755"},"50E14613":{"vendor":"DUONG NGUYEN","name":"DƯƠNG ĐÌNH KHOA","phone":"0327155050","cccd":"183664365","gplx":"790163163208"},"50H44778":{"vendor":"DUONG NGUYEN","name":"TRẦN NGỌC NGHĨA","phone":"0971463239","cccd":"052091008859","gplx":"520135002804"},"51C40249":{"vendor":"HIEU THUAN THANH","name":"TRẦN VĂN THÁI","phone":"0767599616","cccd":"040092039083","gplx":"790151215740"},"50H08397":{"vendor":"HIEU THUAN THANH","name":"VÕ PHÚ TIẾN","phone":"0347344739","cccd":"094091007316","gplx":"740160001740"},"50H75283":{"vendor":"TRANCO","name":"VÕ VĂN HIẾU","phone":"0909409079","cccd":"094085003898","gplx":"790172020367"},"50H68351":{"vendor":"TRANCO","name":"NGUYỄN NGỌC THANH","phone":"0764754733","cccd":"079074028029","gplx":"790094010189"},"50H75912":{"vendor":"TRANCO","name":"NGUYỄN VĂN HIẾU","phone":"0947906767","cccd":"087084013978","gplx":"830151003470"},"50H47324":{"vendor":"GIA KHANG","name":"CHÂU CHÍ THÀNH","phone":"0968018724","cccd":"084085005489","gplx":"790116022428"},"50H31241":{"vendor":"GIA KHANG","name":"TRẦN TUẤN THÀNH","phone":"0966921015","cccd":"082096007987","gplx":"790143967064"},"51C96068":{"vendor":"TRANCO","name":"NGUYỄN KHẮC DUY","phone":"0822678132","cccd":"087084017883","gplx":"790132399830"},"51C98819":{"vendor":"GIA BAO","name":"NGUYỄN MINH SĨ","phone":"0967952544","cccd":"064093007650","gplx":""},"50E40521":{"vendor":"TRANCO","name":"PHAN VĂN HẬU","phone":"0934038315","cccd":"082092009808","gplx":"790142806728"},"50H70423":{"vendor":"DUC HAI","name":"NGUYỄN THANH TỈNH","phone":"0926381168","cccd":"042085000345","gplx":"7901060033790"},"67H04431":{"vendor":"DANG HUNG","name":"ĐẶNG NGỌC NHU","phone":"0973439438","cccd":"","gplx":"740123005536"},"50E14923":{"vendor":"DUONG NGUYEN","name":"TRẦN ĐÌNH BẢO","phone":"0909736747","cccd":"079092025653","gplx":"790159190467"},"51C48540":{"vendor":"GIA KHANG","name":"LÊ BÉ LONG","phone":"0706336749","cccd":"092076003333","gplx":"790159088759"},"50H03656":{"vendor":"DUC HAI","name":"NGUYỄN VĂN KHIÊM","phone":"0908820932","cccd":"025075013027","gplx":"740117000239"},"50H75046":{"vendor":"TRANCO","name":"VÕ VĂN LÂM","phone":"0937905891","cccd":"086086013218","gplx":"790121015060"},"50F09325":{"vendor":"THIEN PHUC PHAT","name":"LÊ KHẮC HOẠT","phone":"0765876315","cccd":"038084012067","gplx":"790077010940"},"50H78733":{"vendor":"GIA BAO","name":"PHAN THANH THẢO","phone":"0966340732","cccd":"080093016662","gplx":""},"51D64911":{"vendor":"DUONG NGUYEN","name":"HUỲNH VĂN TUẤN","phone":"0336786549","cccd":"054099009789","gplx":"640225014484"},"50H78894":{"vendor":"GIA BAO","name":"NGUYỄN HOÀNG ANH","phone":"0938723620","cccd":"080091009105","gplx":""},"51C91569":{"vendor":"DUONG NGUYEN","name":"PHẠM LONG BÌNH","phone":"0932041042","cccd":"079086017688","gplx":"790114027629"},"51C13223":{"vendor":"DUONG NGUYEN","name":"HỒ VĂN SẼ","phone":"0908330553","cccd":"083088015808","gplx":"790067231856"},"50H43304":{"vendor":"DUONG NGUYEN","name":"NGUYỄN THÀNH TẤN","phone":"0363615064","cccd":"054091005727","gplx":"540140001708"}};
 
     // Unified live Driver Database (VIETSUN + VENDOR)
     const DRIVER_DB = {};
@@ -2003,7 +2039,7 @@ if (isset($_GET['api'])) {
 
     async function syncLiveDriverDatabase(showNotify = false) {
       const statusEl = document.getElementById("driverSyncStatusText");
-      if (statusEl) statusEl.textContent = "â³ Äang Ä‘á»“ng bá»™ Äá»™i xe tá»« TMS & Google Sheet...";
+      if (statusEl) statusEl.textContent = "⏳ Đang đồng bộ Đội xe từ TMS & Google Sheet...";
       let vsUpdated = 0;
       let vdUpdated = 0;
 
@@ -2093,15 +2129,15 @@ if (isset($_GET['api'])) {
 
         const totalPlates = Object.keys(DRIVER_DB).length;
         if (statusEl) {
-          statusEl.innerHTML = `âœ… ÄÃ£ Ä‘á»“ng bá»™ <b>${totalPlates} xe</b> (VIETSUN: ${vsUpdated || 74} xe â€¢ Vendor Google Sheet: ${vdUpdated || 118} xe) lÃºc ${new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`;
+          statusEl.innerHTML = `✅ Đã đồng bộ <b>${totalPlates} xe</b> (VIETSUN: ${vsUpdated || 74} xe • Vendor Google Sheet: ${vdUpdated || 118} xe) lúc ${new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`;
         }
         if (showNotify) {
-          showToast(`ÄÃ£ Ä‘á»“ng bá»™ ${totalPlates} xe & tÃ i xáº¿ tá»« TMS vÃ  Google Sheet!`, "success");
+          showToast(`Đã đồng bộ ${totalPlates} xe & tài xế từ TMS và Google Sheet!`, "success");
         }
       } catch (err) {
         console.warn("Driver sync warning:", err);
         if (statusEl) {
-          statusEl.textContent = `Äang dÃ¹ng danh báº¡ lÆ°u sáºµn (${Object.keys(DRIVER_DB).length} xe VIETSUN & Vendor).`;
+          statusEl.textContent = `Đang dùng danh bạ lưu sẵn (${Object.keys(DRIVER_DB).length} xe VIETSUN & Vendor).`;
         }
       }
     }
@@ -2191,7 +2227,7 @@ if (isset($_GET['api'])) {
     }
 
     function formatIsoToVN(isoStr) {
-      if (!isoStr || isoStr === "2021-11-11" || isoStr === "1970-01-01") return "ChÆ°a xáº¿p ngÃ y";
+      if (!isoStr || isoStr === "2021-11-11" || isoStr === "1970-01-01") return "Chưa xếp ngày";
       if (isoStr === "2020-01-01") return "CY";
       const parts = isoStr.split("-");
       if (parts.length !== 3) return isoStr;
@@ -2219,7 +2255,7 @@ if (isset($_GET['api'])) {
       const container = document.getElementById("toastContainer");
       const el = document.createElement("div");
       el.className = `toast ${type}`;
-      el.innerHTML = `<span>${type === "success" ? "âœ…" : type === "warning" ? "âš ï¸" : "âŒ"}</span><span>${msg}</span>`;
+      el.innerHTML = `<span>${type === "success" ? "✅" : type === "warning" ? "⚠️" : "❌"}</span><span>${msg}</span>`;
       container.appendChild(el);
       setTimeout(() => {
         el.style.opacity = "0";
@@ -2230,10 +2266,10 @@ if (isset($_GET['api'])) {
 
     // ISO 6346 Container Check Digit Validator (matches gimax.js iso6346CheckDigit)
     function validateContainerISO(contStr) {
-      if (!contStr) return { valid: false, empty: true, message: "ChÆ°a nháº­p" };
+      if (!contStr) return { valid: false, empty: true, message: "Chưa nhập" };
       const csc = contStr.toUpperCase().replace(/[^A-Z0-9]+/g, "");
       if (csc.length !== 11) {
-        return { valid: false, empty: false, message: `Äá»™ dÃ i ${csc.length}/11 kÃ½ tá»±` };
+        return { valid: false, empty: false, message: `Độ dài ${csc.length}/11 ký tự` };
       }
       let sum = 0;
       for (let i = 0; i < 10; i++) {
@@ -2245,9 +2281,9 @@ if (isset($_GET['api'])) {
       const check = (sum % 11) % 10;
       const lastDigit = parseInt(csc.charAt(10), 10);
       if (check === lastDigit) {
-        return { valid: true, empty: false, message: "Chuáº©n ISO âœ“" };
+        return { valid: true, empty: false, message: "Chuẩn ISO ✓" };
       } else {
-        return { valid: false, empty: false, message: `Sai sá»‘ cuá»‘i (Ä‘Ãºng: ${check})` };
+        return { valid: false, empty: false, message: `Sai số cuối (đúng: ${check})` };
       }
     }
 
@@ -2278,7 +2314,7 @@ if (isset($_GET['api'])) {
           lastErr = err;
         }
       }
-      throw lastErr || new Error("KhÃ´ng thá»ƒ káº¿t ná»‘i API");
+      throw lastErr || new Error("Không thể kết nối API");
     }
 
     async function postCrudUpdate(payloadObj) {
@@ -2307,7 +2343,7 @@ if (isset($_GET['api'])) {
           lastErr = err;
         }
       }
-      throw lastErr || new Error("KhÃ´ng thá»ƒ gá»­i lá»‡nh cáº­p nháº­t");
+      throw lastErr || new Error("Không thể gửi lệnh cập nhật");
     }
 
     // =========================================================================
@@ -2315,7 +2351,7 @@ if (isset($_GET['api'])) {
     // =========================================================================
     async function refreshData(showNotification = false) {
       const syncLbl = document.getElementById("syncTimeLabel");
-      syncLbl.textContent = "Äang Ä‘á»“ng bá»™...";
+      syncLbl.textContent = "Đang đồng bộ...";
       try {
         const data = await fetchShipmentsFromApi(state.apiDate);
         allShipments = data.map(item => ({
@@ -2348,13 +2384,13 @@ if (isset($_GET['api'])) {
         }
 
         const nowStr = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-        syncLbl.textContent = `Cáº­p nháº­t ${nowStr} (${allShipments.length} lÃ´)`;
+        syncLbl.textContent = `Cập nhật ${nowStr} (${allShipments.length} lô)`;
         document.getElementById("connDot").style.background = "#4ade80";
 
         populateDynamicDropdowns();
         applyFilters();
         if (showNotification) {
-          showToast(`ÄÃ£ táº£i ${allShipments.length} lÃ´ hÃ ng tá»« há»‡ thá»‘ng!`, "success");
+          showToast(`Đã tải ${allShipments.length} lô hàng từ hệ thống!`, "success");
           syncLiveDriverDatabase(false);
         }
       } catch (err) {
@@ -2363,18 +2399,18 @@ if (isset($_GET['api'])) {
         const cached = safeGetStorage("vs_cached_shipments", null);
         if (cached) {
           allShipments = JSON.parse(cached);
-          syncLbl.textContent = `Báº£n lÆ°u táº¡m (${allShipments.length} lÃ´)`;
+          syncLbl.textContent = `Bản lưu tạm (${allShipments.length} lô)`;
           populateDynamicDropdowns();
           applyFilters();
-          showToast("Äang hiá»ƒn thá»‹ dá»¯ liá»‡u lÆ°u táº¡m trÃªn mÃ¡y", "warning");
+          showToast("Đang hiển thị dữ liệu lưu tạm trên máy", "warning");
         } else {
-          syncLbl.textContent = "Lá»—i káº¿t ná»‘i";
+          syncLbl.textContent = "Lỗi kết nối";
           document.getElementById("poListContainer").innerHTML = `
             <div class="state-box">
-              <div style="font-size:36px;margin-bottom:8px;">âš ï¸</div>
-              <div style="font-weight:700;color:#0f172a;">KhÃ´ng thá»ƒ táº£i dá»¯ liá»‡u trá»±c tiáº¿p</div>
-              <div style="font-size:12.5px;margin-top:6px;">HÃ£y cháº¡y file <b>Chay_App_TMS.bat</b> trÃªn mÃ¡y tÃ­nh hoáº·c Ä‘Æ°a file lÃªn host Vietsun Ä‘á»ƒ trÃ¡nh cháº·n CORS cá»§a trÃ¬nh duyá»‡t.</div>
-              <button class="btn-primary-lg" style="margin:14px auto 0;max-width:220px;" onclick="refreshData(true)">Thá»­ láº¡i</button>
+              <div style="font-size:36px;margin-bottom:8px;">⚠️</div>
+              <div style="font-weight:700;color:#0f172a;">Không thể tải dữ liệu trực tiếp</div>
+              <div style="font-size:12.5px;margin-top:6px;">Hãy chạy file <b>Chay_App_TMS.bat</b> trên máy tính hoặc đưa file lên host Vietsun để tránh chặn CORS của trình duyệt.</div>
+              <button class="btn-primary-lg" style="margin:14px auto 0;max-width:220px;" onclick="refreshData(true)">Thử lại</button>
             </div>
           `;
         }
@@ -2444,13 +2480,13 @@ if (isset($_GET['api'])) {
       // Populate Filter Selects
       const filterVendor = document.getElementById("filterVendor");
       const curV = state.vendor;
-      filterVendor.innerHTML = `<option value="ALL">-- Táº¥t cáº£ ÄVVT --</option>` +
+      filterVendor.innerHTML = `<option value="ALL">-- Tất cả ĐVVT --</option>` +
         Array.from(vendorSet).sort().map(v => `<option value="${v}">${v}</option>`).join("");
       filterVendor.value = curV;
 
       const filterProv = document.getElementById("filterProvince");
       const curP = state.province;
-      filterProv.innerHTML = `<option value="ALL">-- Táº¥t cáº£ Tá»‰nh --</option>` +
+      filterProv.innerHTML = `<option value="ALL">-- Tất cả Tỉnh --</option>` +
         Array.from(provSet).sort().map(p => `<option value="${p}">${p}</option>`).join("");
       filterProv.value = curP;
     }
@@ -2508,13 +2544,13 @@ if (isset($_GET['api'])) {
         return true;
       });
 
-      // Build ChuHang (Äá»‘i tÆ°á»£ng) Chips with real-time counts
+      // Build ChuHang (Đối tượng) Chips with real-time counts
       renderChuHangChips(afterXN);
 
-      // 3. Filter by ChuHang (Äá»‘i tÆ°á»£ng)
+      // 3. Filter by ChuHang (Đối tượng)
       filteredShipments = afterXN.filter(item => {
         if (state.chuHang === "ALL") return true;
-        return (item.chuHangPo || "KHÃC") === state.chuHang;
+        return (item.chuHangPo || "KHÁC") === state.chuHang;
       });
 
       // Update Summary Stats
@@ -2528,7 +2564,7 @@ if (isset($_GET['api'])) {
     function renderChuHangChips(listBeforeChuHang) {
       const counts = {};
       listBeforeChuHang.forEach(item => {
-        const ch = item.chuHangPo || "KHÃC";
+        const ch = item.chuHangPo || "KHÁC";
         counts[ch] = (counts[ch] || 0) + 1;
       });
 
@@ -2537,7 +2573,7 @@ if (isset($_GET['api'])) {
 
       let html = `
         <button class="chip chip-blue ${state.chuHang === "ALL" ? "active" : ""}" onclick="setChuHangFilter('ALL')">
-          ðŸ¢ Táº¥t cáº£ Ä‘á»‘i tÆ°á»£ng <span class="count">${listBeforeChuHang.length}</span>
+          🏢 Tất cả đối tượng <span class="count">${listBeforeChuHang.length}</span>
         </button>
       `;
 
@@ -2594,10 +2630,10 @@ if (isset($_GET['api'])) {
       if (filteredShipments.length === 0) {
         container.innerHTML = `
           <div class="state-box">
-            <div style="font-size:38px;margin-bottom:8px;">ðŸ“­</div>
-            <div style="font-weight:700;color:#334155;font-size:15px;">KhÃ´ng cÃ³ lÃ´ hÃ ng nÃ o khá»›p bá»™ lá»c</div>
-            <div style="font-size:12.5px;margin-top:4px;">Thá»­ chá»n "Táº¥t cáº£ (30 ngÃ y)" hoáº·c Ä‘á»•i Ä‘á»‘i tÆ°á»£ng/loáº¡i hÃ ng.</div>
-            <button class="mini-btn" style="margin-top:12px;padding:8px 14px;" onclick="setQuickDate('all')">Xem táº¥t cáº£ 30 ngÃ y</button>
+            <div style="font-size:38px;margin-bottom:8px;">📭</div>
+            <div style="font-weight:700;color:#334155;font-size:15px;">Không có lô hàng nào khớp bộ lọc</div>
+            <div style="font-size:12.5px;margin-top:4px;">Thử chọn "Tất cả (30 ngày)" hoặc đổi đối tượng/loại hàng.</div>
+            <button class="mini-btn" style="margin-top:12px;padding:8px 14px;" onclick="setQuickDate('all')">Xem tất cả 30 ngày</button>
           </div>
         `;
         return;
@@ -2609,9 +2645,9 @@ if (isset($_GET['api'])) {
       const cardsHtml = slice.map(item => {
         const isXuat = item.xuatNhapPo === "X";
         const typeBadge = isXuat
-          ? `<span class="badge badge-xuat">ðŸ“¤ XUáº¤T</span>`
+          ? `<span class="badge badge-xuat">📤 XUẤT</span>`
           : item.xuatNhapPo === "N"
-          ? `<span class="badge badge-nhap">ðŸ“¥ NHáº¬P</span>`
+          ? `<span class="badge badge-nhap">📥 NHẬP</span>`
           : `<span class="badge badge-chuhang">${item.xuatNhapPo}</span>`;
 
         const sizeStr = Number(item.cont40Po) > 0 ? "40'HC" : Number(item.cont20Po) > 0 ? "20'DC" : "";
@@ -2622,13 +2658,13 @@ if (isset($_GET['api'])) {
         if (item.soContPo) {
           const check = validateContainerISO(item.soContPo);
           isoHtml = check.valid
-            ? `<span class="iso-badge iso-ok" title="ÄÃºng chuáº©n ISO 6346">âœ“</span>`
+            ? `<span class="iso-badge iso-ok" title="Đúng chuẩn ISO 6346">✓</span>`
             : `<span class="iso-badge iso-warn" title="${check.message}">!</span>`;
         }
 
         const contDisplay = item.soContPo
           ? `<div class="cont-number">${item.soContPo} ${isoHtml}</div>`
-          : `<div class="cont-number empty-val">ChÆ°a cÃ³ sá»‘ Cont</div>`;
+          : `<div class="cont-number empty-val">Chưa có số Cont</div>`;
 
         const sealDisplay = item.soSealPo
           ? `Seal: <b>${item.soSealPo}</b>`
@@ -2637,20 +2673,20 @@ if (isset($_GET['api'])) {
         const hasTruck = Boolean(item.soXePo);
         const drvInfo = getDriverForPlate(item.soXePo);
         const truckDisplay = hasTruck
-          ? `<div class="truck-number">ðŸš› ${item.soXePo}</div>`
-          : `<div class="truck-number unassigned">âš ï¸ ChÆ°a Ä‘iá»u xe</div>`;
+          ? `<div class="truck-number">🚛 ${item.soXePo}</div>`
+          : `<div class="truck-number unassigned">⚠️ Chưa điều xe</div>`;
 
         const vendorDisplay = drvInfo
-          ? `<div class="vendor-name" style="color:#15803d;" title="${drvInfo.name} - ${drvInfo.phone || ""}">ðŸ‘¨â€âœˆï¸ ${drvInfo.name}</div>`
+          ? `<div class="vendor-name" style="color:#15803d;" title="${drvInfo.name} - ${drvInfo.phone || ""}">👨‍✈️ ${drvInfo.name}</div>`
           : item.donViVcPo
-          ? `<div class="vendor-name">ðŸ¢ ${item.donViVcPo}</div>`
-          : `<div class="vendor-name" style="color:#94a3b8;">ÄVVT: ChÆ°a gÃ¡n</div>`;
+          ? `<div class="vendor-name">🏢 ${item.donViVcPo}</div>`
+          : `<div class="vendor-name" style="color:#94a3b8;">ĐVVT: Chưa gán</div>`;
 
         // Delivery / Packing Date pill
         const isUnsetDate = !item.ngayTraHang || item.ngayTraHang === "2021-11-11" || item.ngayTraHang === "1970-01-01";
         const isTodayDate = item.ngayTraHang === todayIso;
         const dateClass = isUnsetDate ? "date-unset" : isTodayDate ? "date-today" : "";
-        const dateLabelPrefix = isXuat ? "NgÃ y Ä‘Ã³ng" : "NgÃ y giao";
+        const dateLabelPrefix = isXuat ? "Ngày đóng" : "Ngày giao";
         const dateFormatted = formatIsoToVN(item.ngayTraHang);
 
         // Extract phone number if available in lienHeNhanPo
@@ -2659,17 +2695,17 @@ if (isset($_GET['api'])) {
 
         const locationParts = [item.khoNhanHangPo, item.diaChiNhanPo, item.tinhNhanPo]
           .filter(x => x && x !== "." && x !== "THONG BAO SAU");
-        const locationText = locationParts.length > 0 ? locationParts.join(" â€¢ ") : "Äá»‹a chá»‰: ThÃ´ng bÃ¡o sau";
+        const locationText = locationParts.length > 0 ? locationParts.join(" • ") : "Địa chỉ: Thông báo sau";
 
         return `
           <div class="po-card type-${item.xuatNhapPo} ${!hasTruck ? 'no-truck' : ''}" id="card-${item.idPo}">
             <div class="card-top">
               <div class="badges-left">
                 ${typeBadge}
-                <span class="badge badge-chuhang">ðŸ¢ ${item.chuHangPo || "N/A"}</span>
+                <span class="badge badge-chuhang">🏢 ${item.chuHangPo || "N/A"}</span>
                 ${sizeBadge}
-                ${item.tinhXuatHangPo ? `<span class="badge" style="background:#e0f2fe;color:#0369a1;">ðŸš¢ ${item.tinhXuatHangPo}</span>` : ""}
-                ${item.hinhThucKHopPo ? `<span class="badge" style="background:#f3e8ff;color:#7e22ce;">ðŸ”— ${item.hinhThucKHopPo}</span>` : ""}
+                ${item.tinhXuatHangPo ? `<span class="badge" style="background:#e0f2fe;color:#0369a1;">🚢 ${item.tinhXuatHangPo}</span>` : ""}
+                ${item.hinhThucKHopPo ? `<span class="badge" style="background:#f3e8ff;color:#7e22ce;">🔗 ${item.hinhThucKHopPo}</span>` : ""}
               </div>
               <span class="po-id">#${item.idPo}</span>
             </div>
@@ -2681,7 +2717,7 @@ if (isset($_GET['api'])) {
                 <div class="seal-number">${sealDisplay}</div>
               </div>
               <div class="truck-side">
-                <div class="field-mini-label">XE / ÄÆ N Vá»Š Váº¬N Táº¢I</div>
+                <div class="field-mini-label">XE / ĐƠN VỊ VẬN TẢI</div>
                 ${truckDisplay}
                 ${vendorDisplay}
               </div>
@@ -2689,33 +2725,34 @@ if (isset($_GET['api'])) {
 
             <div class="customer-row" onclick="openEditModal('${item.idPo}')">
               <div class="customer-name">
-                <span>ðŸ‘¤ ${item.tenKhachPo || "KhÃ¡ch láº»"}</span>
+                <span>👤 ${item.tenKhachPo || "Khách lẻ"}</span>
                 <span style="font-size:11.5px;font-weight:600;color:#64748b;">${item.tenHangHoaPo || ""} ${item.trongLuongPo ? `(${item.trongLuongPo}T)` : ""}</span>
               </div>
-              <div class="warehouse-addr">ðŸ“ ${locationText}</div>
-              ${item.lienHeNhanPo && item.lienHeNhanPo !== "." ? `<div style="font-size:11.5px;color:#0369a1;margin-top:2px;font-weight:600;">ðŸ“ž LH: ${item.lienHeNhanPo}</div>` : ""}
+              <div class="warehouse-addr">📍 ${locationText}</div>
+              ${item.lienHeNhanPo && item.lienHeNhanPo !== "." ? `<div style="font-size:11.5px;color:#0369a1;margin-top:2px;font-weight:600;">📞 LH: ${item.lienHeNhanPo}</div>` : ""}
             </div>
 
             <div class="card-meta">
               <div class="meta-item">
-                <span>ðŸš¢ ${item.tauPo || "--"} (${item.chuyenPo || "--"})</span>
+                <span>🚢 ${item.tauPo || "--"} (${item.chuyenPo || "--"})</span>
               </div>
               <div class="meta-item">
-                <span class="date-pill ${dateClass}">ðŸ“… ${dateLabelPrefix}: ${dateFormatted}</span>
+                <span class="date-pill ${dateClass}">📅 ${dateLabelPrefix}: ${dateFormatted}</span>
               </div>
             </div>
 
             <div class="card-actions">
               <button class="btn-card btn-edit" onclick="openEditModal('${item.idPo}')">
-                âœï¸ Cáº­p nháº­t
+                ✏️ Cập nhật
               </button>
-              <button class="btn-card btn-zalo" onclick="copyPoInfoById('${item.idPo}', 2)" title="Copy THÃ”NG TIN GIAO HÃ€NG (Biá»ƒu tÆ°á»£ng xe)">
-                ðŸš› Giao hÃ ng
+              <button class="btn-card btn-zalo" onclick="copyPoInfoById('${item.idPo}', 2)" title="Copy THÔNG TIN GIAO HÀNG (Biểu tượng xe)">
+                🚛 Giao hàng
               </button>
-              <button class="btn-card btn-zalo" onclick="copyPoInfoById('${item.idPo}', 1)" title="Copy THÃ”NG BÃO HÃ€NG Äáº¾N / ÄÃ“NG HÃ€NG">
-                ðŸ’¬ TB
+              <button class="btn-card btn-zalo" onclick="copyPoInfoById('${item.idPo}', 1)" title="Copy THÔNG BÁO HÀNG ĐẾN / ĐÓNG HÀNG">
+                💬 TB
               </button>
-              ${cleanPhone ? `<a href="tel:${cleanPhone}" class="btn-card btn-call" title="Gá»i liÃªn há»‡ kho">ðŸ“ž</a>` : ""}
+              ${isXuat ? `<button class="btn-card btn-zalo" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0;" onclick="openPklModal('${item.idPo}')" title="In / Gửi Phiếu PKL Hạ Cảng">📄 PKL</button>` : ""}
+              ${cleanPhone ? `<a href="tel:${cleanPhone}" class="btn-card btn-call" title="Gọi liên hệ kho">📞</a>` : ""}
             </div>
           </div>
         `;
@@ -2723,7 +2760,7 @@ if (isset($_GET['api'])) {
 
       const hasMore = filteredShipments.length > renderLimit;
       const moreBtnHtml = hasMore
-        ? `<button class="load-more-btn" onclick="loadMoreCards()">Xem thÃªm (${filteredShipments.length - renderLimit} lÃ´ hÃ ng ná»¯a)...</button>`
+        ? `<button class="load-more-btn" onclick="loadMoreCards()">Xem thêm (${filteredShipments.length - renderLimit} lô hàng nữa)...</button>`
         : "";
 
       container.innerHTML = cardsHtml + moreBtnHtml;
@@ -2839,16 +2876,16 @@ if (isset($_GET['api'])) {
       const isXuat = po.xuatNhapPo === "X";
       const badge = document.getElementById("modalBadgeType");
       badge.className = `badge ${isXuat ? "badge-xuat" : "badge-nhap"}`;
-      badge.textContent = isXuat ? "ðŸ“¤ HÃ€NG XUáº¤T" : "ðŸ“¥ HÃ€NG NHáº¬P";
+      badge.textContent = isXuat ? "📤 HÀNG XUẤT" : "📥 HÀNG NHẬP";
 
-      document.getElementById("modalTitleText").textContent = `LÃ´ #${po.idPo} (${po.chuHangPo || ""})`;
-      document.getElementById("modalCustomerName").textContent = po.tenKhachPo || "KhÃ¡ch hÃ ng";
-      const cangDenSub = po.tinhXuatHangPo ? ` â€¢ Cáº£ng Ä‘áº¿n: ${po.tinhXuatHangPo}` : "";
+      document.getElementById("modalTitleText").textContent = `Lô #${po.idPo} (${po.chuHangPo || ""})`;
+      document.getElementById("modalCustomerName").textContent = po.tenKhachPo || "Khách hàng";
+      const cangDenSub = po.tinhXuatHangPo ? ` • Cảng đến: ${po.tinhXuatHangPo}` : "";
       document.getElementById("modalRouteSub").textContent =
-        `TÃ u: ${po.tauPo || "--"} (${po.chuyenPo || "--"}) â€¢ NgÃ y tÃ u: ${formatIsoToVN(po.ngayTauChayPo)} â€¢ Loáº¡i: ${Number(po.cont40Po) > 0 ? "40'" : "20'"}${cangDenSub}`;
+        `Tàu: ${po.tauPo || "--"} (${po.chuyenPo || "--"}) • Ngày tàu: ${formatIsoToVN(po.ngayTauChayPo)} • Loại: ${Number(po.cont40Po) > 0 ? "40'" : "20'"}${cangDenSub}`;
 
       document.getElementById("lblNgayTraHang").textContent =
-        isXuat ? "ðŸ“… NgÃ y ÄÃ³ng HÃ ng (ngayTraHang)" : "ðŸ“… NgÃ y Giao / Tráº£ HÃ ng (ngayTraHang)";
+        isXuat ? "📅 Ngày Đóng Hàng (ngayTraHang)" : "📅 Ngày Giao / Trả Hàng (ngayTraHang)";
 
       document.getElementById("editIdPo").value = po.idPo;
       document.getElementById("editCodePo").value = po.codePo || "";
@@ -2878,6 +2915,8 @@ if (isset($_GET['api'])) {
 
       onContInput();
       updateModalDriverInfo(po.soXePo || "");
+      const btnPkl = document.getElementById("btnModalPkl");
+      if (btnPkl) btnPkl.style.display = isXuat ? "inline-flex" : "none";
       document.getElementById("editModal").classList.add("open");
     }
 
@@ -2888,7 +2927,7 @@ if (isset($_GET['api'])) {
       if (drv) {
         const vBadge = drv.vendor ? `[${drv.vendor}]` : "";
         box.style.display = "block";
-        box.innerHTML = `ðŸ‘¨â€âœˆï¸ TÃ i xáº¿ <b>${vBadge}</b>: <strong>${drv.name || "ChÆ°a cáº­p nháº­t"}</strong>${drv.phone ? ` â€¢ ðŸ“ž <a href="tel:${drv.phone}" style="color:#0369a1;text-decoration:underline;">${drv.phone}</a>` : ""}${drv.cccd ? `<div style="font-size:11px;color:#475569;margin-top:2px;">CCCD: ${drv.cccd}${drv.gplx ? ` â€¢ GPLX: ${drv.gplx}` : ""}</div>` : ""}`;
+        box.innerHTML = `👨‍✈️ Tài xế <b>${vBadge}</b>: <strong>${drv.name || "Chưa cập nhật"}</strong>${drv.phone ? ` • 📞 <a href="tel:${drv.phone}" style="color:#0369a1;text-decoration:underline;">${drv.phone}</a>` : ""}${drv.cccd ? `<div style="font-size:11px;color:#475569;margin-top:2px;">CCCD: ${drv.cccd}${drv.gplx ? ` • GPLX: ${drv.gplx}` : ""}</div>` : ""}`;
       } else {
         box.style.display = "none";
         box.innerHTML = "";
@@ -2950,25 +2989,25 @@ if (isset($_GET['api'])) {
       }
 
       const headerTitle = curVendor
-        ? `Gá»£i Ã½ sá»‘ xe (Æ¯u tiÃªn ÄVVT: ${curVendor})`
-        : `Gá»£i Ã½ biá»ƒn sá»‘ xe (${matches.length} xe)`;
+        ? `Gợi ý số xe (Ưu tiên ĐVVT: ${curVendor})`
+        : `Gợi ý biển số xe (${matches.length} xe)`;
 
       dropdown.innerHTML = `
         <div class="ac-header">
-          <span>ðŸš› ${headerTitle}</span>
-          <span onclick="hideAllAutocomplete()" style="cursor:pointer;color:#2563eb;">ÄÃ³ng âœ•</span>
+          <span>🚛 ${headerTitle}</span>
+          <span onclick="hideAllAutocomplete()" style="cursor:pointer;color:#2563eb;">Đóng ✕</span>
         </div>
         ${matches.map(t => {
           const isMatchVendor = curVendor && t.vendor === curVendor;
           const drv = getDriverForPlate(t.plate);
           const vLabel = (drv && drv.vendor) || t.vendor || "";
           const subLabel = drv && drv.name
-            ? `${drv.name}${drv.phone ? ` (${drv.phone})` : ""}${vLabel ? ` â€¢ ${vLabel}` : ""}`
+            ? `${drv.name}${drv.phone ? ` (${drv.phone})` : ""}${vLabel ? ` • ${vLabel}` : ""}`
             : vLabel;
           return `
             <div class="ac-item ${isMatchVendor ? 'same-vendor' : ''}" onclick="selectTruckSuggestion('${t.plate}', '${vLabel.replace(/'/g, "\\'")}')">
-              <span>ðŸš› ${t.plate}</span>
-              ${subLabel ? `<span class="ac-sub ${isMatchVendor ? 'match-vendor' : ''}">${isMatchVendor ? 'â˜… ' : ''}${subLabel}</span>` : ''}
+              <span>🚛 ${t.plate}</span>
+              ${subLabel ? `<span class="ac-sub ${isMatchVendor ? 'match-vendor' : ''}">${isMatchVendor ? '★ ' : ''}${subLabel}</span>` : ''}
             </div>
           `;
         }).join("")}
@@ -3034,12 +3073,12 @@ if (isset($_GET['api'])) {
 
       dropdown.innerHTML = `
         <div class="ac-header">
-          <span>ðŸ¢ Chá»n ÄÆ¡n Vá»‹ Váº­n Táº£i (${matches.length})</span>
-          <span onclick="hideAllAutocomplete()" style="cursor:pointer;color:#2563eb;">ÄÃ³ng âœ•</span>
+          <span>🏢 Chọn Đơn Vị Vận Tải (${matches.length})</span>
+          <span onclick="hideAllAutocomplete()" style="cursor:pointer;color:#2563eb;">Đóng ✕</span>
         </div>
         ${matches.map(v => `
           <div class="ac-item" onclick="selectVendorSuggestion('${v.replace(/'/g, "\\'")}')">
-            <span>ðŸ¢ ${v}</span>
+            <span>🏢 ${v}</span>
           </div>
         `).join("")}
       `;
@@ -3105,9 +3144,9 @@ if (isset($_GET['api'])) {
       if (currentEditingPo && val.length >= 5) {
         const prefix5 = val.slice(0, 5);
         if (Number(currentEditingPo.cont20Po) === 1 && CHECK_CONT_40.includes(prefix5)) {
-          sizeMismatch = " (Cont 40' trÃªn lá»‡nh 20'!)";
+          sizeMismatch = " (Cont 40' trên lệnh 20'!)";
         } else if (Number(currentEditingPo.cont40Po) === 1 && CHECK_CONT_20.includes(prefix5)) {
-          sizeMismatch = " (Cont 20' trÃªn lá»‡nh 40'!)";
+          sizeMismatch = " (Cont 20' trên lệnh 40'!)";
         }
       }
 
@@ -3266,11 +3305,11 @@ if (isset($_GET['api'])) {
           localStorage.setItem("vs_cached_shipments", JSON.stringify(allShipments.slice(0, 500)));
         } catch (_) {}
         applyFilters();
-        showToast(`ÄÃ£ lÆ°u ${fieldName} lÃªn há»‡ thá»‘ng TMS!`, "success");
+        showToast(`Đã lưu ${fieldName} lên hệ thống TMS!`, "success");
       } catch (err) {
         console.error(err);
         inpEl.classList.remove("saving");
-        showToast(`Lá»—i lÆ°u ${fieldName}: ${err.message}`, "error");
+        showToast(`Lỗi lưu ${fieldName}: ${err.message}`, "error");
       }
     }
 
@@ -3279,7 +3318,7 @@ if (isset($_GET['api'])) {
       if (!currentEditingPo) return;
       const btn = document.getElementById("btnSaveAll");
       btn.disabled = true;
-      btn.textContent = "â³ Äang lÆ°u lÃªn TMS...";
+      btn.textContent = "⏳ Đang lưu lên TMS...";
 
       try {
         const fieldsToCheck = [
@@ -3300,11 +3339,11 @@ if (isset($_GET['api'])) {
           }
         }
 
-        showToast(`ÄÃ£ Ä‘á»“ng bá»™ hoÃ n táº¥t lÃ´ #${currentEditingPo.idPo}!`, "success");
+        showToast(`Đã đồng bộ hoàn tất lô #${currentEditingPo.idPo}!`, "success");
         setTimeout(() => closeEditModal(), 350);
       } finally {
         btn.disabled = false;
-        btn.textContent = "ðŸ’¾ LÆ°u Cáº­p Nháº­t LÃªn TMS";
+        btn.textContent = "💾 Lưu Cập Nhật Lên TMS";
       }
     }
 
@@ -3333,70 +3372,70 @@ if (isset($_GET['api'])) {
       const tenLaiXe = drv ? drv.name : (po.taiXePo || "");
       const sdtLaiXe = drv ? drv.phone : (po.sdtTaiXePo || "");
 
-      let cccdLaiXe = "     NÆ¡i cáº¥p: ";
+      let cccdLaiXe = "     Nơi cấp: ";
       if (drv && drv.cccd) {
-        if (drv.cccd.includes("NÆ¡i cáº¥p")) {
-          cccdLaiXe = drv.cccd.replace(/\s*NÆ¡i cáº¥p:/i, "     NÆ¡i cáº¥p:");
+        if (drv.cccd.includes("Nơi cấp")) {
+          cccdLaiXe = drv.cccd.replace(/\s*Nơi cấp:/i, "     Nơi cấp:");
         } else {
-          cccdLaiXe = `${drv.cccd}     NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH`;
+          cccdLaiXe = `${drv.cccd}     Nơi cấp: Cục QLHC & TTXH`;
         }
       }
 
-      let gplxLaiXe = "           NÆ¡i cáº¥p:";
-      if (drv && drv.gplx && drv.gplx !== "Äang Cáº­p Nháº­t") {
-        if (drv.gplx.includes("NÆ¡i cáº¥p")) {
-          gplxLaiXe = drv.gplx.replace(/\s*NÆ¡i cáº¥p:/i, "           NÆ¡i cáº¥p:");
+      let gplxLaiXe = "           Nơi cấp:";
+      if (drv && drv.gplx && drv.gplx !== "Đang Cập Nhật") {
+        if (drv.gplx.includes("Nơi cấp")) {
+          gplxLaiXe = drv.gplx.replace(/\s*Nơi cấp:/i, "           Nơi cấp:");
         } else {
-          gplxLaiXe = `${drv.gplx}           NÆ¡i cáº¥p:Sá»ž GTVT`;
+          gplxLaiXe = `${drv.gplx}           Nơi cấp:SỞ GTVT`;
         }
       }
 
       if (loai === 1) {
-        // Icon ðŸ’¬: ThÃ´ng bÃ¡o hÃ ng Ä‘áº¿n (HÃ ng Nháº­p) hoáº·c ThÃ´ng tin Ä‘Ã³ng hÃ ng (HÃ ng Xuáº¥t)
+        // Icon 💬: Thông báo hàng đến (Hàng Nhập) hoặc Thông tin đóng hàng (Hàng Xuất)
         if (!isXuat) {
           return (
-            `THÃ”NG BÃO HÃ€NG Äáº¾N:\n` +
-            `- TÃªn khÃ¡ch: ${khach}\n` +
-            `- Kho tráº£: ${kho}\n` +
-            `- Äá»‹a chá»‰: ${diachi}\t- Tá»‰nh: ${tinh}\n` +
-            `- LiÃªn há»‡: ${lienhe}\n` +
-            `- Sá»‘ cont: ${soCont}\t\t- Sá»‘ seal: ${soSeal}\n` +
-            `- TÃªn tÃ u: ${tau}\t\t\t\t- Sá»‘ chuyáº¿n: ${chuyen}\n` +
-            `- NgÃ y giao: ${ngayGiao}`
+            `THÔNG BÁO HÀNG ĐẾN:\n` +
+            `- Tên khách: ${khach}\n` +
+            `- Kho trả: ${kho}\n` +
+            `- Địa chỉ: ${diachi}\t- Tỉnh: ${tinh}\n` +
+            `- Liên hệ: ${lienhe}\n` +
+            `- Số cont: ${soCont}\t\t- Số seal: ${soSeal}\n` +
+            `- Tên tàu: ${tau}\t\t\t\t- Số chuyến: ${chuyen}\n` +
+            `- Ngày giao: ${ngayGiao}`
           );
         } else {
           return (
-            `THÃ”NG TIN ÄÃ“NG HÃ€NG:\n` +
-            `- KhÃ¡ch hÃ ng: ${khach}\n` +
-            `- Kho ÄÃ“NG: ${kho}\n` +
-            `- Äá»‹a chá»‰: ${diachi}\t- Tá»‰nh: ${tinh}\n` +
-            `- Sá»‘ cont: ${soCont}\t\t- Sá»‘ seal: ${soSeal}\n` +
-            `- NgÃ y ÄÃ“NG: ${ngayGiao}\n` +
-            `- NÆ¡i cáº¥p rá»—ng: ${noiCapRong}\n` +
-            `- Thá»i gian dá»± kiáº¿n tá»›i kho: \n` +
-            `- LiÃªn há»‡: ${lienhe}\n` +
-            `- Sá»‘ xe: ${soXe}\n` +
-            `- TÃªn LÃ¡i Xe: ${tenLaiXe}\n` +
-            `- Sá»‘ CMND: ${cccdLaiXe}\n` +
-            `- Sá»‘ GPLX: ${gplxLaiXe}\n` +
-            `- SÄT: ${sdtLaiXe}`
+            `THÔNG TIN ĐÓNG HÀNG:\n` +
+            `- Khách hàng: ${khach}\n` +
+            `- Kho ĐÓNG: ${kho}\n` +
+            `- Địa chỉ: ${diachi}\t- Tỉnh: ${tinh}\n` +
+            `- Số cont: ${soCont}\t\t- Số seal: ${soSeal}\n` +
+            `- Ngày ĐÓNG: ${ngayGiao}\n` +
+            `- Nơi cấp rỗng: ${noiCapRong}\n` +
+            `- Thời gian dự kiến tới kho: \n` +
+            `- Liên hệ: ${lienhe}\n` +
+            `- Số xe: ${soXe}\n` +
+            `- Tên Lái Xe: ${tenLaiXe}\n` +
+            `- Số CMND: ${cccdLaiXe}\n` +
+            `- Số GPLX: ${gplxLaiXe}\n` +
+            `- SĐT: ${sdtLaiXe}`
           );
         }
       }
 
-      // Default loai === 2 (Icon ðŸš› chiáº¿c xe): THÃ”NG TIN GIAO HÃ€NG / ÄÃ“NG HÃ€NG
-      const loaigiao = isXuat ? "ÄÃ“NG" : "GIAO";
+      // Default loai === 2 (Icon 🚛 chiếc xe): THÔNG TIN GIAO HÀNG / ĐÓNG HÀNG
+      const loaigiao = isXuat ? "ĐÓNG" : "GIAO";
       return (
-        `THÃ”NG TIN ${loaigiao} HÃ€NG:\n` +
+        `THÔNG TIN ${loaigiao} HÀNG:\n` +
         `- Kho ${loaigiao}: ${kho}\n` +
-        `- Äá»‹a chá»‰: ${diachi}\t- Tá»‰nh: ${tinh}\n` +
-        `- LiÃªn há»‡: ${lienhe}\n` +
-        `- Sá»‘ cont: ${soCont}\t\t- Sá»‘ seal: ${soSeal}\n` +
-        `- NgÃ y ${loaigiao}: ${ngayGiao}\n` +
-        `- Sá»‘ xe: ${soXe}\n` +
-        `- TÃªn LÃ¡i Xe: ${tenLaiXe}\n` +
-        `- SÄT: ${sdtLaiXe}\n` +
-        `- Thá»i gian tá»›i kho: `
+        `- Địa chỉ: ${diachi}\t- Tỉnh: ${tinh}\n` +
+        `- Liên hệ: ${lienhe}\n` +
+        `- Số cont: ${soCont}\t\t- Số seal: ${soSeal}\n` +
+        `- Ngày ${loaigiao}: ${ngayGiao}\n` +
+        `- Số xe: ${soXe}\n` +
+        `- Tên Lái Xe: ${tenLaiXe}\n` +
+        `- SĐT: ${sdtLaiXe}\n` +
+        `- Thời gian tới kho: `
       );
     }
 
@@ -3422,7 +3461,7 @@ if (isset($_GET['api'])) {
         document.execCommand("copy");
         showToast(successMsg, "success");
       } catch (_) {
-        showToast("KhÃ´ng thá»ƒ tá»± Ä‘á»™ng copy, vui lÃ²ng thá»­ láº¡i", "error");
+        showToast("Không thể tự động copy, vui lòng thử lại", "error");
       }
       document.body.removeChild(ta);
     }
@@ -3433,8 +3472,8 @@ if (isset($_GET['api'])) {
       const text = buildZaloText(po, loai);
       const drv = getDriverForPlate(po.soXePo);
       const drvNote = drv ? ` (TX: ${drv.name})` : "";
-      const label = loai === 1 ? "ThÃ´ng bÃ¡o" : "TT Giao hÃ ng";
-      copyTextToClipboard(text, `ÄÃ£ copy ${label} Cont ${po.soContPo || "#" + po.idPo}${drvNote}!`);
+      const label = loai === 1 ? "Thông báo" : "TT Giao hàng";
+      copyTextToClipboard(text, `Đã copy ${label} Cont ${po.soContPo || "#" + po.idPo}${drvNote}!`);
     }
 
     function copyCurrentPoToZalo(loai = 2) {
@@ -3457,8 +3496,505 @@ if (isset($_GET['api'])) {
       const text = buildZaloText(livePo, loai);
       const drv = getDriverForPlate(livePo.soXePo);
       const drvNote = drv ? ` (TX: ${drv.name})` : "";
-      const label = loai === 1 ? "ThÃ´ng bÃ¡o" : "TT Giao hÃ ng";
-      copyTextToClipboard(text, `ÄÃ£ copy ${label} Cont ${livePo.soContPo || "#" + livePo.idPo}${drvNote}!`);
+      const label = loai === 1 ? "Thông báo" : "TT Giao hàng";
+      copyTextToClipboard(text, `Đã copy ${label} Cont ${livePo.soContPo || "#" + livePo.idPo}${drvNote}!`);
+    }
+
+    // =========================================================================
+    // 9B. PKL (PACKING LIST) A4 LANDSCAPE GENERATOR & PDF SHARE / PRINT
+    // =========================================================================
+    const GAS_PKL_WEBAPP_URL = "https://script.google.com/macros/s/AKfycby0p1n6JKiVPJ7BSqEzbGpwDouH0k55PAYif4O7bsVBN4jYGul7700eZavmR5A6vOxF/exec";
+    let currentPklPo = null;
+    let customGasPdfBase64 = null;
+    let vietsunLogoImg = null;
+
+    // Preload Vietsun Logo for PKL Canvas
+    (function preloadPklLogo() {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => { vietsunLogoImg = img; };
+      img.src = "logoVietsunColor.png";
+    })();
+
+    function openPklFromEditModal() {
+      if (!currentEditingPo) return;
+      const livePo = Object.assign({}, currentEditingPo, {
+        ngayTraHang: document.getElementById("inp_ngayTraHang").value || currentEditingPo.ngayTraHang,
+        soContPo: document.getElementById("inp_soContPo").value || currentEditingPo.soContPo,
+        soSealPo: document.getElementById("inp_soSealPo").value || currentEditingPo.soSealPo,
+        soXePo: document.getElementById("inp_soXePo").value || currentEditingPo.soXePo,
+        donViVcPo: document.getElementById("inp_donViVcPo").value || currentEditingPo.donViVcPo,
+        noiLayContPo: document.getElementById("inp_noiLayContPo").value || currentEditingPo.noiLayContPo,
+        cangDiPo: document.getElementById("inp_cangDiPo").value || currentEditingPo.cangDiPo,
+        tinhXuatHangPo: document.getElementById("inp_tinhXuatHangPo").value || currentEditingPo.tinhXuatHangPo,
+        khoNhanHangPo: document.getElementById("inp_khoNhanHangPo").value || currentEditingPo.khoNhanHangPo,
+        tinhNhanPo: document.getElementById("inp_tinhNhanPo").value || currentEditingPo.tinhNhanPo,
+        diaChiNhanPo: document.getElementById("inp_diaChiNhanPo").value || currentEditingPo.diaChiNhanPo,
+        lienHeNhanPo: document.getElementById("inp_lienHeNhanPo").value || currentEditingPo.lienHeNhanPo
+      });
+      openPklWithPoObject(livePo);
+    }
+
+    function openPklModal(idPo) {
+      const po = allShipments.find(x => String(x.idPo) === String(idPo));
+      if (!po) return;
+      openPklWithPoObject(po);
+    }
+
+    function openPklWithPoObject(po) {
+      currentPklPo = po;
+      customGasPdfBase64 = null;
+      document.getElementById("pklModalTitle").textContent = `📄 Phiếu PKL: ${po.soContPo || "#" + po.idPo} (${po.soXePo || "Chưa gán xe"})`;
+      document.getElementById("pklModalSub").textContent = `Khách: ${po.tenKhachPo || "--"} • Tàu: ${po.tauPo || "--"} (${po.chuyenPo || "--"})`;
+      const statusText = document.getElementById("pklStatusText");
+      statusText.style.color = "#047857";
+      statusText.textContent = `✅ Đã tạo phiếu PKL trực tiếp từ TMS (${po.donViVcPo || "VIETSUN"} - ${po.soXePo || ""})`;
+
+      renderPklToCanvas(po);
+      document.getElementById("pklModal").classList.add("open");
+    }
+
+    function closePklModal() {
+      document.getElementById("pklModal").classList.remove("open");
+    }
+
+    function drawUnderlinedText(ctx, text, x, y, align = "left") {
+      ctx.textAlign = align;
+      ctx.fillText(text, x, y);
+      const metrics = ctx.measureText(text);
+      let startX = x;
+      if (align === "center") startX = x - metrics.width / 2;
+      else if (align === "right") startX = x - metrics.width;
+      ctx.beginPath();
+      ctx.moveTo(startX, y + 4);
+      ctx.lineTo(startX + metrics.width, y + 4);
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = ctx.fillStyle;
+      ctx.stroke();
+    }
+
+    function renderPklToCanvas(po) {
+      const canvas = document.getElementById("pklCanvas");
+      const W = 1684;
+      const H = 1190;
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext("2d");
+
+      // White A4 Landscape background
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, W, H);
+
+      const vendor = (po.donViVcPo || "VIETSUN").toUpperCase().trim();
+      const plate = (po.soXePo || "").toUpperCase().trim();
+      const cangXep = (po.cangDiPo || "BẾN NGHÉ").toUpperCase().trim();
+      const cangDo = (po.tinhXuatHangPo || po.cangDenPo || "").toUpperCase().trim();
+      const chuHang = (po.chuHangPo || "").toUpperCase().trim();
+      const ngayTau = (po.ngayTauChayPo && po.ngayTauChayPo !== "2021-11-11") ? formatIsoToVN(po.ngayTauChayPo) : "";
+      const tau = (po.tauPo || "").toUpperCase().trim();
+      const chuyen = (po.chuyenPo || "").toUpperCase().trim();
+      const soCont = (po.soContPo || "").toUpperCase().trim();
+      const soSeal = (po.soSealPo || "").trim();
+      const c20 = Number(po.cont20Po) > 0 ? "1" : "0";
+      const c40 = Number(po.cont40Po) > 0 ? "1" : "0";
+      const hangHoa = (po.tenHangHoaPo || "").trim();
+      const trongLuong = po.trongLuongPo ? Number(po.trongLuongPo).toFixed(2) : "";
+      const tenKhach = (po.tenKhachPo || "").trim();
+      const ngayHa = (po.ngayTraHang && po.ngayTraHang !== "2021-11-11") ? formatIsoToVN(po.ngayTraHang) : formatIsoToVN(getTodayISO());
+
+      // 1. Top-Right Red Fleet & Plate Header
+      ctx.fillStyle = "#ea0000";
+      ctx.font = 'bold 36px "Times New Roman", Times, serif';
+      ctx.textAlign = "right";
+      ctx.fillText(`${vendor}${plate ? " - " + plate : ""}`, 1580, 140);
+
+      // 2. Top-Left Vietsun Logo & Company Block
+      if (vietsunLogoImg && vietsunLogoImg.complete && vietsunLogoImg.naturalWidth > 0) {
+        ctx.drawImage(vietsunLogoImg, 145, 210, 305, 155);
+      } else {
+        ctx.fillStyle = "#1e3a8a";
+        ctx.font = 'bold 54px "Times New Roman", Times, serif';
+        ctx.textAlign = "center";
+        ctx.fillText("VSC", 295, 295);
+        ctx.font = '18px Arial, sans-serif';
+        ctx.fillText("VIETSUN CORPORATION", 295, 335);
+      }
+
+      ctx.fillStyle = "#000000";
+      ctx.textAlign = "left";
+      ctx.font = 'bold 17.5px "Times New Roman", Times, serif';
+      ctx.fillText("CÔNG TY CP NHẬT VIỆT- VIETSUN CORP", 104, 460);
+      ctx.fillText("HÃNG TÀU NHẬT VIỆT - VIETSUN LINES", 104, 490);
+      ctx.font = 'bold 16.5px "Times New Roman", Times, serif';
+      ctx.fillText("Số 13-15, Đường B4, P. An Khánh, TP.HCM", 104, 520);
+      ctx.fillText("TEL: 028 3826 9453 FAX: 028.39433114", 104, 550);
+      ctx.fillText("WEBSITE : www.vietsunlogistic.com", 104, 580);
+
+      // 3. Center-Right Header Block
+      ctx.fillStyle = "#000000";
+      ctx.font = 'bold 31px "Times New Roman", Times, serif';
+      ctx.textAlign = "center";
+      ctx.fillText("BẢNG KÊ HÀNG HOÁ VẬN CHUYỂN NỘI ĐỊA", 1074, 235);
+
+      ctx.font = '25px "Times New Roman", Times, serif';
+      ctx.fillText("(CONTAINER PACKING LIST)", 1074, 274);
+
+      ctx.font = 'bold 25px "Times New Roman", Times, serif';
+      drawUnderlinedText(ctx, "KÍNH GỬI CẢNG:", 566, 310, "left");
+      drawUnderlinedText(ctx, cangXep, 828, 310, "left");
+
+      ctx.font = 'bold 22px "Times New Roman", Times, serif';
+      drawUnderlinedText(ctx, "CHI PHÍ HẠ TẠI CẢNG THANH TOÁN SAU CHO CÔNG TY CP NHẬT VIỆT", 566, 348, "left");
+
+      ctx.font = 'italic 23px "Times New Roman", Times, serif';
+      ctx.textAlign = "left";
+      ctx.fillText("(Note : Vui lòng đối chiếu trên hệ thống với hãng tàu )", 566, 382);
+
+      // 4. Upper Vessel & Route Table (x: 564..1584, y: 412..576)
+      const ux = [564, 716, 824, 970, 1126, 1278, 1418, 1584];
+      const uy = [412, 439, 466, 493, 520, 548, 576];
+
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 1.6;
+      ctx.strokeRect(ux[0], uy[0], ux[7] - ux[0], uy[6] - uy[0]);
+
+      // Horizontal lines in Upper Table
+      for (let r = 1; r <= 4; r++) {
+        ctx.beginPath();
+        ctx.moveTo(ux[0], uy[r]);
+        ctx.lineTo(ux[7], uy[r]);
+        ctx.stroke();
+      }
+      // Sub-row line between SOC and COC (from ux[1] to ux[5])
+      ctx.beginPath();
+      ctx.moveTo(ux[1], uy[5]);
+      ctx.lineTo(ux[5], uy[5]);
+      ctx.stroke();
+
+      // Vertical lines in Upper Table
+      // Col 1 border at ux[2]=824 (all rows)
+      ctx.beginPath(); ctx.moveTo(ux[2], uy[0]); ctx.lineTo(ux[2], uy[6]); ctx.stroke();
+      // Sub-col at ux[1]=716 (rows 4..6)
+      ctx.beginPath(); ctx.moveTo(ux[1], uy[4]); ctx.lineTo(ux[1], uy[6]); ctx.stroke();
+      // 20'/40'/45' dividers at ux[3]=970, ux[4]=1126 (rows 3..6)
+      ctx.beginPath(); ctx.moveTo(ux[3], uy[3]); ctx.lineTo(ux[3], uy[6]); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ux[4], uy[3]); ctx.lineTo(ux[4], uy[6]); ctx.stroke();
+      // Col border at ux[5]=1278 (all rows)
+      ctx.beginPath(); ctx.moveTo(ux[5], uy[0]); ctx.lineTo(ux[5], uy[6]); ctx.stroke();
+      // Col border at ux[6]=1418 (rows 0..3)
+      ctx.beginPath(); ctx.moveTo(ux[6], uy[0]); ctx.lineTo(ux[6], uy[3]); ctx.stroke();
+
+      // Upper Table Text
+      ctx.fillStyle = "#000000";
+      ctx.font = 'italic 18px "Times New Roman", Times, serif';
+      ctx.textAlign = "left";
+      ctx.fillText("Chủ hàng", ux[0] + 6, uy[0] + 20);
+      ctx.fillText("Dự kiến xuất tàu", ux[0] + 6, uy[1] + 20);
+      ctx.fillText("Số chuyến", ux[0] + 6, uy[2] + 20);
+      ctx.fillText("Loại container", ux[0] + 6, uy[3] + 20);
+      ctx.fillText("Số lượng", ux[0] + 6, uy[4] + 34);
+
+      ctx.fillText("Ngày tàu chạy", ux[5] + 6, uy[0] + 20);
+      ctx.fillText("Cảng xếp", ux[5] + 6, uy[1] + 20);
+      ctx.fillText("Cảng dỡ", ux[5] + 6, uy[2] + 20);
+
+      ctx.textAlign = "center";
+      ctx.fillText("20'", (ux[2] + ux[3]) / 2, uy[3] + 20);
+      ctx.fillText("40'", (ux[3] + ux[4]) / 2, uy[3] + 20);
+      ctx.fillText("45'", (ux[4] + ux[5]) / 2, uy[3] + 20);
+      ctx.fillText("CLOSING TIME", (ux[5] + ux[7]) / 2, uy[3] + 20);
+      ctx.fillText("SOC", (ux[1] + ux[2]) / 2, uy[4] + 20);
+      ctx.fillText("COC", (ux[1] + ux[2]) / 2, uy[5] + 20);
+
+      // Upper Table Values
+      const midValX = (ux[2] + ux[5]) / 2;
+      const rightValX = (ux[6] + ux[7]) / 2;
+
+      ctx.font = 'bold 19px "Times New Roman", Times, serif';
+      ctx.fillStyle = "#000000";
+      ctx.fillText(chuHang, midValX, uy[0] + 20);
+      ctx.fillText(cangXep, rightValX, uy[1] + 20);
+      ctx.fillText("TRƯỚC: .....H..... NGÀY ...../...../202", (ux[5] + ux[7]) / 2, uy[4] + 35);
+
+      ctx.fillStyle = "#ea0000";
+      ctx.fillText(ngayTau, rightValX, uy[0] + 20);
+      ctx.fillText(tau, midValX, uy[1] + 20);
+      ctx.fillText(chuyen, midValX, uy[2] + 20);
+      ctx.fillText(cangDo, rightValX, uy[2] + 20);
+
+      // 5. Middle Container Table (x: 100..1584, y: 602..718)
+      const mx = [100, 166, 428, 564, 644, 738, 824, 1136, 1278, 1412, 1584];
+      const my = [602, 629, 656, 687, 718];
+
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 1.6;
+      ctx.strokeRect(mx[0], my[0], mx[10] - mx[0], my[4] - my[0]);
+
+      // Horizontal lines in Middle Table
+      // Subheader line under "Loại container" (mx[3]..mx[6])
+      ctx.beginPath(); ctx.moveTo(mx[3], my[1]); ctx.lineTo(mx[6], my[1]); ctx.stroke();
+      for (let r = 2; r <= 3; r++) {
+        ctx.beginPath(); ctx.moveTo(mx[0], my[r]); ctx.lineTo(mx[10], my[r]); ctx.stroke();
+      }
+
+      // Vertical lines in Middle Table
+      for (let c = 1; c <= 9; c++) {
+        const startY = (c === 4 || c === 5) ? my[1] : my[0];
+        ctx.beginPath(); ctx.moveTo(mx[c], startY); ctx.lineTo(mx[c], my[4]); ctx.stroke();
+      }
+
+      // Middle Table Headers
+      ctx.fillStyle = "#000000";
+      ctx.font = 'bold italic 18px "Times New Roman", Times, serif';
+      ctx.textAlign = "center";
+      ctx.fillText("STT", (mx[0] + mx[1]) / 2, my[0] + 34);
+      ctx.fillText("Số container", (mx[1] + mx[2]) / 2, my[0] + 34);
+      ctx.fillText("Số seal", (mx[2] + mx[3]) / 2, my[0] + 34);
+      ctx.fillText("Loại container", (mx[3] + mx[6]) / 2, my[0] + 20);
+      ctx.fillText("20", (mx[3] + mx[4]) / 2, my[1] + 20);
+      ctx.fillText("40", (mx[4] + mx[5]) / 2, my[1] + 20);
+      ctx.fillText("45'", (mx[5] + mx[6]) / 2, my[1] + 20);
+      ctx.fillText("Hàng Hoá", (mx[6] + mx[7]) / 2, my[0] + 34);
+      ctx.fillText("Trọng lượng", (mx[7] + mx[8]) / 2, my[0] + 34);
+      ctx.fillText("DG - U.N.", (mx[8] + mx[9]) / 2, my[0] + 24);
+      ctx.fillText("CLASS", (mx[8] + mx[9]) / 2, my[0] + 45);
+      ctx.fillText("DG - U.N. Number", (mx[9] + mx[10]) / 2, my[0] + 34);
+
+      // Middle Table Row 1 Data
+      ctx.font = '22px "Times New Roman", Times, serif';
+      ctx.fillStyle = "#000000";
+      ctx.fillText("1", (mx[0] + mx[1]) / 2, my[2] + 23);
+
+      ctx.font = '24px "Times New Roman", Times, serif';
+      ctx.fillStyle = "#ea0000";
+      ctx.fillText(soCont, (mx[1] + mx[2]) / 2, my[2] + 23);
+      ctx.fillText(soSeal, (mx[2] + mx[3]) / 2, my[2] + 23);
+      ctx.fillText(c20, (mx[3] + mx[4]) / 2, my[2] + 23);
+      ctx.fillText(c40, (mx[4] + mx[5]) / 2, my[2] + 23);
+      ctx.fillText("0", (mx[5] + mx[6]) / 2, my[2] + 23);
+      ctx.fillText(hangHoa, (mx[6] + mx[7]) / 2, my[2] + 23);
+      ctx.fillText(trongLuong, (mx[7] + mx[8]) / 2, my[2] + 23);
+
+      // 6. Bottom Notes & Signatures
+      ctx.fillStyle = "#000000";
+      ctx.font = '17.5px "Times New Roman", Times, serif';
+      ctx.textAlign = "left";
+      ctx.fillText("Khách hàng chịu trách nhiệm về việc kê khai packing list.", 104, 762);
+      ctx.fillText("Nội dung trên packing list và trên chi tiết khách hàng cung cấp lập Bill phải trùng khớp, chính xác với thực tế.", 104, 790);
+      ctx.fillText("Không nhận các mặt hàng thuộc danh sách hàng \"cấm vận chuyển\" theo Luật pháp Việt Nam.", 104, 818);
+      ctx.fillText("Không nhận vận chuyển các mặt hàng : Gỗ tròn, gỗ tự nhiên, sắt / thép vụn – phế liệu - than đóng xá, than bùn.", 104, 846);
+      ctx.fillText("Hàng nguy hiểm phải thông báo trước, được khai báo và tuân theo quy định vận chuyển.", 104, 874);
+      ctx.fillText(tenKhach, 104, 902);
+
+      // Right Box: Giờ, ngày container hạ cảng
+      ctx.strokeRect(1136, 742, 448, 29);
+      ctx.font = 'italic 19px "Times New Roman", Times, serif';
+      drawUnderlinedText(ctx, "Giờ, ngày container hạ cảng", 1360, 763, "center");
+
+      ctx.font = 'bold 18px "Times New Roman", Times, serif';
+      ctx.textAlign = "center";
+      ctx.fillText(ngayHa, 1360, 804);
+
+      // Signatures
+      ctx.font = 'bold 19px "Times New Roman", Times, serif';
+      ctx.fillText("ĐẠI DIỆN CHỦ HÀNG", 368, 926);
+      ctx.fillText(`ĐẠI DIỆN CẢNG ${cangXep}`, 1298, 926);
+
+      ctx.font = '18px "Times New Roman", Times, serif';
+      ctx.fillText("(ký và ghi rõ họ tên)", 368, 954);
+      ctx.fillText("(ký và ghi rõ họ tên)", 1298, 954);
+    }
+
+    // Pure-JS A4 Landscape PDF Builder from Canvas (Zero external libraries)
+    function buildPklPdfBlob() {
+      if (customGasPdfBase64) {
+        const arr = customGasPdfBase64.split(",");
+        const bstr = atob(arr[1] || arr[0]);
+        const u8 = new Uint8Array(bstr.length);
+        for (let i = 0; i < bstr.length; i++) u8[i] = bstr.charCodeAt(i);
+        return new Blob([u8], { type: "application/pdf" });
+      }
+
+      const canvas = document.getElementById("pklCanvas");
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+      const base64 = dataUrl.split(",")[1];
+      const binStr = atob(base64);
+      const jpgBytes = new Uint8Array(binStr.length);
+      for (let i = 0; i < binStr.length; i++) {
+        jpgBytes[i] = binStr.charCodeAt(i);
+      }
+
+      const w = canvas.width;
+      const h = canvas.height;
+      const pageW = 841.89;
+      const pageH = 595.28;
+
+      const enc = new TextEncoder();
+      const chunks = [];
+      const offsets = [0];
+      let byteLen = 0;
+
+      function pushStr(s) {
+        const b = enc.encode(s);
+        chunks.push(b);
+        byteLen += b.length;
+      }
+      function pushBytes(b) {
+        chunks.push(b);
+        byteLen += b.length;
+      }
+
+      pushStr("%PDF-1.4\n%\xFF\xFF\xFF\xFF\n");
+
+      // 1: Catalog
+      offsets[1] = byteLen;
+      pushStr("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+
+      // 2: Pages
+      offsets[2] = byteLen;
+      pushStr("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n");
+
+      // 3: Page (A4 Landscape)
+      offsets[3] = byteLen;
+      pushStr(`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`);
+
+      // 4: Image XObject
+      offsets[4] = byteLen;
+      pushStr(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpgBytes.length} >>\nstream\n`);
+      pushBytes(jpgBytes);
+      pushStr("\nendstream\nendobj\n");
+
+      // 5: Content Stream
+      const contentStream = `q ${pageW} 0 0 ${pageH} 0 0 cm /Im0 Do Q\n`;
+      offsets[5] = byteLen;
+      pushStr(`5 0 obj\n<< /Length ${contentStream.length} >>\nstream\n${contentStream}endstream\nendobj\n`);
+
+      // xref
+      const xrefOffset = byteLen;
+      pushStr("xref\n0 6\n0000000000 65535 f \n");
+      for (let i = 1; i <= 5; i++) {
+        pushStr(String(offsets[i]).padStart(10, "0") + " 00000 n \n");
+      }
+      pushStr(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
+
+      return new Blob(chunks, { type: "application/pdf" });
+    }
+
+    function getPklFileName() {
+      if (!currentPklPo) return "PackingList.pdf";
+      const plate = (currentPklPo.soXePo || "XE").replace(/[^A-Z0-9]/gi, "");
+      const cont = (currentPklPo.soContPo || currentPklPo.idPo || "CONT").replace(/[^A-Z0-9]/gi, "");
+      return `PKL_${plate}_${cont}.pdf`;
+    }
+
+    async function sharePklPdf() {
+      try {
+        const blob = buildPklPdfBlob();
+        const fileName = getPklFileName();
+        const file = new File([blob], fileName, { type: "application/pdf" });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: `Phiếu PKL ${currentPklPo?.soContPo || ""}`,
+            text: `Phiếu PKL hạ cảng xe ${currentPklPo?.soXePo || ""} - Cont ${currentPklPo?.soContPo || ""}`
+          });
+          showToast("Đã mở bảng chia sẻ PDF!", "success");
+        } else {
+          downloadPklPdf();
+        }
+      } catch (err) {
+        if (err && err.name !== "AbortError") {
+          downloadPklPdf();
+        }
+      }
+    }
+
+    function downloadPklPdf() {
+      const blob = buildPklPdfBlob();
+      const fileName = getPklFileName();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+      showToast(`Đã tải file ${fileName}!`, "success");
+    }
+
+    function printPklCanvas() {
+      const canvas = document.getElementById("pklCanvas");
+      const imgData = canvas.toDataURL("image/png");
+      const w = window.open("", "_blank");
+      if (!w) {
+        downloadPklPdf();
+        return;
+      }
+      w.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${getPklFileName()}</title>
+          <style>
+            @page { size: A4 landscape; margin: 0; }
+            body { margin: 0; display: flex; align-items: center; justify-content: center; background: #fff; }
+            img { width: 100vw; height: 100vh; object-fit: contain; }
+          </style>
+        </head>
+        <body onload="setTimeout(() => { window.print(); }, 200);">
+          <img src="${imgData}" />
+        </body>
+        </html>
+      `);
+      w.document.close();
+    }
+
+    function fetchJsonpFromGas(url) {
+      return new Promise((resolve, reject) => {
+        const cbName = "pkl_jsonp_" + Math.round(Math.random() * 1000000);
+        window[cbName] = (data) => {
+          delete window[cbName];
+          if (script && script.parentNode) script.parentNode.removeChild(script);
+          resolve(data);
+        };
+        const script = document.createElement("script");
+        script.src = url + (url.includes("?") ? "&" : "?") + "callback=" + cbName;
+        script.onerror = () => {
+          delete window[cbName];
+          if (script && script.parentNode) script.parentNode.removeChild(script);
+          reject(new Error("Không kết nối được Google Apps Script"));
+        };
+        document.body.appendChild(script);
+      });
+    }
+
+    async function fetchPklFromGoogleSheet() {
+      if (!currentPklPo) return;
+      const plate = (currentPklPo.soXePo || "").trim();
+      if (!plate) {
+        showToast("Lô hàng này chưa có Biển số xe để tra cứu!", "warning");
+        return;
+      }
+      const statusText = document.getElementById("pklStatusText");
+      statusText.style.color = "#0369a1";
+      statusText.textContent = `⏳ Đang lấy PDF từ Google Sheet PKL cho xe ${plate}...`;
+      try {
+        const res = await fetchJsonpFromGas(`${GAS_PKL_WEBAPP_URL}?plate=${encodeURIComponent(plate)}`);
+        if (res && res.status === "success" && res.pdfBase64) {
+          customGasPdfBase64 = res.pdfBase64;
+          statusText.style.color = "#15803d";
+          statusText.textContent = `✅ Đã đồng bộ file PDF từ Sheet PKL cho xe ${plate}! Bấm Tải PDF hoặc Gửi Zalo.`;
+          showToast(`Đã lấy PDF từ Google Sheet PKL cho xe ${plate}!`, "success");
+        } else {
+          statusText.style.color = "#dc2626";
+          statusText.textContent = `⚠️ ${res?.message || "Chưa có xe này trên Sheet PKL cũ (Đang dùng bản trực tiếp từ TMS)"}`;
+        }
+      } catch (err) {
+        statusText.style.color = "#dc2626";
+        statusText.textContent = `⚠️ Lỗi gọi Sheet PKL cũ: ${err.message} (Đang dùng bản trực tiếp từ TMS)`;
+      }
     }
 
     // =========================================================================
@@ -3473,13 +4009,13 @@ if (isset($_GET['api'])) {
 
       errBox.style.display = "none";
       if (!uName || !uPass) {
-        errBox.textContent = "Vui lÃ²ng nháº­p Ä‘áº§y Ä‘á»§ TÃ i khoáº£n vÃ  Máº­t kháº©u!";
+        errBox.textContent = "Vui lòng nhập đầy đủ Tài khoản và Mật khẩu!";
         errBox.style.display = "block";
         return;
       }
 
       btn.disabled = true;
-      btn.textContent = "â³ Äang xÃ¡c thá»±c vá»›i TMS...";
+      btn.textContent = "⏳ Đang xác thực với TMS...";
 
       try {
         const urlsToTry = ["?api=login", "/api/login"];
@@ -3499,7 +4035,7 @@ if (isset($_GET['api'])) {
         }
 
         if (loginResult && loginResult.info && !loginResult.info.ok) {
-          errBox.textContent = loginResult.info.error || "Sai tÃªn Ä‘Äƒng nháº­p hoáº·c máº­t kháº©u TMS!";
+          errBox.textContent = loginResult.info.error || "Sai tên đăng nhập hoặc mật khẩu TMS!";
           errBox.style.display = "block";
           return;
         }
@@ -3520,12 +4056,12 @@ if (isset($_GET['api'])) {
 
         document.getElementById("userLabel").textContent = state.username;
         document.getElementById("loginOverlay").classList.remove("open");
-        showToast(`Xin chÃ o ${state.username}! Äang táº£i dá»¯ liá»‡u...`, "success");
+        showToast(`Xin chào ${state.username}! Đang tải dữ liệu...`, "success");
         refreshData(false);
         syncLiveDriverDatabase(false);
       } finally {
         btn.disabled = false;
-        btn.textContent = "ðŸ” ÄÄ‚NG NHáº¬P Há»† THá»NG";
+        btn.textContent = "🔐 ĐĂNG NHẬP HỆ THỐNG";
       }
     }
 
@@ -3564,7 +4100,7 @@ if (isset($_GET['api'])) {
       const uName = document.getElementById("cfgUsername").value.trim();
       const uPass = document.getElementById("cfgPassword").value.trim();
       if (!uName || !uPass) {
-        showToast("Vui lÃ²ng nháº­p Ä‘áº§y Ä‘á»§ TÃ i khoáº£n vÃ  Máº­t kháº©u!", "error");
+        showToast("Vui lòng nhập đầy đủ Tài khoản và Mật khẩu!", "error");
         return;
       }
       state.username = uName;
@@ -3581,7 +4117,7 @@ if (isset($_GET['api'])) {
         });
         const info = await resp.json();
         if (!resp.ok || !info.ok) {
-          showToast(info.error || "Sai tÃ i khoáº£n hoáº·c máº­t kháº©u TMS!", "error");
+          showToast(info.error || "Sai tài khoản hoặc mật khẩu TMS!", "error");
           return;
         }
         if (info.userString) {
@@ -3600,7 +4136,7 @@ if (isset($_GET['api'])) {
       } catch (_) {}
 
       document.getElementById("userLabel").textContent = state.username;
-      document.getElementById("serverDateInfo").textContent = `Má»‘c dá»¯ liá»‡u API: ${formatIsoToVN(state.apiDate)}`;
+      document.getElementById("serverDateInfo").textContent = `Mốc dữ liệu API: ${formatIsoToVN(state.apiDate)}`;
       closeAccountModal();
       refreshData(true);
     }
@@ -3623,7 +4159,7 @@ if (isset($_GET['api'])) {
         deferredPrompt = null;
         document.getElementById("btnInstallPwa").style.display = "none";
       } else if (isIOS) {
-        alert("ðŸ“² Äá»ƒ cÃ i App trÃªn iPhone / iPad:\n\n1. Má»Ÿ link nÃ y báº±ng trÃ¬nh duyá»‡t Safari.\n2. Báº¥m biá»ƒu tÆ°á»£ng Chia sáº» (Ã´ vuÃ´ng cÃ³ mÅ©i tÃªn hÆ°á»›ng lÃªn â¬†ï¸ á»Ÿ thanh dÆ°á»›i cÃ¹ng).\n3. KÃ©o xuá»‘ng chá»n 'ThÃªm vÃ o MH chÃ­nh' (Add to Home Screen) âž” Báº¥m 'ThÃªm'.");
+        alert("📲 Để cài App trên iPhone / iPad:\n\n1. Mở link này bằng trình duyệt Safari.\n2. Bấm biểu tượng Chia sẻ (ô vuông có mũi tên hướng lên ⬆️ ở thanh dưới cùng).\n3. Kéo xuống chọn 'Thêm vào MH chính' (Add to Home Screen) ➔ Bấm 'Thêm'.");
       }
     }
 
@@ -3637,7 +4173,7 @@ if (isset($_GET['api'])) {
       }
       document.getElementById("filterFromDate").value = state.fromDate;
       document.getElementById("filterToDate").value = state.toDate;
-      document.getElementById("serverDateInfo").textContent = `Má»‘c dá»¯ liá»‡u API: ${formatIsoToVN(state.apiDate)}`;
+      document.getElementById("serverDateInfo").textContent = `Mốc dữ liệu API: ${formatIsoToVN(state.apiDate)}`;
 
       if (!state.isLoggedIn || !state.username) {
         document.getElementById("loginOverlay").classList.add("open");

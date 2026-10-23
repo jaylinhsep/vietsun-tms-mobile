@@ -1644,13 +1644,49 @@
 
       <div class="sheet-footer">
         <button type="button" class="btn-secondary-lg" onclick="copyCurrentPoToZalo(2)" title="Copy THÔNG TIN GIAO HÀNG (kèm Tài xế & SĐT)">
-          🚛 Copy Giao Hàng
+          🚛 Giao Hàng
         </button>
         <button type="button" class="btn-secondary-lg" onclick="copyCurrentPoToZalo(1)" title="Copy THÔNG BÁO HÀNG ĐẾN / ĐÓNG HÀNG">
           💬 Copy TB
         </button>
+        <button type="button" class="btn-secondary-lg" id="btnModalPkl" style="display:none;background:#ecfdf5;color:#047857;border-color:#a7f3d0;" onclick="openPklFromEditModal()" title="Xuất / In Phiếu PKL Vào Cổng">
+          📄 Phiếu PKL
+        </button>
         <button type="button" class="btn-primary-lg" id="btnSaveAll" onclick="saveAllChanges(event)">
           💾 Lưu TMS
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PKL (PACKING LIST) PREVIEW & PDF EXPORT MODAL -->
+  <div class="modal-backdrop" id="pklModal" onclick="if(event.target===this) closePklModal()">
+    <div class="bottom-sheet" style="max-height:94vh;">
+      <div class="sheet-header">
+        <div>
+          <div class="sheet-title" id="pklModalTitle">📄 Phiếu PKL Hạ Cảng (Packing List)</div>
+          <div id="pklModalSub" style="font-size:12px;color:#475569;margin-top:2px;">Tự động trích xuất trực tiếp từ dữ liệu Hàng Xuất TMS</div>
+        </div>
+        <button class="sheet-close" onclick="closePklModal()">✕</button>
+      </div>
+      <div class="sheet-body" style="padding:12px 14px;">
+        <div id="pklStatusBanner" style="font-size:12.5px;font-weight:600;color:#047857;background:#ecfdf5;border:1px solid #a7f3d0;padding:8px 12px;border-radius:9px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span id="pklStatusText">✅ Đã tạo phiếu PKL trực tiếp từ TMS!</span>
+          <button type="button" class="mini-btn" style="background:#fff;color:#0369a1;border:1px solid #bae6fd;" onclick="fetchPklFromGoogleSheet()">🔄 Lấy từ Sheet PKL cũ</button>
+        </div>
+        <div style="width:100%;overflow:auto;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;box-shadow:inset 0 2px 6px rgba(0,0,0,0.05);">
+          <canvas id="pklCanvas" style="width:100%;height:auto;display:block;background:#fff;"></canvas>
+        </div>
+      </div>
+      <div class="sheet-footer">
+        <button type="button" class="btn-secondary-lg" style="background:#f3e8ff;color:#6b21a8;border-color:#d8b4fe;" onclick="sharePklPdf()">
+          📤 Gửi Zalo / Chia sẻ
+        </button>
+        <button type="button" class="btn-secondary-lg" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0;" onclick="downloadPklPdf()">
+          📥 Tải PDF
+        </button>
+        <button type="button" class="btn-primary-lg" onclick="printPklCanvas()">
+          🖨️ In Phiếu PKL
         </button>
       </div>
     </div>
@@ -2602,6 +2638,7 @@
               <button class="btn-card btn-zalo" onclick="copyPoInfoById('${item.idPo}', 1)" title="Copy THÔNG BÁO HÀNG ĐẾN / ĐÓNG HÀNG">
                 💬 TB
               </button>
+              ${isXuat ? `<button class="btn-card btn-zalo" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0;" onclick="openPklModal('${item.idPo}')" title="In / Gửi Phiếu PKL Hạ Cảng">📄 PKL</button>` : ""}
               ${cleanPhone ? `<a href="tel:${cleanPhone}" class="btn-card btn-call" title="Gọi liên hệ kho">📞</a>` : ""}
             </div>
           </div>
@@ -2765,6 +2802,8 @@
 
       onContInput();
       updateModalDriverInfo(po.soXePo || "");
+      const btnPkl = document.getElementById("btnModalPkl");
+      if (btnPkl) btnPkl.style.display = isXuat ? "inline-flex" : "none";
       document.getElementById("editModal").classList.add("open");
     }
 
@@ -3346,6 +3385,503 @@
       const drvNote = drv ? ` (TX: ${drv.name})` : "";
       const label = loai === 1 ? "Thông báo" : "TT Giao hàng";
       copyTextToClipboard(text, `Đã copy ${label} Cont ${livePo.soContPo || "#" + livePo.idPo}${drvNote}!`);
+    }
+
+    // =========================================================================
+    // 9B. PKL (PACKING LIST) A4 LANDSCAPE GENERATOR & PDF SHARE / PRINT
+    // =========================================================================
+    const GAS_PKL_WEBAPP_URL = "https://script.google.com/macros/s/AKfycby0p1n6JKiVPJ7BSqEzbGpwDouH0k55PAYif4O7bsVBN4jYGul7700eZavmR5A6vOxF/exec";
+    let currentPklPo = null;
+    let customGasPdfBase64 = null;
+    let vietsunLogoImg = null;
+
+    // Preload Vietsun Logo for PKL Canvas
+    (function preloadPklLogo() {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => { vietsunLogoImg = img; };
+      img.src = "logoVietsunColor.png";
+    })();
+
+    function openPklFromEditModal() {
+      if (!currentEditingPo) return;
+      const livePo = Object.assign({}, currentEditingPo, {
+        ngayTraHang: document.getElementById("inp_ngayTraHang").value || currentEditingPo.ngayTraHang,
+        soContPo: document.getElementById("inp_soContPo").value || currentEditingPo.soContPo,
+        soSealPo: document.getElementById("inp_soSealPo").value || currentEditingPo.soSealPo,
+        soXePo: document.getElementById("inp_soXePo").value || currentEditingPo.soXePo,
+        donViVcPo: document.getElementById("inp_donViVcPo").value || currentEditingPo.donViVcPo,
+        noiLayContPo: document.getElementById("inp_noiLayContPo").value || currentEditingPo.noiLayContPo,
+        cangDiPo: document.getElementById("inp_cangDiPo").value || currentEditingPo.cangDiPo,
+        tinhXuatHangPo: document.getElementById("inp_tinhXuatHangPo").value || currentEditingPo.tinhXuatHangPo,
+        khoNhanHangPo: document.getElementById("inp_khoNhanHangPo").value || currentEditingPo.khoNhanHangPo,
+        tinhNhanPo: document.getElementById("inp_tinhNhanPo").value || currentEditingPo.tinhNhanPo,
+        diaChiNhanPo: document.getElementById("inp_diaChiNhanPo").value || currentEditingPo.diaChiNhanPo,
+        lienHeNhanPo: document.getElementById("inp_lienHeNhanPo").value || currentEditingPo.lienHeNhanPo
+      });
+      openPklWithPoObject(livePo);
+    }
+
+    function openPklModal(idPo) {
+      const po = allShipments.find(x => String(x.idPo) === String(idPo));
+      if (!po) return;
+      openPklWithPoObject(po);
+    }
+
+    function openPklWithPoObject(po) {
+      currentPklPo = po;
+      customGasPdfBase64 = null;
+      document.getElementById("pklModalTitle").textContent = `📄 Phiếu PKL: ${po.soContPo || "#" + po.idPo} (${po.soXePo || "Chưa gán xe"})`;
+      document.getElementById("pklModalSub").textContent = `Khách: ${po.tenKhachPo || "--"} • Tàu: ${po.tauPo || "--"} (${po.chuyenPo || "--"})`;
+      const statusText = document.getElementById("pklStatusText");
+      statusText.style.color = "#047857";
+      statusText.textContent = `✅ Đã tạo phiếu PKL trực tiếp từ TMS (${po.donViVcPo || "VIETSUN"} - ${po.soXePo || ""})`;
+
+      renderPklToCanvas(po);
+      document.getElementById("pklModal").classList.add("open");
+    }
+
+    function closePklModal() {
+      document.getElementById("pklModal").classList.remove("open");
+    }
+
+    function drawUnderlinedText(ctx, text, x, y, align = "left") {
+      ctx.textAlign = align;
+      ctx.fillText(text, x, y);
+      const metrics = ctx.measureText(text);
+      let startX = x;
+      if (align === "center") startX = x - metrics.width / 2;
+      else if (align === "right") startX = x - metrics.width;
+      ctx.beginPath();
+      ctx.moveTo(startX, y + 4);
+      ctx.lineTo(startX + metrics.width, y + 4);
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = ctx.fillStyle;
+      ctx.stroke();
+    }
+
+    function renderPklToCanvas(po) {
+      const canvas = document.getElementById("pklCanvas");
+      const W = 1684;
+      const H = 1190;
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext("2d");
+
+      // White A4 Landscape background
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, W, H);
+
+      const vendor = (po.donViVcPo || "VIETSUN").toUpperCase().trim();
+      const plate = (po.soXePo || "").toUpperCase().trim();
+      const cangXep = (po.cangDiPo || "BẾN NGHÉ").toUpperCase().trim();
+      const cangDo = (po.tinhXuatHangPo || po.cangDenPo || "").toUpperCase().trim();
+      const chuHang = (po.chuHangPo || "").toUpperCase().trim();
+      const ngayTau = (po.ngayTauChayPo && po.ngayTauChayPo !== "2021-11-11") ? formatIsoToVN(po.ngayTauChayPo) : "";
+      const tau = (po.tauPo || "").toUpperCase().trim();
+      const chuyen = (po.chuyenPo || "").toUpperCase().trim();
+      const soCont = (po.soContPo || "").toUpperCase().trim();
+      const soSeal = (po.soSealPo || "").trim();
+      const c20 = Number(po.cont20Po) > 0 ? "1" : "0";
+      const c40 = Number(po.cont40Po) > 0 ? "1" : "0";
+      const hangHoa = (po.tenHangHoaPo || "").trim();
+      const trongLuong = po.trongLuongPo ? Number(po.trongLuongPo).toFixed(2) : "";
+      const tenKhach = (po.tenKhachPo || "").trim();
+      const ngayHa = (po.ngayTraHang && po.ngayTraHang !== "2021-11-11") ? formatIsoToVN(po.ngayTraHang) : formatIsoToVN(getTodayISO());
+
+      // 1. Top-Right Red Fleet & Plate Header
+      ctx.fillStyle = "#ea0000";
+      ctx.font = 'bold 36px "Times New Roman", Times, serif';
+      ctx.textAlign = "right";
+      ctx.fillText(`${vendor}${plate ? " - " + plate : ""}`, 1580, 140);
+
+      // 2. Top-Left Vietsun Logo & Company Block
+      if (vietsunLogoImg && vietsunLogoImg.complete && vietsunLogoImg.naturalWidth > 0) {
+        ctx.drawImage(vietsunLogoImg, 145, 210, 305, 155);
+      } else {
+        ctx.fillStyle = "#1e3a8a";
+        ctx.font = 'bold 54px "Times New Roman", Times, serif';
+        ctx.textAlign = "center";
+        ctx.fillText("VSC", 295, 295);
+        ctx.font = '18px Arial, sans-serif';
+        ctx.fillText("VIETSUN CORPORATION", 295, 335);
+      }
+
+      ctx.fillStyle = "#000000";
+      ctx.textAlign = "left";
+      ctx.font = 'bold 17.5px "Times New Roman", Times, serif';
+      ctx.fillText("CÔNG TY CP NHẬT VIỆT- VIETSUN CORP", 104, 460);
+      ctx.fillText("HÃNG TÀU NHẬT VIỆT - VIETSUN LINES", 104, 490);
+      ctx.font = 'bold 16.5px "Times New Roman", Times, serif';
+      ctx.fillText("Số 13-15, Đường B4, P. An Khánh, TP.HCM", 104, 520);
+      ctx.fillText("TEL: 028 3826 9453 FAX: 028.39433114", 104, 550);
+      ctx.fillText("WEBSITE : www.vietsunlogistic.com", 104, 580);
+
+      // 3. Center-Right Header Block
+      ctx.fillStyle = "#000000";
+      ctx.font = 'bold 31px "Times New Roman", Times, serif';
+      ctx.textAlign = "center";
+      ctx.fillText("BẢNG KÊ HÀNG HOÁ VẬN CHUYỂN NỘI ĐỊA", 1074, 235);
+
+      ctx.font = '25px "Times New Roman", Times, serif';
+      ctx.fillText("(CONTAINER PACKING LIST)", 1074, 274);
+
+      ctx.font = 'bold 25px "Times New Roman", Times, serif';
+      drawUnderlinedText(ctx, "KÍNH GỬI CẢNG:", 566, 310, "left");
+      drawUnderlinedText(ctx, cangXep, 828, 310, "left");
+
+      ctx.font = 'bold 22px "Times New Roman", Times, serif';
+      drawUnderlinedText(ctx, "CHI PHÍ HẠ TẠI CẢNG THANH TOÁN SAU CHO CÔNG TY CP NHẬT VIỆT", 566, 348, "left");
+
+      ctx.font = 'italic 23px "Times New Roman", Times, serif';
+      ctx.textAlign = "left";
+      ctx.fillText("(Note : Vui lòng đối chiếu trên hệ thống với hãng tàu )", 566, 382);
+
+      // 4. Upper Vessel & Route Table (x: 564..1584, y: 412..576)
+      const ux = [564, 716, 824, 970, 1126, 1278, 1418, 1584];
+      const uy = [412, 439, 466, 493, 520, 548, 576];
+
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 1.6;
+      ctx.strokeRect(ux[0], uy[0], ux[7] - ux[0], uy[6] - uy[0]);
+
+      // Horizontal lines in Upper Table
+      for (let r = 1; r <= 4; r++) {
+        ctx.beginPath();
+        ctx.moveTo(ux[0], uy[r]);
+        ctx.lineTo(ux[7], uy[r]);
+        ctx.stroke();
+      }
+      // Sub-row line between SOC and COC (from ux[1] to ux[5])
+      ctx.beginPath();
+      ctx.moveTo(ux[1], uy[5]);
+      ctx.lineTo(ux[5], uy[5]);
+      ctx.stroke();
+
+      // Vertical lines in Upper Table
+      // Col 1 border at ux[2]=824 (all rows)
+      ctx.beginPath(); ctx.moveTo(ux[2], uy[0]); ctx.lineTo(ux[2], uy[6]); ctx.stroke();
+      // Sub-col at ux[1]=716 (rows 4..6)
+      ctx.beginPath(); ctx.moveTo(ux[1], uy[4]); ctx.lineTo(ux[1], uy[6]); ctx.stroke();
+      // 20'/40'/45' dividers at ux[3]=970, ux[4]=1126 (rows 3..6)
+      ctx.beginPath(); ctx.moveTo(ux[3], uy[3]); ctx.lineTo(ux[3], uy[6]); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(ux[4], uy[3]); ctx.lineTo(ux[4], uy[6]); ctx.stroke();
+      // Col border at ux[5]=1278 (all rows)
+      ctx.beginPath(); ctx.moveTo(ux[5], uy[0]); ctx.lineTo(ux[5], uy[6]); ctx.stroke();
+      // Col border at ux[6]=1418 (rows 0..3)
+      ctx.beginPath(); ctx.moveTo(ux[6], uy[0]); ctx.lineTo(ux[6], uy[3]); ctx.stroke();
+
+      // Upper Table Text
+      ctx.fillStyle = "#000000";
+      ctx.font = 'italic 18px "Times New Roman", Times, serif';
+      ctx.textAlign = "left";
+      ctx.fillText("Chủ hàng", ux[0] + 6, uy[0] + 20);
+      ctx.fillText("Dự kiến xuất tàu", ux[0] + 6, uy[1] + 20);
+      ctx.fillText("Số chuyến", ux[0] + 6, uy[2] + 20);
+      ctx.fillText("Loại container", ux[0] + 6, uy[3] + 20);
+      ctx.fillText("Số lượng", ux[0] + 6, uy[4] + 34);
+
+      ctx.fillText("Ngày tàu chạy", ux[5] + 6, uy[0] + 20);
+      ctx.fillText("Cảng xếp", ux[5] + 6, uy[1] + 20);
+      ctx.fillText("Cảng dỡ", ux[5] + 6, uy[2] + 20);
+
+      ctx.textAlign = "center";
+      ctx.fillText("20'", (ux[2] + ux[3]) / 2, uy[3] + 20);
+      ctx.fillText("40'", (ux[3] + ux[4]) / 2, uy[3] + 20);
+      ctx.fillText("45'", (ux[4] + ux[5]) / 2, uy[3] + 20);
+      ctx.fillText("CLOSING TIME", (ux[5] + ux[7]) / 2, uy[3] + 20);
+      ctx.fillText("SOC", (ux[1] + ux[2]) / 2, uy[4] + 20);
+      ctx.fillText("COC", (ux[1] + ux[2]) / 2, uy[5] + 20);
+
+      // Upper Table Values
+      const midValX = (ux[2] + ux[5]) / 2;
+      const rightValX = (ux[6] + ux[7]) / 2;
+
+      ctx.font = 'bold 19px "Times New Roman", Times, serif';
+      ctx.fillStyle = "#000000";
+      ctx.fillText(chuHang, midValX, uy[0] + 20);
+      ctx.fillText(cangXep, rightValX, uy[1] + 20);
+      ctx.fillText("TRƯỚC: .....H..... NGÀY ...../...../202", (ux[5] + ux[7]) / 2, uy[4] + 35);
+
+      ctx.fillStyle = "#ea0000";
+      ctx.fillText(ngayTau, rightValX, uy[0] + 20);
+      ctx.fillText(tau, midValX, uy[1] + 20);
+      ctx.fillText(chuyen, midValX, uy[2] + 20);
+      ctx.fillText(cangDo, rightValX, uy[2] + 20);
+
+      // 5. Middle Container Table (x: 100..1584, y: 602..718)
+      const mx = [100, 166, 428, 564, 644, 738, 824, 1136, 1278, 1412, 1584];
+      const my = [602, 629, 656, 687, 718];
+
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 1.6;
+      ctx.strokeRect(mx[0], my[0], mx[10] - mx[0], my[4] - my[0]);
+
+      // Horizontal lines in Middle Table
+      // Subheader line under "Loại container" (mx[3]..mx[6])
+      ctx.beginPath(); ctx.moveTo(mx[3], my[1]); ctx.lineTo(mx[6], my[1]); ctx.stroke();
+      for (let r = 2; r <= 3; r++) {
+        ctx.beginPath(); ctx.moveTo(mx[0], my[r]); ctx.lineTo(mx[10], my[r]); ctx.stroke();
+      }
+
+      // Vertical lines in Middle Table
+      for (let c = 1; c <= 9; c++) {
+        const startY = (c === 4 || c === 5) ? my[1] : my[0];
+        ctx.beginPath(); ctx.moveTo(mx[c], startY); ctx.lineTo(mx[c], my[4]); ctx.stroke();
+      }
+
+      // Middle Table Headers
+      ctx.fillStyle = "#000000";
+      ctx.font = 'bold italic 18px "Times New Roman", Times, serif';
+      ctx.textAlign = "center";
+      ctx.fillText("STT", (mx[0] + mx[1]) / 2, my[0] + 34);
+      ctx.fillText("Số container", (mx[1] + mx[2]) / 2, my[0] + 34);
+      ctx.fillText("Số seal", (mx[2] + mx[3]) / 2, my[0] + 34);
+      ctx.fillText("Loại container", (mx[3] + mx[6]) / 2, my[0] + 20);
+      ctx.fillText("20", (mx[3] + mx[4]) / 2, my[1] + 20);
+      ctx.fillText("40", (mx[4] + mx[5]) / 2, my[1] + 20);
+      ctx.fillText("45'", (mx[5] + mx[6]) / 2, my[1] + 20);
+      ctx.fillText("Hàng Hoá", (mx[6] + mx[7]) / 2, my[0] + 34);
+      ctx.fillText("Trọng lượng", (mx[7] + mx[8]) / 2, my[0] + 34);
+      ctx.fillText("DG - U.N.", (mx[8] + mx[9]) / 2, my[0] + 24);
+      ctx.fillText("CLASS", (mx[8] + mx[9]) / 2, my[0] + 45);
+      ctx.fillText("DG - U.N. Number", (mx[9] + mx[10]) / 2, my[0] + 34);
+
+      // Middle Table Row 1 Data
+      ctx.font = '22px "Times New Roman", Times, serif';
+      ctx.fillStyle = "#000000";
+      ctx.fillText("1", (mx[0] + mx[1]) / 2, my[2] + 23);
+
+      ctx.font = '24px "Times New Roman", Times, serif';
+      ctx.fillStyle = "#ea0000";
+      ctx.fillText(soCont, (mx[1] + mx[2]) / 2, my[2] + 23);
+      ctx.fillText(soSeal, (mx[2] + mx[3]) / 2, my[2] + 23);
+      ctx.fillText(c20, (mx[3] + mx[4]) / 2, my[2] + 23);
+      ctx.fillText(c40, (mx[4] + mx[5]) / 2, my[2] + 23);
+      ctx.fillText("0", (mx[5] + mx[6]) / 2, my[2] + 23);
+      ctx.fillText(hangHoa, (mx[6] + mx[7]) / 2, my[2] + 23);
+      ctx.fillText(trongLuong, (mx[7] + mx[8]) / 2, my[2] + 23);
+
+      // 6. Bottom Notes & Signatures
+      ctx.fillStyle = "#000000";
+      ctx.font = '17.5px "Times New Roman", Times, serif';
+      ctx.textAlign = "left";
+      ctx.fillText("Khách hàng chịu trách nhiệm về việc kê khai packing list.", 104, 762);
+      ctx.fillText("Nội dung trên packing list và trên chi tiết khách hàng cung cấp lập Bill phải trùng khớp, chính xác với thực tế.", 104, 790);
+      ctx.fillText("Không nhận các mặt hàng thuộc danh sách hàng \"cấm vận chuyển\" theo Luật pháp Việt Nam.", 104, 818);
+      ctx.fillText("Không nhận vận chuyển các mặt hàng : Gỗ tròn, gỗ tự nhiên, sắt / thép vụn – phế liệu - than đóng xá, than bùn.", 104, 846);
+      ctx.fillText("Hàng nguy hiểm phải thông báo trước, được khai báo và tuân theo quy định vận chuyển.", 104, 874);
+      ctx.fillText(tenKhach, 104, 902);
+
+      // Right Box: Giờ, ngày container hạ cảng
+      ctx.strokeRect(1136, 742, 448, 29);
+      ctx.font = 'italic 19px "Times New Roman", Times, serif';
+      drawUnderlinedText(ctx, "Giờ, ngày container hạ cảng", 1360, 763, "center");
+
+      ctx.font = 'bold 18px "Times New Roman", Times, serif';
+      ctx.textAlign = "center";
+      ctx.fillText(ngayHa, 1360, 804);
+
+      // Signatures
+      ctx.font = 'bold 19px "Times New Roman", Times, serif';
+      ctx.fillText("ĐẠI DIỆN CHỦ HÀNG", 368, 926);
+      ctx.fillText(`ĐẠI DIỆN CẢNG ${cangXep}`, 1298, 926);
+
+      ctx.font = '18px "Times New Roman", Times, serif';
+      ctx.fillText("(ký và ghi rõ họ tên)", 368, 954);
+      ctx.fillText("(ký và ghi rõ họ tên)", 1298, 954);
+    }
+
+    // Pure-JS A4 Landscape PDF Builder from Canvas (Zero external libraries)
+    function buildPklPdfBlob() {
+      if (customGasPdfBase64) {
+        const arr = customGasPdfBase64.split(",");
+        const bstr = atob(arr[1] || arr[0]);
+        const u8 = new Uint8Array(bstr.length);
+        for (let i = 0; i < bstr.length; i++) u8[i] = bstr.charCodeAt(i);
+        return new Blob([u8], { type: "application/pdf" });
+      }
+
+      const canvas = document.getElementById("pklCanvas");
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+      const base64 = dataUrl.split(",")[1];
+      const binStr = atob(base64);
+      const jpgBytes = new Uint8Array(binStr.length);
+      for (let i = 0; i < binStr.length; i++) {
+        jpgBytes[i] = binStr.charCodeAt(i);
+      }
+
+      const w = canvas.width;
+      const h = canvas.height;
+      const pageW = 841.89;
+      const pageH = 595.28;
+
+      const enc = new TextEncoder();
+      const chunks = [];
+      const offsets = [0];
+      let byteLen = 0;
+
+      function pushStr(s) {
+        const b = enc.encode(s);
+        chunks.push(b);
+        byteLen += b.length;
+      }
+      function pushBytes(b) {
+        chunks.push(b);
+        byteLen += b.length;
+      }
+
+      pushStr("%PDF-1.4\n%\xFF\xFF\xFF\xFF\n");
+
+      // 1: Catalog
+      offsets[1] = byteLen;
+      pushStr("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+
+      // 2: Pages
+      offsets[2] = byteLen;
+      pushStr("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n");
+
+      // 3: Page (A4 Landscape)
+      offsets[3] = byteLen;
+      pushStr(`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n`);
+
+      // 4: Image XObject
+      offsets[4] = byteLen;
+      pushStr(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${w} /Height ${h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpgBytes.length} >>\nstream\n`);
+      pushBytes(jpgBytes);
+      pushStr("\nendstream\nendobj\n");
+
+      // 5: Content Stream
+      const contentStream = `q ${pageW} 0 0 ${pageH} 0 0 cm /Im0 Do Q\n`;
+      offsets[5] = byteLen;
+      pushStr(`5 0 obj\n<< /Length ${contentStream.length} >>\nstream\n${contentStream}endstream\nendobj\n`);
+
+      // xref
+      const xrefOffset = byteLen;
+      pushStr("xref\n0 6\n0000000000 65535 f \n");
+      for (let i = 1; i <= 5; i++) {
+        pushStr(String(offsets[i]).padStart(10, "0") + " 00000 n \n");
+      }
+      pushStr(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`);
+
+      return new Blob(chunks, { type: "application/pdf" });
+    }
+
+    function getPklFileName() {
+      if (!currentPklPo) return "PackingList.pdf";
+      const plate = (currentPklPo.soXePo || "XE").replace(/[^A-Z0-9]/gi, "");
+      const cont = (currentPklPo.soContPo || currentPklPo.idPo || "CONT").replace(/[^A-Z0-9]/gi, "");
+      return `PKL_${plate}_${cont}.pdf`;
+    }
+
+    async function sharePklPdf() {
+      try {
+        const blob = buildPklPdfBlob();
+        const fileName = getPklFileName();
+        const file = new File([blob], fileName, { type: "application/pdf" });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: `Phiếu PKL ${currentPklPo?.soContPo || ""}`,
+            text: `Phiếu PKL hạ cảng xe ${currentPklPo?.soXePo || ""} - Cont ${currentPklPo?.soContPo || ""}`
+          });
+          showToast("Đã mở bảng chia sẻ PDF!", "success");
+        } else {
+          downloadPklPdf();
+        }
+      } catch (err) {
+        if (err && err.name !== "AbortError") {
+          downloadPklPdf();
+        }
+      }
+    }
+
+    function downloadPklPdf() {
+      const blob = buildPklPdfBlob();
+      const fileName = getPklFileName();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+      showToast(`Đã tải file ${fileName}!`, "success");
+    }
+
+    function printPklCanvas() {
+      const canvas = document.getElementById("pklCanvas");
+      const imgData = canvas.toDataURL("image/png");
+      const w = window.open("", "_blank");
+      if (!w) {
+        downloadPklPdf();
+        return;
+      }
+      w.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>${getPklFileName()}</title>
+          <style>
+            @page { size: A4 landscape; margin: 0; }
+            body { margin: 0; display: flex; align-items: center; justify-content: center; background: #fff; }
+            img { width: 100vw; height: 100vh; object-fit: contain; }
+          </style>
+        </head>
+        <body onload="setTimeout(() => { window.print(); }, 200);">
+          <img src="${imgData}" />
+        </body>
+        </html>
+      `);
+      w.document.close();
+    }
+
+    function fetchJsonpFromGas(url) {
+      return new Promise((resolve, reject) => {
+        const cbName = "pkl_jsonp_" + Math.round(Math.random() * 1000000);
+        window[cbName] = (data) => {
+          delete window[cbName];
+          if (script && script.parentNode) script.parentNode.removeChild(script);
+          resolve(data);
+        };
+        const script = document.createElement("script");
+        script.src = url + (url.includes("?") ? "&" : "?") + "callback=" + cbName;
+        script.onerror = () => {
+          delete window[cbName];
+          if (script && script.parentNode) script.parentNode.removeChild(script);
+          reject(new Error("Không kết nối được Google Apps Script"));
+        };
+        document.body.appendChild(script);
+      });
+    }
+
+    async function fetchPklFromGoogleSheet() {
+      if (!currentPklPo) return;
+      const plate = (currentPklPo.soXePo || "").trim();
+      if (!plate) {
+        showToast("Lô hàng này chưa có Biển số xe để tra cứu!", "warning");
+        return;
+      }
+      const statusText = document.getElementById("pklStatusText");
+      statusText.style.color = "#0369a1";
+      statusText.textContent = `⏳ Đang lấy PDF từ Google Sheet PKL cho xe ${plate}...`;
+      try {
+        const res = await fetchJsonpFromGas(`${GAS_PKL_WEBAPP_URL}?plate=${encodeURIComponent(plate)}`);
+        if (res && res.status === "success" && res.pdfBase64) {
+          customGasPdfBase64 = res.pdfBase64;
+          statusText.style.color = "#15803d";
+          statusText.textContent = `✅ Đã đồng bộ file PDF từ Sheet PKL cho xe ${plate}! Bấm Tải PDF hoặc Gửi Zalo.`;
+          showToast(`Đã lấy PDF từ Google Sheet PKL cho xe ${plate}!`, "success");
+        } else {
+          statusText.style.color = "#dc2626";
+          statusText.textContent = `⚠️ ${res?.message || "Chưa có xe này trên Sheet PKL cũ (Đang dùng bản trực tiếp từ TMS)"}`;
+        }
+      } catch (err) {
+        statusText.style.color = "#dc2626";
+        statusText.textContent = `⚠️ Lỗi gọi Sheet PKL cũ: ${err.message} (Đang dùng bản trực tiếp từ TMS)`;
+      }
     }
 
     // =========================================================================
