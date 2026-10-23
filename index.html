@@ -783,6 +783,82 @@
 
     .form-group {
       margin-bottom: 10px;
+      position: relative;
+    }
+
+    /* CUSTOM AUTOCOMPLETE DROPDOWN FOR IOS & ANDROID */
+    .ac-dropdown {
+      position: absolute;
+      top: calc(100% + 2px);
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border: 1.5px solid var(--primary);
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.22);
+      max-height: 210px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      z-index: 999;
+      display: none;
+    }
+
+    .ac-dropdown.open {
+      display: block;
+    }
+
+    .ac-header {
+      padding: 6px 10px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #64748b;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+    }
+
+    .ac-item {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f172a;
+      background: #fff;
+    }
+
+    .ac-item:last-child {
+      border-bottom: none;
+    }
+
+    .ac-item:active, .ac-item.same-vendor {
+      background: #eff6ff;
+    }
+
+    .ac-sub {
+      font-size: 11px;
+      font-weight: 600;
+      color: #0284c7;
+      background: #e0f2fe;
+      padding: 2px 7px;
+      border-radius: 6px;
+      white-space: nowrap;
+      max-width: 48%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ac-sub.match-vendor {
+      background: #dcfce7;
+      color: #15803d;
     }
 
     .form-group.full {
@@ -1277,12 +1353,17 @@
                 type="text"
                 class="form-control"
                 id="inp_soXePo"
-                list="dlSoXe"
-                placeholder="Gõ biển số (VD: 50H10011)"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="characters"
+                spellcheck="false"
+                placeholder="Gõ biển số (VD: 61H...)"
                 style="text-transform:uppercase;"
+                onfocus="showTruckSuggestions()"
                 oninput="onTruckInput()"
-                onchange="onFieldChanged('soXePo')"
+                onblur="onTruckBlur()"
               />
+              <div class="ac-dropdown" id="ac_soXePo"></div>
             </div>
 
             <!-- DON VI VAN TAI -->
@@ -1295,11 +1376,17 @@
                 type="text"
                 class="form-control"
                 id="inp_donViVcPo"
-                list="dlVendor"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="characters"
+                spellcheck="false"
                 placeholder="Chọn hoặc gõ Vendor..."
                 style="text-transform:uppercase;"
-                onchange="onFieldChanged('donViVcPo')"
+                onfocus="showVendorSuggestions()"
+                oninput="showVendorSuggestions()"
+                onblur="onVendorBlur()"
               />
+              <div class="ac-dropdown" id="ac_donViVcPo"></div>
             </div>
           </div>
 
@@ -1752,17 +1839,49 @@
       }
     }
 
+    let knownTruckMap = new Map(); // plate -> { plate, vendor, count }
+    let knownVendorList = [...DEFAULT_VENDORS];
+
     function populateDynamicDropdowns() {
-      // Populate Datalists
+      // Populate Datalists & Custom Autocomplete Maps
       const xeSet = new Set(DEFAULT_XE_VIETSUN);
       const vendorSet = new Set(DEFAULT_VENDORS);
       const provSet = new Set(DEFAULT_PROVINCES);
 
+      knownTruckMap.clear();
+      DEFAULT_XE_VIETSUN.forEach(x => {
+        if (x) knownTruckMap.set(x, { plate: x, vendor: "VIETSUN", count: 1 });
+      });
+
+      // Also load user's recently typed trucks from localStorage
+      try {
+        const recent = JSON.parse(localStorage.getItem("vs_recent_trucks") || "[]");
+        recent.forEach(r => {
+          if (r && r.plate) {
+            knownTruckMap.set(r.plate, { plate: r.plate, vendor: r.vendor || "", count: 50 });
+            xeSet.add(r.plate);
+          }
+        });
+      } catch (_) {}
+
       allShipments.forEach(s => {
-        if (s.soXePo) xeSet.add(s.soXePo.toUpperCase());
-        if (s.donViVcPo) vendorSet.add(s.donViVcPo.toUpperCase());
+        const rawXe = (s.soXePo || "").toUpperCase().replace(/\s+/g, "").trim();
+        const rawDv = (s.donViVcPo || "").toUpperCase().trim();
+        if (rawXe) {
+          xeSet.add(rawXe);
+          const existing = knownTruckMap.get(rawXe);
+          if (existing) {
+            existing.count++;
+            if (!existing.vendor && rawDv) existing.vendor = rawDv;
+          } else {
+            knownTruckMap.set(rawXe, { plate: rawXe, vendor: rawDv, count: 1 });
+          }
+        }
+        if (rawDv) vendorSet.add(rawDv);
         if (s.tinhNhanPo && s.tinhNhanPo !== "THONG BAO SAU") provSet.add(s.tinhNhanPo.toUpperCase());
       });
+
+      knownVendorList = Array.from(vendorSet).sort();
 
       document.getElementById("dlSoXe").innerHTML = Array.from(xeSet)
         .map(x => `<option value="${x}"></option>`).join("");
@@ -2202,8 +2321,167 @@
     }
 
     function closeEditModal() {
+      hideAllAutocomplete();
       document.getElementById("editModal").classList.remove("open");
       currentEditingPo = null;
+    }
+
+    function hideAllAutocomplete() {
+      document.querySelectorAll(".ac-dropdown").forEach(el => el.classList.remove("open"));
+    }
+
+    // Close autocomplete when tapping outside input/dropdown
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".form-group")) {
+        hideAllAutocomplete();
+      }
+    });
+
+    function showTruckSuggestions() {
+      hideAllAutocomplete();
+      const inp = document.getElementById("inp_soXePo");
+      const curVendor = (document.getElementById("inp_donViVcPo").value || "").toUpperCase().trim();
+      const q = (inp.value || "").toUpperCase().replace(/\s+/g, "").trim();
+      const dropdown = document.getElementById("ac_soXePo");
+
+      const allTrucks = Array.from(knownTruckMap.values());
+      // Filter matching query (or show all if query matches exact current Editing PO's initial value on focus)
+      const isInitialUnchanged = currentEditingPo && q === (currentEditingPo.soXePo || "").toUpperCase().trim();
+      const filterQuery = isInitialUnchanged ? "" : q;
+
+      let matches = allTrucks.filter(t => {
+        if (!filterQuery) return true;
+        return t.plate.includes(filterQuery);
+      });
+
+      // Sort: 1) Same vendor as currently filled donViVcPo, 2) Starts with query, 3) Usage count
+      matches.sort((a, b) => {
+        const aSameV = curVendor && a.vendor === curVendor ? 1 : 0;
+        const bSameV = curVendor && b.vendor === curVendor ? 1 : 0;
+        if (aSameV !== bSameV) return bSameV - aSameV;
+
+        if (filterQuery) {
+          const aStarts = a.plate.startsWith(filterQuery) ? 1 : 0;
+          const bStarts = b.plate.startsWith(filterQuery) ? 1 : 0;
+          if (aStarts !== bStarts) return bStarts - aStarts;
+        }
+        return b.count - a.count;
+      });
+
+      matches = matches.slice(0, 35);
+      if (matches.length === 0) {
+        dropdown.classList.remove("open");
+        return;
+      }
+
+      const headerTitle = curVendor
+        ? `Gợi ý số xe (Ưu tiên ĐVVT: ${curVendor})`
+        : `Gợi ý biển số xe (${matches.length} xe)`;
+
+      dropdown.innerHTML = `
+        <div class="ac-header">
+          <span>🚛 ${headerTitle}</span>
+          <span onclick="hideAllAutocomplete()" style="cursor:pointer;color:#2563eb;">Đóng ✕</span>
+        </div>
+        ${matches.map(t => {
+          const isMatchVendor = curVendor && t.vendor === curVendor;
+          return `
+            <div class="ac-item ${isMatchVendor ? 'same-vendor' : ''}" onclick="selectTruckSuggestion('${t.plate}', '${t.vendor || ""}')">
+              <span>🚛 ${t.plate}</span>
+              ${t.vendor ? `<span class="ac-sub ${isMatchVendor ? 'match-vendor' : ''}">${isMatchVendor ? '★ ' : ''}${t.vendor}</span>` : ''}
+            </div>
+          `;
+        }).join("")}
+      `;
+      dropdown.classList.add("open");
+    }
+
+    let isSelectingSuggestion = false;
+
+    function selectTruckSuggestion(plate, vendor) {
+      isSelectingSuggestion = true;
+      const inpXe = document.getElementById("inp_soXePo");
+      const inpDv = document.getElementById("inp_donViVcPo");
+      inpXe.value = plate;
+      if (vendor) {
+        inpDv.value = vendor;
+      }
+      hideAllAutocomplete();
+      saveRecentTruck(plate, vendor || inpDv.value);
+      onFieldChanged("soXePo");
+      setTimeout(() => { isSelectingSuggestion = false; }, 300);
+    }
+
+    function onTruckBlur() {
+      setTimeout(() => {
+        if (isSelectingSuggestion || !currentEditingPo) return;
+        const inpXe = document.getElementById("inp_soXePo");
+        const val = (inpXe.value || "").toUpperCase().trim();
+        if (val !== (currentEditingPo.soXePo || "").toUpperCase().trim()) {
+          onFieldChanged("soXePo");
+        }
+      }, 220);
+    }
+
+    function saveRecentTruck(plate, vendor) {
+      if (!plate) return;
+      try {
+        const cleanPlate = plate.toUpperCase().replace(/\s+/g, "").trim();
+        const cleanVendor = (vendor || "").toUpperCase().trim();
+        knownTruckMap.set(cleanPlate, { plate: cleanPlate, vendor: cleanVendor, count: 99 });
+        let recent = JSON.parse(localStorage.getItem("vs_recent_trucks") || "[]");
+        recent = recent.filter(r => r.plate !== cleanPlate);
+        recent.unshift({ plate: cleanPlate, vendor: cleanVendor });
+        localStorage.setItem("vs_recent_trucks", JSON.stringify(recent.slice(0, 50)));
+      } catch (_) {}
+    }
+
+    function showVendorSuggestions() {
+      hideAllAutocomplete();
+      const inp = document.getElementById("inp_donViVcPo");
+      const q = (inp.value || "").toUpperCase().trim();
+      const dropdown = document.getElementById("ac_donViVcPo");
+
+      const isInitialUnchanged = currentEditingPo && q === (currentEditingPo.donViVcPo || "").toUpperCase().trim();
+      const filterQuery = isInitialUnchanged ? "" : q;
+
+      let matches = knownVendorList.filter(v => !filterQuery || v.includes(filterQuery)).slice(0, 40);
+      if (matches.length === 0) {
+        dropdown.classList.remove("open");
+        return;
+      }
+
+      dropdown.innerHTML = `
+        <div class="ac-header">
+          <span>🏢 Chọn Đơn Vị Vận Tải (${matches.length})</span>
+          <span onclick="hideAllAutocomplete()" style="cursor:pointer;color:#2563eb;">Đóng ✕</span>
+        </div>
+        ${matches.map(v => `
+          <div class="ac-item" onclick="selectVendorSuggestion('${v.replace(/'/g, "\\'")}')">
+            <span>🏢 ${v}</span>
+          </div>
+        `).join("")}
+      `;
+      dropdown.classList.add("open");
+    }
+
+    function selectVendorSuggestion(vendor) {
+      isSelectingSuggestion = true;
+      document.getElementById("inp_donViVcPo").value = vendor;
+      hideAllAutocomplete();
+      onFieldChanged("donViVcPo");
+      setTimeout(() => { isSelectingSuggestion = false; }, 300);
+    }
+
+    function onVendorBlur() {
+      setTimeout(() => {
+        if (isSelectingSuggestion || !currentEditingPo) return;
+        const inpDv = document.getElementById("inp_donViVcPo");
+        const val = (inpDv.value || "").toUpperCase().trim();
+        if (val !== (currentEditingPo.donViVcPo || "").toUpperCase().trim()) {
+          onFieldChanged("donViVcPo");
+        }
+      }, 220);
     }
 
     function setModalDate(offsetDays) {
@@ -2275,6 +2553,7 @@
           vendorInp.value = "VIETSUN";
         }
       }
+      showTruckSuggestions();
     }
 
     function onFieldChanged(fieldName) {
@@ -2344,6 +2623,7 @@
             thongtin: rawVal
           });
           currentEditingPo.soXePo = rawVal;
+          saveRecentTruck(rawVal, document.getElementById("inp_donViVcPo").value);
 
           // Parse #reload_input_ajax response if server auto-resolved Vendor
           if (htmlResp && htmlResp.includes("reload_input_ajax")) {
