@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#1e40af" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Vietsun TMS" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="mobile-web-app-capable" content="yes" />
   <title>Vietsun TMS Mobile</title>
   <link rel="manifest" href="manifest.json" />
@@ -2503,8 +2504,11 @@
       refreshData(true);
     }
 
-    // PWA Installation Prompt
+    // PWA Installation Prompt (Android Chrome + iOS Safari Support)
     let deferredPrompt = null;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+
     window.addEventListener("beforeinstallprompt", (e) => {
       e.preventDefault();
       deferredPrompt = e;
@@ -2512,15 +2516,21 @@
     });
 
     async function installPWA() {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      await deferredPrompt.userChoice;
-      deferredPrompt = null;
-      document.getElementById("btnInstallPwa").style.display = "none";
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        document.getElementById("btnInstallPwa").style.display = "none";
+      } else if (isIOS) {
+        alert("📲 Để cài App trên iPhone / iPad:\n\n1. Mở link này bằng trình duyệt Safari.\n2. Bấm biểu tượng Chia sẻ (ô vuông có mũi tên hướng lên ⬆️ ở thanh dưới cùng).\n3. Kéo xuống chọn 'Thêm vào MH chính' (Add to Home Screen) ➔ Bấm 'Thêm'.");
+      }
     }
 
     // Initialize App
     window.addEventListener("DOMContentLoaded", () => {
+      if (isIOS && !isStandalone) {
+        document.getElementById("btnInstallPwa").style.display = "inline-flex";
+      }
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("sw.js").catch(() => {});
       }
