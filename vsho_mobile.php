@@ -193,6 +193,13 @@ if (isset($_GET['api'])) {
       gap: 8px;
       min-width: 0;
       flex: 1;
+      overflow: hidden;
+    }
+
+    .brand-text {
+      min-width: 0;
+      flex: 1;
+      overflow: hidden;
     }
 
     .brand-logo {
@@ -217,18 +224,22 @@ if (isset($_GET['api'])) {
       letter-spacing: 0.2px;
       line-height: 1.15;
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .brand-sub {
       font-size: 11px;
-      opacity: 0.9;
+      opacity: 0.92;
       font-weight: 500;
       display: flex;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 4px;
+      gap: 5px;
       line-height: 1.25;
       margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .status-dot {
@@ -244,17 +255,17 @@ if (isset($_GET['api'])) {
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       flex-shrink: 0;
     }
 
     .icon-btn {
       background: rgba(255, 255, 255, 0.16);
-      border: 1px solid rgba(255, 255, 255, 0.22);
+      border: 1px solid rgba(255, 255, 255, 0.24);
       color: #fff;
-      border-radius: 10px;
-      padding: 7px 9px;
-      font-size: 12px;
+      border-radius: 9px;
+      padding: 6px 8px;
+      font-size: 11.5px;
       font-weight: 600;
       display: inline-flex;
       align-items: center;
@@ -263,6 +274,65 @@ if (isset($_GET['api'])) {
       flex-shrink: 0;
       cursor: pointer;
       transition: all 0.15s;
+    }
+
+    /* FULL-SCREEN LOGIN OVERLAY */
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 3000;
+      background: linear-gradient(145deg, #0f172a 0%, #1e3a8a 50%, #2563eb 100%);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-overlay.open {
+      display: flex;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 390px;
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 26px 22px 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      animation: fadeUp 0.25s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .login-logo-box {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 12px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+      color: #ffffff;
+      font-weight: 900;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.32);
+    }
+
+    .login-error {
+      display: none;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      padding: 9px 12px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      text-align: center;
     }
 
     .icon-btn:active {
@@ -1226,30 +1296,71 @@ if (isset($_GET['api'])) {
 
   <div class="toast-container" id="toastContainer"></div>
 
+  <!-- FULL-SCREEN LOGIN OVERLAY FOR MULTI-USER ACCESS -->
+  <div class="login-overlay" id="loginOverlay">
+    <div class="login-card">
+      <div class="login-logo-box">VS</div>
+      <div style="text-align:center;margin-bottom:18px;">
+        <div style="font-size:18px;font-weight:800;color:#0f172a;">VIETSUN TMS MOBILE</div>
+        <div style="font-size:12.5px;color:#64748b;margin-top:3px;">ÄÄƒng nháº­p báº±ng tÃ i khoáº£n TMS cá»§a báº¡n</div>
+      </div>
+
+      <div class="login-error" id="loginErrorBox"></div>
+
+      <form onsubmit="submitLoginScreen(event)">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label>ðŸ‘¤ TÃ i khoáº£n TMS (Username)</label>
+          <input
+            type="text"
+            class="form-control"
+            id="loginUsername"
+            placeholder="VD: trucking14, trucking4..."
+            autocomplete="username"
+            required
+          />
+        </div>
+
+        <div class="form-group" style="margin-bottom:14px;">
+          <label>ðŸ”‘ Máº­t kháº©u (Password)</label>
+          <input
+            type="password"
+            class="form-control"
+            id="loginPassword"
+            placeholder="Nháº­p máº­t kháº©u..."
+            autocomplete="current-password"
+            required
+          />
+        </div>
+
+        <button type="submit" class="btn-primary-lg" id="btnLoginSubmit" style="width:100%;padding:12px;">
+          ðŸ” ÄÄ‚NG NHáº¬P Há»† THá»NG
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- HEADER -->
   <header class="app-header">
     <div class="header-top">
       <div class="brand">
         <div class="brand-logo">VS</div>
-        <div>
+        <div class="brand-text">
           <div class="brand-title">VIETSUN TMS</div>
           <div class="brand-sub">
             <span class="status-dot" id="connDot"></span>
-            <span id="userLabel">TK: trucking14</span>
-            <span>â€¢</span>
             <span id="syncTimeLabel">Äang táº£i...</span>
           </div>
         </div>
       </div>
       <div class="header-actions">
-        <button class="icon-btn" id="btnInstallPwa" style="display:none;" onclick="installPWA()">
-          ðŸ“² CÃ i App
+        <button class="icon-btn" id="btnInstallPwa" style="display:none;" onclick="installPWA()" title="CÃ i App ra mÃ n hÃ¬nh chÃ­nh">
+          ðŸ“² CÃ i
         </button>
-        <button class="icon-btn" onclick="openAccountModal()" title="Cáº¥u hÃ¬nh tÃ i khoáº£n">
-          ðŸ‘¤ TK
+        <button class="icon-btn" onclick="openAccountModal()" title="TÃ i khoáº£n & CÃ i Ä‘áº·t">
+          ðŸ‘¤ <span id="userLabel">TK</span>
         </button>
         <button class="icon-btn" onclick="refreshData(true)" title="Táº£i láº¡i dá»¯ liá»‡u má»›i nháº¥t">
-          ðŸ”„ LÃ m má»›i
+          ðŸ”„ Má»›i
         </button>
       </div>
     </div>
@@ -1701,8 +1812,8 @@ if (isset($_GET['api'])) {
         </div>
       </div>
       <div class="sheet-footer">
-        <button type="button" class="btn-secondary-lg" onclick="closeAccountModal()">ÄÃ³ng</button>
-        <button type="button" class="btn-primary-lg" onclick="saveAccountSettings()">âœ… ÄÄƒng nháº­p & Äá»“ng bá»™</button>
+        <button type="button" class="btn-secondary-lg" style="color:#dc2626;border-color:#fecaca;background:#fef2f2;" onclick="logoutAccount()">ðŸšª ÄÄƒng xuáº¥t / Äá»•i TK</button>
+        <button type="button" class="btn-primary-lg" onclick="saveAccountSettings()">âœ… LÆ°u & Äá»“ng bá»™</button>
       </div>
     </div>
   </div>
@@ -2035,10 +2146,13 @@ if (isset($_GET['api'])) {
       }
     }
 
+    const isExplicitlyLoggedIn = safeGetStorage("vs_auth_v2", "") === "1";
+
     let state = {
-      username: safeGetStorage("vs_username", "trucking14"),
-      password: safeGetStorage("vs_password", "1"),
-      userString: safeGetStorage("vs_userString", "trucking14<<|7<<|a0b923820d<<|1<<|0.0.0.0.0.0.1.0.1.1.0.1.0.1."),
+      isLoggedIn: isExplicitlyLoggedIn,
+      username: isExplicitlyLoggedIn ? safeGetStorage("vs_username", "") : "",
+      password: isExplicitlyLoggedIn ? safeGetStorage("vs_password", "") : "",
+      userString: isExplicitlyLoggedIn ? safeGetStorage("vs_userString", "") : "",
       apiDate: safeGetStorage("vs_apiDate", getTodayISO()),
       dateMode: "today",          // today | tomorrow | yesterday | 3days | unset | all | custom
       dateType: "ngayTraHang",    // ngayTraHang | ngayTauChayPo
@@ -3348,8 +3462,92 @@ if (isset($_GET['api'])) {
     }
 
     // =========================================================================
-    // 10. ACCOUNT SETTINGS & PWA INSTALL
+    // 10. ACCOUNT SETTINGS, MULTI-USER LOGIN & PWA INSTALL
     // =========================================================================
+    async function submitLoginScreen(e) {
+      if (e) e.preventDefault();
+      const uName = document.getElementById("loginUsername").value.trim();
+      const uPass = document.getElementById("loginPassword").value.trim();
+      const errBox = document.getElementById("loginErrorBox");
+      const btn = document.getElementById("btnLoginSubmit");
+
+      errBox.style.display = "none";
+      if (!uName || !uPass) {
+        errBox.textContent = "Vui lÃ²ng nháº­p Ä‘áº§y Ä‘á»§ TÃ i khoáº£n vÃ  Máº­t kháº©u!";
+        errBox.style.display = "block";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "â³ Äang xÃ¡c thá»±c vá»›i TMS...";
+
+      try {
+        const urlsToTry = ["?api=login", "/api/login"];
+        let loginResult = null;
+
+        for (const u of urlsToTry) {
+          try {
+            const resp = await fetch(u, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ username: uName, password: uPass })
+            });
+            const info = await resp.json();
+            loginResult = { status: resp.status, info };
+            break;
+          } catch (_) {}
+        }
+
+        if (loginResult && loginResult.info && !loginResult.info.ok) {
+          errBox.textContent = loginResult.info.error || "Sai tÃªn Ä‘Äƒng nháº­p hoáº·c máº­t kháº©u TMS!";
+          errBox.style.display = "block";
+          return;
+        }
+
+        state.username = uName;
+        state.password = uPass;
+        state.userString = (loginResult && loginResult.info && loginResult.info.userString)
+          ? loginResult.info.userString
+          : `${uName}<<|7<<|a0b923820d<<|1<<|0.0.0.0.0.0.1.0.1.1.0.1.0.1.`;
+        state.isLoggedIn = true;
+
+        try {
+          localStorage.setItem("vs_auth_v2", "1");
+          localStorage.setItem("vs_username", state.username);
+          localStorage.setItem("vs_password", state.password);
+          localStorage.setItem("vs_userString", state.userString);
+        } catch (_) {}
+
+        document.getElementById("userLabel").textContent = state.username;
+        document.getElementById("loginOverlay").classList.remove("open");
+        showToast(`Xin chÃ o ${state.username}! Äang táº£i dá»¯ liá»‡u...`, "success");
+        refreshData(false);
+        syncLiveDriverDatabase(false);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "ðŸ” ÄÄ‚NG NHáº¬P Há»† THá»NG";
+      }
+    }
+
+    function logoutAccount() {
+      closeAccountModal();
+      state.isLoggedIn = false;
+      state.username = "";
+      state.password = "";
+      state.userString = "";
+      try {
+        localStorage.removeItem("vs_auth_v2");
+        localStorage.removeItem("vs_username");
+        localStorage.removeItem("vs_password");
+        localStorage.removeItem("vs_userString");
+      } catch (_) {}
+      document.getElementById("loginUsername").value = "";
+      document.getElementById("loginPassword").value = "";
+      document.getElementById("loginErrorBox").style.display = "none";
+      document.getElementById("loginOverlay").classList.add("open");
+      setTimeout(() => document.getElementById("loginUsername").focus(), 150);
+    }
+
     function openAccountModal() {
       document.getElementById("cfgUsername").value = state.username;
       document.getElementById("cfgPassword").value = state.password;
@@ -3363,8 +3561,14 @@ if (isset($_GET['api'])) {
     }
 
     async function saveAccountSettings() {
-      state.username = document.getElementById("cfgUsername").value.trim() || "trucking14";
-      state.password = document.getElementById("cfgPassword").value.trim() || "1";
+      const uName = document.getElementById("cfgUsername").value.trim();
+      const uPass = document.getElementById("cfgPassword").value.trim();
+      if (!uName || !uPass) {
+        showToast("Vui lÃ²ng nháº­p Ä‘áº§y Ä‘á»§ TÃ i khoáº£n vÃ  Máº­t kháº©u!", "error");
+        return;
+      }
+      state.username = uName;
+      state.password = uPass;
       state.userString = document.getElementById("cfgUserString").value.trim();
       state.apiDate = document.getElementById("cfgApiDate").value || getTodayISO();
 
@@ -3375,23 +3579,27 @@ if (isset($_GET['api'])) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username: state.username, password: state.password })
         });
-        if (resp.ok) {
-          const info = await resp.json();
-          if (info.userString) {
-            state.userString = info.userString;
-            document.getElementById("cfgUserString").value = info.userString;
-          }
+        const info = await resp.json();
+        if (!resp.ok || !info.ok) {
+          showToast(info.error || "Sai tÃ i khoáº£n hoáº·c máº­t kháº©u TMS!", "error");
+          return;
+        }
+        if (info.userString) {
+          state.userString = info.userString;
+          document.getElementById("cfgUserString").value = info.userString;
         }
       } catch (_) {}
 
+      state.isLoggedIn = true;
       try {
+        localStorage.setItem("vs_auth_v2", "1");
         localStorage.setItem("vs_username", state.username);
         localStorage.setItem("vs_password", state.password);
         localStorage.setItem("vs_userString", state.userString);
         localStorage.setItem("vs_apiDate", state.apiDate);
       } catch (_) {}
 
-      document.getElementById("userLabel").textContent = `TK: ${state.username}`;
+      document.getElementById("userLabel").textContent = state.username;
       document.getElementById("serverDateInfo").textContent = `Má»‘c dá»¯ liá»‡u API: ${formatIsoToVN(state.apiDate)}`;
       closeAccountModal();
       refreshData(true);
@@ -3425,14 +3633,20 @@ if (isset($_GET['api'])) {
         document.getElementById("btnInstallPwa").style.display = "inline-flex";
       }
       if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.register("sw.js").catch(() => {});
+        navigator.serviceWorker.register("sw.js").then(reg => reg.update()).catch(() => {});
       }
-      document.getElementById("userLabel").textContent = `TK: ${state.username}`;
       document.getElementById("filterFromDate").value = state.fromDate;
       document.getElementById("filterToDate").value = state.toDate;
       document.getElementById("serverDateInfo").textContent = `Má»‘c dá»¯ liá»‡u API: ${formatIsoToVN(state.apiDate)}`;
-      refreshData(false);
-      syncLiveDriverDatabase(false);
+
+      if (!state.isLoggedIn || !state.username) {
+        document.getElementById("loginOverlay").classList.add("open");
+        setTimeout(() => document.getElementById("loginUsername").focus(), 150);
+      } else {
+        document.getElementById("userLabel").textContent = state.username;
+        refreshData(false);
+        syncLiveDriverDatabase(false);
+      }
     });
   </script>
 </body>

@@ -141,7 +141,7 @@ function remoteRequest(targetUrl, options = {}, body = null, redirectsLeft = 5) 
   });
 }
 
-async function loginToTms(username = "trucking14", password = "1") {
+async function loginToTms(username = "trucking14", password = "1", strict = false) {
   const form = new URLSearchParams({
     username,
     password,
@@ -161,8 +161,9 @@ async function loginToTms(username = "trucking14", password = "1") {
   const match = html.match(/id="userString"\s+value="([^"]+)"/);
   if (match && match[1]) {
     cachedUserString = match[1];
+    return match[1];
   }
-  return cachedUserString;
+  return strict ? null : cachedUserString;
 }
 
 const MIME_TYPES = {
@@ -208,13 +209,23 @@ const server = http.createServer(async (req, res) => {
     // 1. API Login
     if ((pathname === "/api/login" || apiParam === "login") && req.method === "POST") {
       const rawBody = await readRequestBody(req);
-      let creds = { username: "trucking14", password: "1" };
+      let creds = { username: "", password: "" };
       try {
         creds = JSON.parse(rawBody);
       } catch (_) {}
-      const uStr = await loginToTms(creds.username || "trucking14", creds.password || "1");
+      const uName = (creds.username || "").trim();
+      const uPass = (creds.password || "").trim();
+      if (!uName || !uPass) {
+        res.writeHead(400, { "Content-Type": "application/json; charset=utf-8" });
+        return res.end(JSON.stringify({ ok: false, error: "Vui lòng nhập đầy đủ Tài khoản và Mật khẩu!" }));
+      }
+      const uStr = await loginToTms(uName, uPass, true);
+      if (!uStr) {
+        res.writeHead(401, { "Content-Type": "application/json; charset=utf-8" });
+        return res.end(JSON.stringify({ ok: false, error: "Sai tên đăng nhập hoặc mật khẩu TMS!" }));
+      }
       res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-      return res.end(JSON.stringify({ ok: true, username: creds.username, userString: uStr }));
+      return res.end(JSON.stringify({ ok: true, username: uName, userString: uStr }));
     }
 
     // 2. API Return JSON (with Gzip support for fast mobile 5G loading)
@@ -359,7 +370,10 @@ const server = http.createServer(async (req, res) => {
 
     if (fs.existsSync(absPath) && fs.statSync(absPath).isFile()) {
       const ext = path.extname(absPath).toLowerCase();
-      res.writeHead(200, { "Content-Type": MIME_TYPES[ext] || "application/octet-stream" });
+      res.writeHead(200, {
+        "Content-Type": MIME_TYPES[ext] || "application/octet-stream",
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      });
       return fs.createReadStream(absPath).pipe(res);
     }
 
