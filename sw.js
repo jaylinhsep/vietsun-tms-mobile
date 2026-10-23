@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vietsun-tms-v1';
+const CACHE_NAME = 'vietsun-tms-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -24,10 +24,16 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-  if (url.pathname.includes('/api/') || url.pathname.endsWith('.php')) {
+  if (url.pathname.includes('/api/') || url.search.includes('api=') || url.pathname.endsWith('.php')) {
     return;
   }
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+    fetch(event.request)
+      .then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy)).catch(() => {});
+        return res;
+      })
+      .catch(() => caches.match(event.request))
   );
 });

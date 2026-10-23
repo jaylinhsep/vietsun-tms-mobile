@@ -7,6 +7,7 @@ const http = require("http");
 const https = require("https");
 const fs = require("fs");
 const path = require("path");
+const zlib = require("zlib");
 const { URL } = require("url");
 
 const PORT = process.env.PORT || 8080;
@@ -173,13 +174,26 @@ const server = http.createServer(async (req, res) => {
       return res.end(JSON.stringify({ ok: true, username: creds.username, userString: uStr }));
     }
 
-    // 2. API Return JSON
+    // 2. API Return JSON (with Gzip support for fast mobile 5G loading)
     if (pathname === "/api/return_json" || apiParam === "return_json") {
       const ngay = parsedUrl.searchParams.get("ngay") || new Date().toISOString().slice(0, 10);
       const remoteRes = await remoteRequest(`${REMOTE_BASE}/return_json.php?ngay=${encodeURIComponent(ngay)}`);
-      const text = remoteRes.body.toString("utf8").trim();
-      res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-      return res.end(text || "[]");
+      const text = remoteRes.body.toString("utf8").trim() || "[]";
+      const acceptEncoding = req.headers["accept-encoding"] || "";
+      if (acceptEncoding.includes("gzip")) {
+        const compressed = zlib.gzipSync(Buffer.from(text, "utf8"));
+        res.writeHead(200, {
+          "Content-Type": "application/json; charset=utf-8",
+          "Content-Encoding": "gzip",
+          "Cache-Control": "no-store"
+        });
+        return res.end(compressed);
+      }
+      res.writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store"
+      });
+      return res.end(text);
     }
 
     // 3. API Index CRUD Update

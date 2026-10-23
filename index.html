@@ -1514,11 +1514,19 @@
     let filteredShipments = [];
     let renderLimit = 60;
 
+    function safeGetStorage(key, fallback) {
+      try {
+        return localStorage.getItem(key) || fallback;
+      } catch (_) {
+        return fallback;
+      }
+    }
+
     let state = {
-      username: localStorage.getItem("vs_username") || "trucking14",
-      password: localStorage.getItem("vs_password") || "1",
-      userString: localStorage.getItem("vs_userString") || "trucking14<<|7<<|a0b923820d<<|1<<|0.0.0.0.0.0.1.0.1.1.0.1.0.1.",
-      apiDate: localStorage.getItem("vs_apiDate") || getTodayISO(),
+      username: safeGetStorage("vs_username", "trucking14"),
+      password: safeGetStorage("vs_password", "1"),
+      userString: safeGetStorage("vs_userString", "trucking14<<|7<<|a0b923820d<<|1<<|0.0.0.0.0.0.1.0.1.1.0.1.0.1."),
+      apiDate: safeGetStorage("vs_apiDate", getTodayISO()),
       dateMode: "today",          // today | tomorrow | yesterday | 3days | unset | all | custom
       dateType: "ngayTraHang",    // ngayTraHang | ngayTauChayPo
       fromDate: getTodayISO(),
@@ -1704,7 +1712,13 @@
         // Sort newest ID or date first
         allShipments.sort((a, b) => Number(b.idPo) - Number(a.idPo));
 
-        localStorage.setItem("vs_cached_shipments", JSON.stringify(allShipments));
+        // Safely cache only latest 500 records (~350KB) to avoid iOS Safari 5MB localStorage QuotaExceededError
+        try {
+          localStorage.setItem("vs_cached_shipments", JSON.stringify(allShipments.slice(0, 500)));
+        } catch (storageErr) {
+          console.warn("Storage quota warning (ignored):", storageErr);
+        }
+
         const nowStr = new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
         syncLbl.textContent = `Cập nhật ${nowStr} (${allShipments.length} lô)`;
         document.getElementById("connDot").style.background = "#4ade80";
@@ -1717,7 +1731,7 @@
       } catch (err) {
         console.error(err);
         document.getElementById("connDot").style.background = "#f59e0b";
-        const cached = localStorage.getItem("vs_cached_shipments");
+        const cached = safeGetStorage("vs_cached_shipments", null);
         if (cached) {
           allShipments = JSON.parse(cached);
           syncLbl.textContent = `Bản lưu tạm (${allShipments.length} lô)`;
@@ -2377,7 +2391,9 @@
         inpEl.classList.remove("saving");
         inpEl.classList.add("saved");
         dirtyFields.delete(fieldName);
-        localStorage.setItem("vs_cached_shipments", JSON.stringify(allShipments));
+        try {
+          localStorage.setItem("vs_cached_shipments", JSON.stringify(allShipments.slice(0, 500)));
+        } catch (_) {}
         applyFilters();
         showToast(`Đã lưu ${fieldName} lên hệ thống TMS!`, "success");
       } catch (err) {
@@ -2493,10 +2509,12 @@
         }
       } catch (_) {}
 
-      localStorage.setItem("vs_username", state.username);
-      localStorage.setItem("vs_password", state.password);
-      localStorage.setItem("vs_userString", state.userString);
-      localStorage.setItem("vs_apiDate", state.apiDate);
+      try {
+        localStorage.setItem("vs_username", state.username);
+        localStorage.setItem("vs_password", state.password);
+        localStorage.setItem("vs_userString", state.userString);
+        localStorage.setItem("vs_apiDate", state.apiDate);
+      } catch (_) {}
 
       document.getElementById("userLabel").textContent = `TK: ${state.username}`;
       document.getElementById("serverDateInfo").textContent = `Mốc dữ liệu API: ${formatIsoToVN(state.apiDate)}`;
