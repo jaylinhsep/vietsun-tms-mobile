@@ -1,0 +1,12 @@
+{
+  "name": "vietsun-tms-mobile",
+  "version": "1.0.0",
+  "description": "Vietsun TMS Mobile Web App / PWA & API Proxy for Render.com",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
