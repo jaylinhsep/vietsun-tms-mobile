@@ -1388,6 +1388,17 @@
               />
               <div class="ac-dropdown" id="ac_donViVcPo"></div>
             </div>
+
+            <!-- VIETSUN DRIVER INFO BOX (AUTO-SHOWN WHEN VIETSUN TRUCK SELECTED) -->
+            <div class="form-group full" id="driverInfoBox" style="display:none; margin-bottom:4px;">
+              <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:8px 12px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <div style="font-size:12.5px; color:#166534;">
+                  <div style="font-weight:800;" id="drvNameText">👨‍✈️ Tài xế: --</div>
+                  <div style="font-size:11.5px; margin-top:2px;" id="drvSubText">📞 SĐT: --</div>
+                </div>
+                <a href="#" id="drvCallBtn" class="btn-card btn-call" style="padding:6px 10px; font-size:12px;">📞 Gọi TX</a>
+              </div>
+            </div>
           </div>
 
           <div class="form-section-title">
@@ -1494,11 +1505,14 @@
       </div>
 
       <div class="sheet-footer">
-        <button type="button" class="btn-secondary-lg" onclick="copyCurrentPoToZalo()">
-          📋 Copy Zalo
+        <button type="button" class="btn-secondary-lg" onclick="copyCurrentPoToZalo(2)" title="Copy THÔNG TIN GIAO HÀNG (kèm Tài xế & SĐT)">
+          🚛 Copy Giao Hàng
+        </button>
+        <button type="button" class="btn-secondary-lg" onclick="copyCurrentPoToZalo(1)" title="Copy THÔNG BÁO HÀNG ĐẾN / ĐÓNG HÀNG">
+          💬 Copy TB
         </button>
         <button type="button" class="btn-primary-lg" id="btnSaveAll" onclick="saveAllChanges(event)">
-          💾 Lưu Cập Nhật Lên TMS
+          💾 Lưu TMS
         </button>
       </div>
     </div>
@@ -1568,6 +1582,91 @@
       "50H91065","50H91077","50E48301","50E54493","50E52975","50E53620","50E52957","50E53597",
       "50E54092","50E53813","50E52617","50E54447","50E52920","50F21358","50F21525","50F21764","50F23020"
     ];
+
+    // Database Tài xế, SĐT, CCCD, GPLX Đội xe VIETSUN từ TMS
+    const VIETSUN_DRIVER_DB = {
+      "50H91309":{"cccd":"079097000590  Nơi cấp: Cục QLHC & TTXH","gplx":"790152274557 Nơi cấp:SỞ GTVT","name":"HUỲNH THANH TÙNG","phone":"0356601380"},
+      "50H67772":{"cccd":"075082015319  Nơi cấp: Cục QLHC & TTXH","gplx":"740113002170 Nơi cấp:SỞ GTVT","name":"NGUYỄN VĂN PHƯƠNG","phone":"0931249725"},
+      "50H91554":{"cccd":"044082006183  Nơi cấp: Cục QLHC & TTXH","gplx":"790105007335 Nơi cấp:sở GTVT","name":"NGUYỄN VĂN TUẤN","phone":"0378857982"},
+      "50E52975":{"cccd":"038085016388  Nơi cấp: Cục QLHC & TTXH","gplx":"790152206084 Nơi cấp:SỞ GTVT","name":"NGUYỄN TRỌNG TRƯỜNG","phone":"0974533635"},
+      "50H10121":{"cccd":"037089000509  Nơi cấp: Cục QLHC & TTXH","gplx":"790144799134 Nơi cấp:SỞ GTVT","name":"PHAN VĂN HUYNH","phone":"0987437351"},
+      "50H76073":{"cccd":"075092005970  Nơi cấp: Cục QLHC & TTXH","gplx":"790219058674 Nơi cấp:BỘ CÔNG AN","name":"NGUYỄN VĂN THANH","phone":"0914210965"},
+      "50H10152":{"cccd":"017084008865  Nơi cấp: Cục QLHC & TTXH","gplx":"310162850107 Nơi cấp:sở GTVT","name":"QUẢN VĂN NGỌC","phone":"0975075027"},
+      "50H05689":{"cccd":"094086003131  Nơi cấp: Cục QLHC & TTXH","gplx":"740114002180 Nơi cấp:SỞ GTVT","name":"NGÔ MINH TRỌNG","phone":"0985955580"},
+      "50H10035":{"cccd":"075089026187  Nơi cấp: Cục QLHC & TTXH","gplx":"750130023874 Nơi cấp:Sở GTVT","name":"TRẦN TRÍ TÀI","phone":"0919480367"},
+      "50H05455":{"cccd":"035074010129  Nơi cấp: Cục QLHC & TTXH","gplx":"790146894437 Nơi cấp:SỞ GTVT","name":"NGUYỄN THÁI CƠ","phone":"0986192693"},
+      "50H68309":{"cccd":"094085000613  Nơi cấp: Cục QLHC & TTXH","gplx":"790133745151 Nơi cấp:SỞ GTVT","name":"LÊ VĂN NGOAN","phone":"0795884070"},
+      "50E14550":{"cccd":"080093000650  Nơi cấp: Cục QLHC & TTXH","gplx":"790159130760 Nơi cấp:SỞ GTVT","name":"LÊ HOÀNG ÂN","phone":"0966464917"},
+      "50E14009":{"cccd":"087201009730  Nơi cấp: Cục QLHC & TTXH","gplx":"790206185040 Nơi cấp:bộ công an","name":"NGUYỄN MINH TRIẾT","phone":"0364334382"},
+      "50E53597":{"cccd":"077089005508  Nơi cấp: Cục QLHC & TTXH","gplx":"790110015510 Nơi cấp:SỞ GTVT","name":"NGUYỄN VĂN TÀI","phone":"0335946252"},
+      "50E52920":{"cccd":"080093006093  Nơi cấp: Cục QLHC & TTXH","gplx":"790160094374 Nơi cấp:SỞ GTVT","name":"ĐỖ MINH PHỤNG","phone":"0967799542"},
+      "50H10017":{"cccd":"080081000387  Nơi cấp: Cục QLHC & TTXH","gplx":"790156088701 Nơi cấp:BỘ GTVT","name":"NGUYỄN VƯƠNG QUỐC","phone":"0936736236"},
+      "50H68333":{"cccd":"038085020371  Nơi cấp: Cục QLHC & TTXH","gplx":"790159210491 Nơi cấp:SỞ GTVT","name":"HOÀNG VĂN LỰC","phone":"0902856068"},
+      "50H10011":{"cccd":"079201021731  Nơi cấp: Cục QLHC & TTXH","gplx":"790204030139 Nơi cấp:SỞ GTVT","name":"PHAN HOÀNG HÙNG","phone":"0707231297"},
+      "50E15217":{"cccd":"080074000416  Nơi cấp: Cục QLHC & TTXH","gplx":"790966004092 Nơi cấp:SỞ GTVT","name":"HUỲNH THANH TÂM","phone":"0937373731"},
+      "50H76816":{"cccd":"079078002279  Nơi cấp: Cục QLHC & TTXH","gplx":"790152151977 Nơi cấp:SỞ GTVT","name":"PHAN VĂN TÚ","phone":"0904334484"},
+      "50H90600":{"cccd":"079074022039  Nơi cấp: Cục QLHC & TTXH","gplx":"790009228687 Nơi cấp:SỞ GTVT","name":"DƯƠNG HIẾU HÒA","phone":"0796449644"},
+      "51D03966":{"cccd":"075082009103  Nơi cấp: Cục QLHC & TTXH","gplx":"750053003841 Nơi cấp:Cục Cảnh sát giao thông","name":"TRANG MINH HẬU","phone":"0979577801"},
+      "50H68200":{"cccd":"042080010369  Nơi cấp: Cục QLHC & TTXH","gplx":"790106009000 Nơi cấp:SỞ GTVT","name":"NGUYỄN VIẾT XUÂN","phone":"0979483434"},
+      "50H90144":{"cccd":"075091024017  Nơi cấp: Cục QLHC & TTXH","gplx":"790171923030 Nơi cấp:BCA","name":"PHẠM VĂN BÌNH","phone":"0909092471"},
+      "50H10208":{"cccd":"030062009674  Nơi cấp: Cục QLHC & TTXH","gplx":"750100001394 Nơi cấp:SỞ GTVT","name":"NGUYỄN ĐỨC TRIỆU","phone":"0938025734"},
+      "50H91424":{"cccd":"079077005704  Nơi cấp: Cục QLHC & TTXH","gplx":"790135410947 Nơi cấp:sở GTVT","name":"ĐỖ THÀNH HƯNG","phone":"0916597944"},
+      "50E48301":{"cccd":"084083014543  Nơi cấp: Cục QLHC & TTXH","gplx":"790101006837 Nơi cấp:SỞ GTVT","name":"NGUYỄN HỮU TƯỜNG","phone":"0933943550"},
+      "50H05535":{"cccd":"054088010647  Nơi cấp: Cục QLHC & TTXH","gplx":"540111812711 Nơi cấp:SỞ GTVT","name":"LÂM TỬ TY","phone":"0961191339"},
+      "50E14112":{"cccd":"074078009227  Nơi cấp: Cục QLHC & TTXH","gplx":"740044000054 Nơi cấp:sở GTVT","name":"NGUYỄN VĂN XUÂN","phone":"0964337309"},
+      "50H10224":{"cccd":"093098001120  Nơi cấp: Cục QLHC & TTXH","gplx":"790163115562 Nơi cấp:BCA","name":"NGUYỄN VĂN HẬU","phone":"0938234301"},
+      "50H76406":{"cccd":"038082023809  Nơi cấp: Cục QLHC & TTXH","gplx":"740086003914 Nơi cấp:sở GTVT","name":"ĐỖ VĂN TUẤN","phone":"0906534154"},
+      "50E54493":{"cccd":"075090016892  Nơi cấp: Cục QLHC & TTXH","gplx":"790137778023 Nơi cấp:SỞ GTVT","name":"NGUYỄN TUẤN ANH","phone":"0979222556"},
+      "50H91213":{"cccd":"091085002627  Nơi cấp: Cục QLHC & TTXH","gplx":"790102029798 Nơi cấp:SỞ GTVT","name":"HUỲNH VĂN SỬ","phone":"0908727855"},
+      "50H91917":{"cccd":"040086020171  Nơi cấp: Cục QLHC & TTXH","gplx":"750087003158 Nơi cấp:SỞ GTVT","name":"TRẦN DUY BÌNH","phone":"0973607075"},
+      "50E54092":{"cccd":"046083015082  Nơi cấp: Cục QLHC & TTXH","gplx":"790107001117 Nơi cấp:SỞ GTVT","name":"PHAN THẾ MINH SƠN","phone":"0889243552"},
+      "50E52617":{"cccd":"084096005671  Nơi cấp: Cục QLHC & TTXH","gplx":"840164002355 Nơi cấp:SỞ GTVT","name":"HUỲNH VĂN TẤN ĐẠT","phone":"0974891088"},
+      "50H05658":{"cccd":"042090011523  Nơi cấp: Cục QLHC & TTXH","gplx":"310176002813 Nơi cấp:SỞ GTVT","name":"HOÀNG HỮU LONG","phone":"0971772771"},
+      "50E14029":{"cccd":"038081001711  Nơi cấp: Cục QLHC & TTXH","gplx":"790168165517 Nơi cấp:sở GTVT","name":"HÀ VĂN LUẬT","phone":"0961535776"},
+      "50H05808":{"cccd":"040081035050  Nơi cấp: Cục QLHC & TTXH","gplx":"420098000382 Nơi cấp:SỞ GTVT","name":"NGUYỄN THÀNH TRUNG","phone":"0973029550"},
+      "50H76226":{"cccd":"079089006263  Nơi cấp: Cục QLHC & TTXH","gplx":"790115230930 Nơi cấp:SỞ GTVT","name":"ĐOÀN TÍN THÀNH","phone":"0903379977"},
+      "50H76364":{"cccd":"094085015886  Nơi cấp: cuc QL HC & TTXH","gplx":"310150041834 Nơi cấp:Sở GTVT","name":"LÊ MINH HIỂN","phone":"0902484393"},
+      "50E54447":{"cccd":"052088013362  Nơi cấp: Cục QLHC & TTXH","gplx":"790148929197 Nơi cấp:SỞ GTVT","name":"LÊ TRỌNG NHŨ","phone":"0985468603"},
+      "50H76548":{"cccd":"084093004347  Nơi cấp: Cục QLHC & TTXH","gplx":"790185182027 Nơi cấp:SỞ GTVT","name":"HUỲNH VĂN CHÍ NGUYỆN","phone":"0327348324"},
+      "50H67574":{"cccd":"087084012933  Nơi cấp: Cục QLHC & TTXH","gplx":"790135004317 Nơi cấp:BCA","name":"HUỲNH VĂN TÂM","phone":"0934044395"},
+      "50E13972":{"cccd":"084083011298  Nơi cấp: Cục QLHC & TTXH","gplx":"790154124087 Nơi cấp:SỞ GTVT","name":"TRƯƠNG HOÀNG TÂM","phone":"0933436783"},
+      "50H76100":{"cccd":"038087010115  Nơi cấp: Cục QLHC & TTXH","gplx":"790111019706 Nơi cấp:sở GTVT","name":"NGUYỄN VĂN TUẤN","phone":"0932636166"},
+      "50H75037":{"cccd":"038090000713  Nơi cấp: Cục QLHC & TTXH","gplx":"790159083060 Nơi cấp:sở GTVT","name":"HÀ VĂN HUỲNH","phone":"0962595828"},
+      "50H91136":{"cccd":"075084012309  Nơi cấp: Cục QLHC & TTXH","gplx":"740103000597 Nơi cấp:SỞ GTVT","name":"NGUYỄN VĂN LÂM","phone":"0907451526"},
+      "50H91077":{"cccd":"084078005598  Nơi cấp: Cục QLHC & TTXH","gplx":"790133026546 Nơi cấp:SỞ GTVT","name":"NGUYỄN VĂN VINH","phone":"0939534848"},
+      "50H75631":{"cccd":"040094035935  Nơi cấp: Cục QLHC & TTXH","gplx":"790158168344 Nơi cấp:SỞ GTVT","name":"PHẠM VĂN HOÀI","phone":"0987130446"},
+      "50H76822":{"cccd":"092068002539  Nơi cấp: Cục QLHC & TTXH","gplx":"740100001386 Nơi cấp:SỞ GTVT","name":"ĐOÀN VĂN KHÔI","phone":"07074042920"},
+      "50H91025":{"cccd":"096085012314  Nơi cấp: Cục QLHC & TTXH","gplx":"960104002204 Nơi cấp:SỞ GTVT","name":"LÊ CHÍ BÉ","phone":"0949325326"},
+      "50H91065":{"cccd":"084087008097  Nơi cấp: Cục QLHC & TTXH","gplx":"790120002234 Nơi cấp:sở GTVT","name":"LÊ VĂN LỌ","phone":"0931781902"},
+      "50H90495":{"cccd":"038087003353  Nơi cấp: Cục QLHC & TTXH","gplx":"790135394702 Nơi cấp:sở GTVT","name":"HÀ VĂN NAM","phone":"0962156417"},
+      "50H76011":{"cccd":"052086008837  Nơi cấp: Cục QLHC & TTXH","gplx":"520098005953 Nơi cấp:sở GTVT","name":"BÙI QUỐC BẢO","phone":"0984771750"},
+      "50E53813":{"cccd":"070090005753  Nơi cấp: Cục QLHC & TTXH","gplx":"700140007614 Nơi cấp:SỞ GTVT","name":"BÙI THẾ PHONG","phone":"0919412472"},
+      "50H75942":{"cccd":"038079021380  Nơi cấp: Cục QLHC & TTXH","gplx":"790156178864 Nơi cấp:sở GTVT","name":"HÀ VĂN QUÂN","phone":"0968858255"},
+      "50H10039":{"cccd":"046086012096  Nơi cấp: Cục QLHC & TTXH","gplx":"460070000841 Nơi cấp:BCA","name":"TRẦN QUỐC THANH","phone":"0344275975"},
+      "50H67809":{"cccd":"019064000138  Nơi cấp: Cục QLHC & TTXH","gplx":"740109000223 Nơi cấp:SỞ GTVT","name":"ĐẶNG VĂN GIANG","phone":"0986779164"},
+      "50H10106":{"cccd":"051093007367  Nơi cấp: Cục QLHC & TTXH","gplx":"790144963131 Nơi cấp:SỞ GTVT","name":"ĐOÀN TRUNG ĐIỆP","phone":"0966469601"},
+      "50H75270":{"cccd":"051086015636  Nơi cấp: Cục QLHC & TTXH","gplx":"790116256113 Nơi cấp:sở GTVT","name":"TRẦN VĂN CHIẾN","phone":"0908491943"},
+      "50H05806":{"cccd":"042072019464  Nơi cấp: Cục QLHC & TTXH","gplx":"740138003479 Nơi cấp:sở GTVT","name":"NGUYỄN VĂN HÀ","phone":"0976404108"},
+      "50H10056":{"cccd":"080084015762  Nơi cấp: Cục QLHC & TTXH","gplx":"800072000197 Nơi cấp:BCA","name":"LÊ BẢO QUỐC","phone":"0946070660"},
+      "50H05545":{"cccd":"040086034549  Nơi cấp: Cục QLHC & TTXH","gplx":"400138010216 Nơi cấp:SỞ GTVT","name":"NGUYỄN VĂN QUANG","phone":"0919960266"},
+      "50E52957":{"cccd":"084080010693  Nơi cấp: Cục QLHC & TTXH","gplx":"790118015806 Nơi cấp:SỞ GTVT","name":"NGUYỄN VĂN CHIẾN","phone":"0933893216"},
+      "50H75167":{"cccd":"084088003267  Nơi cấp: Cục QLHC & TTXH","gplx":"790121231718 Nơi cấp:SỞ GTVT","name":"NGUYỄN VĂN KHOA","phone":"0937773854"},
+      "50H76863":{"cccd":"093094003991  Nơi cấp: Cục QLHC & TTXH","gplx":"930172002271 Nơi cấp:SỞ GTVT","name":"PHẠM TUẤN KHANH","phone":"0832385658"},
+      "50H90045":{"cccd":"079072041145  Nơi cấp: Cục QLHC & TTXH","gplx":"790109010227 Nơi cấp:SỞ GTVT","name":"HỒ NGỌC THANH","phone":"0908067972"},
+      "50E53620":{"cccd":"086094004600  Nơi cấp: Cục QLHC & TTXH","gplx":"790140976232 Nơi cấp:SỞ GTVT","name":"TRƯƠNG NGỌC ĐÔNG","phone":"0707200832"},
+      "50H76757":{"cccd":"096079008895  Nơi cấp: Cục QLHC & TTXH","gplx":"790101005351 Nơi cấp:SỞ GTVT","name":"NGUYỄN VĂN GIÀU","phone":"0943998978"},
+      "50H91113":{"cccd":"093091008061  Nơi cấp: Cục QLHC & TTXH","gplx":"790161177742 Nơi cấp:sở GTVT","name":"NGUYỄN KIM TƯ","phone":"0933989655"},
+      "50H90944":{"cccd":"044073008800  Nơi cấp: Cục QLHC & TTXH","gplx":"740107007134 Nơi cấp:SỞ GTVT","name":"ĐỖ HỒNG TUYẾN","phone":"0918569137"},
+      "50H91272":{"cccd":"038078006397  Nơi cấp: Cục QLHC & TTXH","gplx":"790106000982 Nơi cấp:sở GTVT","name":"VŨ QUANG TUÂN","phone":"0937823360"},
+      "50H10031":{"cccd":"087078013673  Nơi cấp: Cục QLHC & TTXH","gplx":"790064018256 Nơi cấp:Sở GTVT","name":"NGUYỄN VĨNH PHƯỚC","phone":"0939454501"},
+      "50H68711":{"cccd":"","gplx":"","name":"NGUYỄN VƯƠNG QUỐC","phone":"0936736236"}
+    };
+
+    function getDriverForPlate(plate) {
+      if (!plate) return null;
+      const clean = plate.toUpperCase().replace(/[^A-Z0-9]/g, "");
+      return VIETSUN_DRIVER_DB[clean] || null;
+    }
 
     const DEFAULT_VENDORS = [
       "VIETSUN","TUAN HUNG","DOAN TIEN PHAT","TAN AN","NHAT SON","NGOC DUNG","DUONG NGUYEN",
@@ -2084,11 +2183,14 @@
           : `Seal: <span style="color:#94a3b8;">--</span>`;
 
         const hasTruck = Boolean(item.soXePo);
+        const drvInfo = getDriverForPlate(item.soXePo);
         const truckDisplay = hasTruck
           ? `<div class="truck-number">🚛 ${item.soXePo}</div>`
           : `<div class="truck-number unassigned">⚠️ Chưa điều xe</div>`;
 
-        const vendorDisplay = item.donViVcPo
+        const vendorDisplay = drvInfo
+          ? `<div class="vendor-name" style="color:#15803d;">👨‍✈️ ${drvInfo.name} ${drvInfo.phone ? `(${drvInfo.phone})` : ""}</div>`
+          : item.donViVcPo
           ? `<div class="vendor-name">🏢 ${item.donViVcPo}</div>`
           : `<div class="vendor-name" style="color:#94a3b8;">ĐVVT: Chưa gán</div>`;
 
@@ -2152,12 +2254,15 @@
 
             <div class="card-actions">
               <button class="btn-card btn-edit" onclick="openEditModal('${item.idPo}')">
-                ✏️ Cập nhật Cont / Xe / Ngày
+                ✏️ Cập nhật
               </button>
-              ${cleanPhone ? `<a href="tel:${cleanPhone}" class="btn-card btn-call" title="Gọi liên hệ kho">📞 Gọi</a>` : ""}
-              <button class="btn-card btn-zalo" onclick="copyPoInfoById('${item.idPo}')" title="Copy thông tin gửi Zalo">
-                📋 Copy
+              <button class="btn-card btn-zalo" onclick="copyPoInfoById('${item.idPo}', 2)" title="Copy THÔNG TIN GIAO HÀNG (Biểu tượng xe)">
+                🚛 Giao hàng
               </button>
+              <button class="btn-card btn-zalo" onclick="copyPoInfoById('${item.idPo}', 1)" title="Copy THÔNG BÁO HÀNG ĐẾN / ĐÓNG HÀNG">
+                💬 TB
+              </button>
+              ${cleanPhone ? `<a href="tel:${cleanPhone}" class="btn-card btn-call" title="Gọi liên hệ kho">📞</a>` : ""}
             </div>
           </div>
         `;
@@ -2317,7 +2422,21 @@
       });
 
       onContInput();
+      updateModalDriverInfo(po.soXePo || "");
       document.getElementById("editModal").classList.add("open");
+    }
+
+    function updateModalDriverInfo(plate) {
+      const box = document.getElementById("driverInfoBox");
+      if (!box) return;
+      const drv = getDriverForPlate(plate);
+      if (drv) {
+        box.style.display = "block";
+        box.innerHTML = `👨‍✈️ Tài xế VIETSUN: <strong>${drv.name}</strong> • 📞 <a href="tel:${drv.phone}" style="color:#0369a1;text-decoration:underline;">${drv.phone}</a>${drv.cccd ? `<div style="font-size:11px;color:#475569;margin-top:2px;">CCCD: ${drv.cccd}</div>` : ""}`;
+      } else {
+        box.style.display = "none";
+        box.innerHTML = "";
+      }
     }
 
     function closeEditModal() {
@@ -2385,10 +2504,14 @@
         </div>
         ${matches.map(t => {
           const isMatchVendor = curVendor && t.vendor === curVendor;
+          const drv = getDriverForPlate(t.plate);
+          const subLabel = drv
+            ? `${drv.name} (${drv.phone})`
+            : (t.vendor || "");
           return `
             <div class="ac-item ${isMatchVendor ? 'same-vendor' : ''}" onclick="selectTruckSuggestion('${t.plate}', '${t.vendor || ""}')">
               <span>🚛 ${t.plate}</span>
-              ${t.vendor ? `<span class="ac-sub ${isMatchVendor ? 'match-vendor' : ''}">${isMatchVendor ? '★ ' : ''}${t.vendor}</span>` : ''}
+              ${subLabel ? `<span class="ac-sub ${isMatchVendor ? 'match-vendor' : ''}">${isMatchVendor ? '★ ' : ''}${subLabel}</span>` : ''}
             </div>
           `;
         }).join("")}
@@ -2406,6 +2529,7 @@
       if (vendor) {
         inpDv.value = vendor;
       }
+      updateModalDriverInfo(plate);
       hideAllAutocomplete();
       saveRecentTruck(plate, vendor || inpDv.value);
       onFieldChanged("soXePo");
@@ -2553,6 +2677,7 @@
           vendorInp.value = "VIETSUN";
         }
       }
+      updateModalDriverInfo(raw);
       showTruckSuggestions();
     }
 
@@ -2718,38 +2843,134 @@
     }
 
     // =========================================================================
-    // 9. ZALO COPY HELPER (MATCHING GIMAX copyttkh FORMAT)
+    // 9. ZALO COPY HELPER (EXACT MATCH WITH TMS WEB copyttkh(id, loai))
     // =========================================================================
-    function buildZaloText(po) {
+    function buildZaloText(po, loai = 2) {
       const isXuat = po.xuatNhapPo === "X";
-      const header = isXuat ? "📦 LỆNH ĐÓNG HÀNG XUẤT:" : "🚛 THÔNG BÁO GIAO HÀNG NHẬP:";
-      const lines = [
-        header,
-        `- Khách hàng: ${po.tenKhachPo || "--"} (${po.chuHangPo || ""})`,
-        `- Kho: ${po.khoNhanHangPo || "--"}`,
-        `- Địa chỉ: ${po.diaChiNhanPo || "--"} - ${po.tinhNhanPo || "--"}`,
-        po.lienHeNhanPo && po.lienHeNhanPo !== "." ? `- Liên hệ: ${po.lienHeNhanPo}` : null,
-        `- Số Cont: ${po.soContPo || "Chưa có"} (${Number(po.cont40Po) > 0 ? "40'" : "20'"}) | Seal: ${po.soSealPo || "--"}`,
-        `- Tàu/Chuyến: ${po.tauPo || "--"} / ${po.chuyenPo || "--"}`,
-        `- ${isXuat ? "Ngày đóng" : "Ngày giao"}: ${formatIsoToVN(po.ngayTraHang)}`,
-        po.noiLayContPo ? `- Nơi lấy/hạ rỗng: ${po.noiLayContPo}` : null,
-        `- Số xe: ${po.soXePo || "Chưa điều"} (${po.donViVcPo || "--"})`
-      ].filter(Boolean);
-      return lines.join("\n");
+      const khach = po.tenKhachPo || "";
+      const kho = po.khoNhanHangPo || "";
+      const diachi = po.diaChiNhanPo || "";
+      const tinh = po.tinhNhanPo || "";
+      const lienhe = (po.lienHeNhanPo && po.lienHeNhanPo !== ".") ? po.lienHeNhanPo : "";
+      const soCont = po.soContPo || "";
+      const soSeal = po.soSealPo || "";
+      const tau = po.tauPo || "";
+      const chuyen = po.chuyenPo || "";
+      const ngayGiao = (po.ngayTraHang && po.ngayTraHang !== "2021-11-11" && po.ngayTraHang !== "1970-01-01")
+        ? formatIsoToVN(po.ngayTraHang)
+        : "";
+      const noiCapRong = po.noiLayContPo || "";
+      const soXe = po.soXePo || "";
+
+      // Lookup Vietsun driver details by license plate
+      const drv = getDriverForPlate(soXe);
+      const tenLaiXe = drv ? drv.name : (po.taiXePo || "");
+      const sdtLaiXe = drv ? drv.phone : (po.sdtTaiXePo || "");
+      const cccdLaiXe = drv && drv.cccd ? drv.cccd : "  Nơi cấp: ";
+      const gplxLaiXe = drv && drv.gplx ? drv.gplx : " Nơi cấp:";
+
+      if (loai === 1) {
+        // Icon 💬: Thông báo hàng đến (Hàng Nhập) hoặc Đóng hàng (Hàng Xuất)
+        if (!isXuat) {
+          return (
+            `THÔNG BÁO HÀNG ĐẾN:\n` +
+            `- Tên khách: ${khach}\n` +
+            `- Kho trả: ${kho}\n` +
+            `- Địa chỉ: ${diachi}\t- Tỉnh: ${tinh}\n` +
+            `- Liên hệ: ${lienhe}\n` +
+            `- Số cont: ${soCont}\t\t- Số seal: ${soSeal}\n` +
+            `- Tên tàu: ${tau}\t\t\t\t- Số chuyến: ${chuyen}\n` +
+            `- Ngày giao: ${ngayGiao}`
+          );
+        } else {
+          return (
+            `Đóng hàng: ${kho} (${diachi} - ${tinh})\n` +
+            `Ngày: ${ngayGiao}\n` +
+            `Cont: ${soCont} Seal:${soSeal}\n` +
+            `Nơi cấp rỗng: ${noiCapRong}\n` +
+            `Thời gian dự kiến tới kho: \n` +
+            `Số xe:${soXe}\n` +
+            `TX: ${tenLaiXe}\n` +
+            `Số CMND/CCCD:${cccdLaiXe}\n` +
+            `Số GPLX:${gplxLaiXe}\n` +
+            `SĐT:${sdtLaiXe}`
+          );
+        }
+      }
+
+      // Default loai === 2 (Icon 🚛 chiếc xe): THÔNG TIN GIAO HÀNG / ĐÓNG HÀNG
+      const loaigiao = isXuat ? "ĐÓNG" : "GIAO";
+      return (
+        `THÔNG TIN ${loaigiao} HÀNG:\n` +
+        `- Kho ${loaigiao}: ${kho}\n` +
+        `- Địa chỉ: ${diachi}\t- Tỉnh: ${tinh}\n` +
+        `- Liên hệ: ${lienhe}\n` +
+        `- Số cont: ${soCont}\t\t- Số seal: ${soSeal}\n` +
+        `- Ngày ${loaigiao}: ${ngayGiao}\n` +
+        `- Số xe: ${soXe}\n` +
+        `- Tên Lái Xe: ${tenLaiXe}\n` +
+        `- SĐT: ${sdtLaiXe}\n` +
+        `- Thời gian tới kho: `
+      );
     }
 
-    function copyPoInfoById(idPo) {
+    function copyTextToClipboard(text, successMsg) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast(successMsg, "success");
+        }).catch(() => fallbackCopyText(text, successMsg));
+      } else {
+        fallbackCopyText(text, successMsg);
+      }
+    }
+
+    function fallbackCopyText(text, successMsg) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try {
+        document.execCommand("copy");
+        showToast(successMsg, "success");
+      } catch (_) {
+        showToast("Không thể tự động copy, vui lòng thử lại", "error");
+      }
+      document.body.removeChild(ta);
+    }
+
+    function copyPoInfoById(idPo, loai = 2) {
       const po = allShipments.find(x => String(x.idPo) === String(idPo));
       if (!po) return;
-      const text = buildZaloText(po);
-      navigator.clipboard.writeText(text).then(() => {
-        showToast(`Đã copy thông tin Cont ${po.soContPo || "#" + po.idPo}!`, "success");
-      });
+      const text = buildZaloText(po, loai);
+      const drv = getDriverForPlate(po.soXePo);
+      const drvNote = drv ? ` (TX: ${drv.name})` : "";
+      const label = loai === 1 ? "Thông báo" : "TT Giao hàng";
+      copyTextToClipboard(text, `Đã copy ${label} Cont ${po.soContPo || "#" + po.idPo}${drvNote}!`);
     }
 
-    function copyCurrentPoToZalo() {
+    function copyCurrentPoToZalo(loai = 2) {
       if (!currentEditingPo) return;
-      copyPoInfoById(currentEditingPo.idPo);
+      // Read live inputs from modal so user can copy immediately after typing truck plate
+      const livePo = Object.assign({}, currentEditingPo, {
+        ngayTraHang: document.getElementById("inp_ngayTraHang").value || currentEditingPo.ngayTraHang,
+        soContPo: document.getElementById("inp_soContPo").value || currentEditingPo.soContPo,
+        soSealPo: document.getElementById("inp_soSealPo").value || currentEditingPo.soSealPo,
+        soXePo: document.getElementById("inp_soXePo").value || currentEditingPo.soXePo,
+        donViVcPo: document.getElementById("inp_donViVcPo").value || currentEditingPo.donViVcPo,
+        noiLayContPo: document.getElementById("inp_noiLayContPo").value || currentEditingPo.noiLayContPo,
+        khoNhanHangPo: document.getElementById("inp_khoNhanHangPo").value || currentEditingPo.khoNhanHangPo,
+        tinhNhanPo: document.getElementById("inp_tinhNhanPo").value || currentEditingPo.tinhNhanPo,
+        diaChiNhanPo: document.getElementById("inp_diaChiNhanPo").value || currentEditingPo.diaChiNhanPo,
+        lienHeNhanPo: document.getElementById("inp_lienHeNhanPo").value || currentEditingPo.lienHeNhanPo
+      });
+      const text = buildZaloText(livePo, loai);
+      const drv = getDriverForPlate(livePo.soXePo);
+      const drvNote = drv ? ` (TX: ${drv.name})` : "";
+      const label = loai === 1 ? "Thông báo" : "TT Giao hàng";
+      copyTextToClipboard(text, `Đã copy ${label} Cont ${livePo.soContPo || "#" + livePo.idPo}${drvNote}!`);
     }
 
     // =========================================================================
