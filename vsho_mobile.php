@@ -1542,6 +1542,18 @@ if (isset($_GET['api'])) {
             </div>
 
             <div class="form-group">
+              <label><span>ðŸš¢ Cáº£ng Ä‘áº¿n (PhÃ­a Báº¯c)</span></label>
+              <input
+                type="text"
+                class="form-control"
+                id="inp_tinhXuatHangPo"
+                list="dlCangDen"
+                placeholder="VD: CLO, HPG, DAN..."
+                onchange="onFieldChanged('tinhXuatHangPo')"
+              />
+            </div>
+
+            <div class="form-group">
               <label><span>ðŸ”„ HÃ¬nh thá»©c káº¿t há»£p</span></label>
               <input
                 type="text"
@@ -1684,6 +1696,11 @@ if (isset($_GET['api'])) {
   <datalist id="dlSoXe"></datalist>
   <datalist id="dlVendor"></datalist>
   <datalist id="dlTinh"></datalist>
+  <datalist id="dlCangDen">
+    <option value="CLO"></option>
+    <option value="HPG"></option>
+    <option value="DAN"></option>
+  </datalist>
   <datalist id="dlKetHop">
     <option value="80%"></option>
     <option value="100%"></option>
@@ -2183,6 +2200,7 @@ if (isset($_GET['api'])) {
           noiLayContPo: decodeHtmlEntities(item.noiLayContPo || ""),
           cangDiPo: decodeHtmlEntities(item.cangDiPo || ""),
           cangDenPo: decodeHtmlEntities(item.cangDenPo || ""),
+          tinhXuatHangPo: decodeHtmlEntities(item.tinhXuatHangPo || "").trim(),
           soContPo: (item.soContPo || "").trim(),
           soSealPo: (item.soSealPo || "").trim(),
           soXePo: (item.soXePo || "").trim(),
@@ -2521,6 +2539,7 @@ if (isset($_GET['api'])) {
                 ${typeBadge}
                 <span class="badge badge-chuhang">ðŸ¢ ${item.chuHangPo || "N/A"}</span>
                 ${sizeBadge}
+                ${item.tinhXuatHangPo ? `<span class="badge" style="background:#e0f2fe;color:#0369a1;">ðŸš¢ ${item.tinhXuatHangPo}</span>` : ""}
                 ${item.hinhThucKHopPo ? `<span class="badge" style="background:#f3e8ff;color:#7e22ce;">ðŸ”— ${item.hinhThucKHopPo}</span>` : ""}
               </div>
               <span class="po-id">#${item.idPo}</span>
@@ -2695,8 +2714,9 @@ if (isset($_GET['api'])) {
 
       document.getElementById("modalTitleText").textContent = `LÃ´ #${po.idPo} (${po.chuHangPo || ""})`;
       document.getElementById("modalCustomerName").textContent = po.tenKhachPo || "KhÃ¡ch hÃ ng";
+      const cangDenSub = po.tinhXuatHangPo ? ` â€¢ Cáº£ng Ä‘áº¿n: ${po.tinhXuatHangPo}` : "";
       document.getElementById("modalRouteSub").textContent =
-        `TÃ u: ${po.tauPo || "--"} (${po.chuyenPo || "--"}) â€¢ NgÃ y tÃ u: ${formatIsoToVN(po.ngayTauChayPo)} â€¢ Loáº¡i: ${Number(po.cont40Po) > 0 ? "40'" : "20'"}`;
+        `TÃ u: ${po.tauPo || "--"} (${po.chuyenPo || "--"}) â€¢ NgÃ y tÃ u: ${formatIsoToVN(po.ngayTauChayPo)} â€¢ Loáº¡i: ${Number(po.cont40Po) > 0 ? "40'" : "20'"}${cangDenSub}`;
 
       document.getElementById("lblNgayTraHang").textContent =
         isXuat ? "ðŸ“… NgÃ y ÄÃ³ng HÃ ng (ngayTraHang)" : "ðŸ“… NgÃ y Giao / Tráº£ HÃ ng (ngayTraHang)";
@@ -2714,6 +2734,7 @@ if (isset($_GET['api'])) {
       document.getElementById("inp_donViVcPo").value = po.donViVcPo || "";
       document.getElementById("inp_noiLayContPo").value = po.noiLayContPo || "";
       document.getElementById("inp_cangDiPo").value = po.cangDiPo || po.noiHaContPo || "";
+      document.getElementById("inp_tinhXuatHangPo").value = po.tinhXuatHangPo || po.cangDenPo || "";
       document.getElementById("inp_hinhThucKHopPo").value = po.hinhThucKHopPo || "";
       document.getElementById("inp_portTimePo").value = po.portTimePo || "";
       document.getElementById("inp_khoNhanHangPo").value = po.khoNhanHangPo || "";
@@ -3088,6 +3109,7 @@ if (isset($_GET['api'])) {
             donViVcPo: 30,
             noiLayContPo: 100,
             cangDiPo: 100,
+            tinhXuatHangPo: 50,
             hinhThucKHopPo: 50,
             portTimePo: 20,
             khoNhanHangPo: 150,
@@ -3133,7 +3155,7 @@ if (isset($_GET['api'])) {
       try {
         const fieldsToCheck = [
           "ngayTraHang", "soContPo", "soSealPo", "soXePo", "donViVcPo",
-          "noiLayContPo", "cangDiPo", "hinhThucKHopPo", "portTimePo",
+          "noiLayContPo", "cangDiPo", "tinhXuatHangPo", "hinhThucKHopPo", "portTimePo",
           "khoNhanHangPo", "tinhNhanPo", "diaChiNhanPo", "lienHeNhanPo"
         ];
 
@@ -3177,15 +3199,31 @@ if (isset($_GET['api'])) {
       const noiCapRong = po.noiLayContPo || "";
       const soXe = po.soXePo || "";
 
-      // Lookup Vietsun driver details by license plate
+      // Lookup Vietsun / Vendor driver details by license plate
       const drv = getDriverForPlate(soXe);
       const tenLaiXe = drv ? drv.name : (po.taiXePo || "");
       const sdtLaiXe = drv ? drv.phone : (po.sdtTaiXePo || "");
-      const cccdLaiXe = drv && drv.cccd ? drv.cccd : "  NÆ¡i cáº¥p: ";
-      const gplxLaiXe = drv && drv.gplx ? drv.gplx : " NÆ¡i cáº¥p:";
+
+      let cccdLaiXe = "     NÆ¡i cáº¥p: ";
+      if (drv && drv.cccd) {
+        if (drv.cccd.includes("NÆ¡i cáº¥p")) {
+          cccdLaiXe = drv.cccd.replace(/\s*NÆ¡i cáº¥p:/i, "     NÆ¡i cáº¥p:");
+        } else {
+          cccdLaiXe = `${drv.cccd}     NÆ¡i cáº¥p: Cá»¥c QLHC & TTXH`;
+        }
+      }
+
+      let gplxLaiXe = "           NÆ¡i cáº¥p:";
+      if (drv && drv.gplx && drv.gplx !== "Äang Cáº­p Nháº­t") {
+        if (drv.gplx.includes("NÆ¡i cáº¥p")) {
+          gplxLaiXe = drv.gplx.replace(/\s*NÆ¡i cáº¥p:/i, "           NÆ¡i cáº¥p:");
+        } else {
+          gplxLaiXe = `${drv.gplx}           NÆ¡i cáº¥p:Sá»ž GTVT`;
+        }
+      }
 
       if (loai === 1) {
-        // Icon ðŸ’¬: ThÃ´ng bÃ¡o hÃ ng Ä‘áº¿n (HÃ ng Nháº­p) hoáº·c ÄÃ³ng hÃ ng (HÃ ng Xuáº¥t)
+        // Icon ðŸ’¬: ThÃ´ng bÃ¡o hÃ ng Ä‘áº¿n (HÃ ng Nháº­p) hoáº·c ThÃ´ng tin Ä‘Ã³ng hÃ ng (HÃ ng Xuáº¥t)
         if (!isXuat) {
           return (
             `THÃ”NG BÃO HÃ€NG Äáº¾N:\n` +
@@ -3199,16 +3237,20 @@ if (isset($_GET['api'])) {
           );
         } else {
           return (
-            `ÄÃ³ng hÃ ng: ${kho} (${diachi} - ${tinh})\n` +
-            `NgÃ y: ${ngayGiao}\n` +
-            `Cont: ${soCont} Seal:${soSeal}\n` +
-            `NÆ¡i cáº¥p rá»—ng: ${noiCapRong}\n` +
-            `Thá»i gian dá»± kiáº¿n tá»›i kho: \n` +
-            `Sá»‘ xe:${soXe}\n` +
-            `TX: ${tenLaiXe}\n` +
-            `Sá»‘ CMND/CCCD:${cccdLaiXe}\n` +
-            `Sá»‘ GPLX:${gplxLaiXe}\n` +
-            `SÄT:${sdtLaiXe}`
+            `THÃ”NG TIN ÄÃ“NG HÃ€NG:\n` +
+            `- KhÃ¡ch hÃ ng: ${khach}\n` +
+            `- Kho ÄÃ“NG: ${kho}\n` +
+            `- Äá»‹a chá»‰: ${diachi}\t- Tá»‰nh: ${tinh}\n` +
+            `- Sá»‘ cont: ${soCont}\t\t- Sá»‘ seal: ${soSeal}\n` +
+            `- NgÃ y ÄÃ“NG: ${ngayGiao}\n` +
+            `- NÆ¡i cáº¥p rá»—ng: \n` +
+            `- Thá»i gian dá»± kiáº¿n tá»›i kho: \n` +
+            `- LiÃªn há»‡: ${lienhe}\n` +
+            `- Sá»‘ xe: ${soXe}\n` +
+            `- TÃªn LÃ¡i Xe: ${tenLaiXe}\n` +
+            `- Sá»‘ CMND: ${cccdLaiXe}\n` +
+            `- Sá»‘ GPLX: ${gplxLaiXe}\n` +
+            `- SÄT: ${sdtLaiXe}`
           );
         }
       }
@@ -3276,6 +3318,8 @@ if (isset($_GET['api'])) {
         soXePo: document.getElementById("inp_soXePo").value || currentEditingPo.soXePo,
         donViVcPo: document.getElementById("inp_donViVcPo").value || currentEditingPo.donViVcPo,
         noiLayContPo: document.getElementById("inp_noiLayContPo").value || currentEditingPo.noiLayContPo,
+        cangDiPo: document.getElementById("inp_cangDiPo").value || currentEditingPo.cangDiPo,
+        tinhXuatHangPo: document.getElementById("inp_tinhXuatHangPo").value || currentEditingPo.tinhXuatHangPo,
         khoNhanHangPo: document.getElementById("inp_khoNhanHangPo").value || currentEditingPo.khoNhanHangPo,
         tinhNhanPo: document.getElementById("inp_tinhNhanPo").value || currentEditingPo.tinhNhanPo,
         diaChiNhanPo: document.getElementById("inp_diaChiNhanPo").value || currentEditingPo.diaChiNhanPo,
