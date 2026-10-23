@@ -190,20 +190,22 @@ if (isset($_GET['api'])) {
     .brand {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      min-width: 0;
+      flex: 1;
     }
 
     .brand-logo {
-      width: 36px;
-      height: 36px;
+      width: 34px;
+      height: 34px;
       background: #fff;
-      border-radius: 10px;
+      border-radius: 9px;
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: 800;
       color: var(--primary);
-      font-size: 14px;
+      font-size: 13.5px;
       letter-spacing: -0.5px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.15);
       flex-shrink: 0;
@@ -211,18 +213,22 @@ if (isset($_GET['api'])) {
 
     .brand-title {
       font-weight: 800;
-      font-size: 16px;
+      font-size: 15px;
       letter-spacing: 0.2px;
       line-height: 1.15;
+      white-space: nowrap;
     }
 
     .brand-sub {
       font-size: 11px;
-      opacity: 0.88;
+      opacity: 0.9;
       font-weight: 500;
       display: flex;
       align-items: center;
-      gap: 5px;
+      flex-wrap: wrap;
+      gap: 4px;
+      line-height: 1.25;
+      margin-top: 2px;
     }
 
     .status-dot {
@@ -232,12 +238,14 @@ if (isset($_GET['api'])) {
       background: #4ade80;
       display: inline-block;
       box-shadow: 0 0 6px #4ade80;
+      flex-shrink: 0;
     }
 
     .header-actions {
       display: flex;
       align-items: center;
       gap: 6px;
+      flex-shrink: 0;
     }
 
     .icon-btn {
@@ -245,12 +253,14 @@ if (isset($_GET['api'])) {
       border: 1px solid rgba(255, 255, 255, 0.22);
       color: #fff;
       border-radius: 10px;
-      padding: 7px 10px;
+      padding: 7px 9px;
       font-size: 12px;
       font-weight: 600;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
       cursor: pointer;
       transition: all 0.15s;
     }
@@ -595,19 +605,22 @@ if (isset($_GET['api'])) {
     /* CONT & TRUCK HIGHLIGHT ROW */
     .cont-truck-box {
       display: grid;
-      grid-template-columns: 1.15fr 1fr;
+      grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
       gap: 8px;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 10px;
       padding: 8px 10px;
       margin-bottom: 8px;
+      overflow: hidden;
     }
 
     .cont-side, .truck-side {
       display: flex;
       flex-direction: column;
       justify-content: center;
+      min-width: 0;
+      overflow: hidden;
     }
 
     .truck-side {
@@ -672,13 +685,14 @@ if (isset($_GET['api'])) {
     }
 
     .vendor-name {
-      font-size: 11.5px;
+      font-size: 11px;
       font-weight: 700;
       color: #334155;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       margin-top: 1px;
+      max-width: 100%;
     }
 
     /* CUSTOMER & ROUTE INFO */
@@ -753,16 +767,17 @@ if (isset($_GET['api'])) {
 
     .btn-card {
       flex: 1;
-      padding: 8px 10px;
+      padding: 8px 8px;
       border-radius: 9px;
-      font-size: 12.5px;
+      font-size: 12px;
       font-weight: 700;
       border: none;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 4px;
+      white-space: nowrap;
       transition: all 0.15s;
     }
 
@@ -2512,7 +2527,7 @@ if (isset($_GET['api'])) {
           : `<div class="truck-number unassigned">âš ï¸ ChÆ°a Ä‘iá»u xe</div>`;
 
         const vendorDisplay = drvInfo
-          ? `<div class="vendor-name" style="color:#15803d;">ðŸ‘¨â€âœˆï¸ ${drvInfo.name} ${drvInfo.phone ? `(${drvInfo.phone})` : ""}</div>`
+          ? `<div class="vendor-name" style="color:#15803d;" title="${drvInfo.name} - ${drvInfo.phone || ""}">ðŸ‘¨â€âœˆï¸ ${drvInfo.name}</div>`
           : item.donViVcPo
           ? `<div class="vendor-name">ðŸ¢ ${item.donViVcPo}</div>`
           : `<div class="vendor-name" style="color:#94a3b8;">ÄVVT: ChÆ°a gÃ¡n</div>`;
@@ -3243,7 +3258,7 @@ if (isset($_GET['api'])) {
             `- Äá»‹a chá»‰: ${diachi}\t- Tá»‰nh: ${tinh}\n` +
             `- Sá»‘ cont: ${soCont}\t\t- Sá»‘ seal: ${soSeal}\n` +
             `- NgÃ y ÄÃ“NG: ${ngayGiao}\n` +
-            `- NÆ¡i cáº¥p rá»—ng: \n` +
+            `- NÆ¡i cáº¥p rá»—ng: ${noiCapRong}\n` +
             `- Thá»i gian dá»± kiáº¿n tá»›i kho: \n` +
             `- LiÃªn há»‡: ${lienhe}\n` +
             `- Sá»‘ xe: ${soXe}\n` +
