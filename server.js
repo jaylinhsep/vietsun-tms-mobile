@@ -12,6 +12,8 @@ const { URL } = require("url");
 
 const PORT = process.env.PORT || 8080;
 const REMOTE_BASE = "https://vsho.vietsunlogistics.com";
+const DEFAULT_SHEET_ID = "13ndQsSmBsKlHjIRQR0S0MO5BPqqL6J4CECBAYfQi1oo";
+const DEFAULT_SHEET_GID = "1046738475";
 
 // Store session cookies in memory
 let sessionCookies = "";
@@ -21,6 +23,46 @@ const httpsAgent = new https.Agent({
   keepAlive: true,
   rejectUnauthorized: false
 });
+
+const VENDOR_NAME_MAP = {
+  NHATSON: "NHAT SON",
+  NGOCSANG: "NGOC SANG",
+  PHUCAN: "PHUC AN",
+  TUANHUNG: "TUAN HUNG",
+  VUONGPHAT: "VUONG PHAT",
+  PHUCTRUONGAN: "PHUC TRUONG AN",
+  GIAKHANG: "GIA KHANG"
+};
+
+function normalizeVendorName(raw) {
+  const clean = (raw || "").toUpperCase().trim();
+  const noSpace = clean.replace(/\s+/g, "");
+  return VENDOR_NAME_MAP[noSpace] || clean;
+}
+
+function parseCsvLine(line) {
+  const result = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === "," && !inQuotes) {
+      result.push(cur.trim());
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  result.push(cur.trim());
+  return result;
+}
 
 function mergeSetCookies(setCookieHeader) {
   if (!setCookieHeader) return;
@@ -49,6 +91,7 @@ function mergeSetCookies(setCookieHeader) {
 function remoteRequest(targetUrl, options = {}, body = null, redirectsLeft = 5) {
   return new Promise((resolve, reject) => {
     const parsed = new URL(targetUrl);
+    const isTmsHost = parsed.hostname.includes("vietsunlogistics.com");
     const reqOptions = {
       hostname: parsed.hostname,
       port: parsed.port || 443,
@@ -57,7 +100,7 @@ function remoteRequest(targetUrl, options = {}, body = null, redirectsLeft = 5) 
       agent: httpsAgent,
       headers: {
         "User-Agent": "Mozilla/5.0 (Linux; Android 14) VietsunTMSMobile/1.0",
-        ...(sessionCookies ? { Cookie: sessionCookies } : {}),
+        ...(isTmsHost && sessionCookies ? { Cookie: sessionCookies } : {}),
         ...(options.headers || {})
       }
     };
@@ -67,7 +110,7 @@ function remoteRequest(targetUrl, options = {}, body = null, redirectsLeft = 5) 
     }
 
     const req = https.request(reqOptions, (res) => {
-      if (res.headers["set-cookie"]) {
+      if (isTmsHost && res.headers["set-cookie"]) {
         mergeSetCookies(res.headers["set-cookie"]);
       }
 
@@ -212,6 +255,101 @@ const server = http.createServer(async (req, res) => {
       );
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       return res.end(remoteRes.body);
+    }
+
+    // 4. API Live Fleet & Drivers Sync (TMS Vietsun Fleet + Google Sheet Vendor Fleet)
+    if (pathname === "/api/drivers" || apiParam === "drivers") {
+      const sheetId = parsedUrl.searchParams.get("sheetId") || DEFAULT_SHEET_ID;
+      const gid = parsedUrl.searchParams.get("gid") || DEFAULT_SHEET_GID;
+      const vietsunList = [];
+      const vendorList = [];
+
+      const [tmsResult, sheetResult] = await Promise.allSettled([
+        (async () => {
+          const form = new URLSearchParams({
+            userString: cachedUserString,
+            loai: "26",
+            query: "0",
+            cv: "0",
+            id: "1"
+          }).toString();
+          const r = await remoteRequest(
+            `${REMOTE_BASE}/ajax-gvt.php`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" }
+            },
+            form
+          );
+          const html = r.body.toString("utf8");
+          const rowRegex = /<tr id="tr\d+">([\s\S]*?)<\/tr>/g;
+          let rowMatch;
+          while ((rowMatch = rowRegex.exec(html)) !== null) {
+            const inner = rowMatch[1];
+            const m = inner.match(/<th[^>]*>([^<]*)<\/th>\s*<td[^>]*>([^<]*)<\/td>\s*<td[^>]*>([^<]*)<\/td>/i);
+            if (m) {
+              const rawPlate = m[1].trim();
+              const plate = rawPlate.toUpperCase().replace(/[^A-Z0-9]/g, "");
+              const name = m[2].trim();
+              const phone = m[3].trim();
+              if (plate && plate !== "DEPOT") {
+                vietsunList.push({
+                  vendor: "VIETSUN",
+                  plate,
+                  name,
+                  phone
+                });
+              }
+            }
+          }
+        })(),
+        (async () => {
+          const csvUrl = `https://docs.google.com/spreadsheets/d/${encodeURIComponent(sheetId)}/export?format=csv&gid=${encodeURIComponent(gid)}`;
+          const r = await remoteRequest(csvUrl);
+          if (r.statusCode === 200) {
+            const csvText = r.body.toString("utf8");
+            const lines = csvText.split(/\r?\n/);
+            for (let i = 1; i < lines.length; i++) {
+              const line = lines[i].trim();
+              if (!line) continue;
+              const cols = parseCsvLine(line);
+              const vendor = normalizeVendorName(cols[0] || "");
+              const plate = (cols[1] || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+              const name = (cols[2] || "").trim();
+              const phone = (cols[3] || "").trim();
+              const cccd = (cols[4] || "").trim();
+              const gplx = (cols[5] || "").trim();
+              if (plate) {
+                vendorList.push({
+                  vendor: vendor || "VENDOR",
+                  plate,
+                  name,
+                  phone,
+                  cccd,
+                  gplx
+                });
+              }
+            }
+          }
+        })()
+      ]);
+
+      res.writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store"
+      });
+      return res.end(
+        JSON.stringify({
+          ok: true,
+          vietsunCount: vietsunList.length,
+          vendorCount: vendorList.length,
+          vietsun: vietsunList,
+          vendors: vendorList,
+          tmsError: tmsResult.status === "rejected" ? tmsResult.reason?.message : null,
+          sheetError: sheetResult.status === "rejected" ? sheetResult.reason?.message : null,
+          updatedAt: new Date().toISOString()
+        })
+      );
     }
 
     // 4. Static PWA Files

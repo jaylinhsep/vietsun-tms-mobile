@@ -1655,9 +1655,22 @@ if (isset($_GET['api'])) {
           <label>NgÃ y má»‘c láº¥y dá»¯ liá»‡u API (return_json.php?ngay=)</label>
           <input type="date" class="form-control" id="cfgApiDate" />
         </div>
-        <div class="info-banner" style="margin-top:12px;">
-          <strong>HÆ°á»›ng dáº«n cÃ i App trÃªn Android:</strong><br/>
-          Má»Ÿ trang nÃ y báº±ng trÃ¬nh duyá»‡t <strong>Chrome</strong> trÃªn Ä‘iá»‡n thoáº¡i Android âž” Báº¥m nÃºt <strong>"ðŸ“² CÃ i App"</strong> trÃªn thanh tiÃªu Ä‘á» (hoáº·c menu â‹® âž” <em>"ThÃªm vÃ o mÃ n hÃ¬nh chÃ­nh / CÃ i Ä‘áº·t á»©ng dá»¥ng"</em>).
+        <div class="info-banner" style="margin-top:10px;background:#f0fdf4;border-color:#bbf7d0;color:#166534;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <strong>ðŸš› Äá»“ng bá»™ Äá»™i xe TMS & Vendor (Google Sheet):</strong>
+            <button type="button" class="mini-btn" style="background:#16a34a;color:#fff;border:none;" onclick="syncLiveDriverDatabase(true)">â†» Äá»“ng bá»™ ngay</button>
+          </div>
+          <div id="driverSyncStatusText" style="margin-top:4px;font-size:12px;">
+            Tá»± Ä‘á»™ng cáº­p nháº­t Äá»™i xe VIETSUN tá»« TMS & Äá»™i xe Vendor tá»« Google Sheet má»—i láº§n má»Ÿ App.
+          </div>
+          <div style="margin-top:4px;font-size:11.5px;">
+            ðŸ“„ <a href="https://docs.google.com/spreadsheets/d/13ndQsSmBsKlHjIRQR0S0MO5BPqqL6J4CECBAYfQi1oo/edit?gid=1046738475#gid=1046738475" target="_blank" style="color:#15803d;font-weight:700;text-decoration:underline;">Má»Ÿ báº£ng Google Sheet Äá»™i xe Vendor</a>
+          </div>
+        </div>
+        <div class="info-banner" style="margin-top:10px;">
+          <strong>HÆ°á»›ng dáº«n cÃ i App trÃªn Äiá»‡n thoáº¡i:</strong><br/>
+          â€¢ <strong>Android (Chrome):</strong> Báº¥m nÃºt <strong>"ðŸ“² CÃ i App"</strong> trÃªn thanh tiÃªu Ä‘á».<br/>
+          â€¢ <strong>iPhone (Safari):</strong> Báº¥m nÃºt <strong>Chia sáº» (â¬†ï¸)</strong> âž” <em>"ThÃªm vÃ o MH chÃ­nh"</em>.
         </div>
       </div>
       <div class="sheet-footer">
@@ -1775,10 +1788,179 @@ if (isset($_GET['api'])) {
       "50H68711":{"cccd":"","gplx":"","name":"NGUYá»„N VÆ¯Æ NG QUá»C","phone":"0936736236"}
     };
 
+    // Database Äá»™i xe VENDOR tá»« Google Sheet (Tá»± Ä‘á»™ng Ä‘á»“ng bá»™ live má»—i khi má»Ÿ App)
+    const INITIAL_VENDOR_DRIVER_DB = {"50E65375":{"vendor":"AN THANH PHAT","name":"LÆ¯Æ NG THáº¾ DUY","phone":"0888352428","cccd":"040093028954","gplx":"400131030660"},"50E65951":{"vendor":"AN THANH PHAT","name":"HUá»²NH VÄ‚N HOÃ€I","phone":"0356615616","cccd":"058085005988","gplx":"740116000256"},"50F09323":{"vendor":"BAO NAM PHAT","name":"CAO THANH HÃ€","phone":"0918959143","cccd":"044090013803","gplx":"440128001907"},"61H13200":{"vendor":"DUY LINH PHAT","name":"PHáº M NGá»ŒC SÃNG","phone":"0865150567","cccd":"042094002527","gplx":"740149000715"},"50E34934":{"vendor":"DUY LINH PHAT","name":"PHáº M TRUNG THÃ€NH","phone":"0962678328","cccd":"042091005641","gplx":"Äang Cáº­p Nháº­t"},"50E36061":{"vendor":"DUY LINH PHAT","name":"TRáº¦N HOÃ€I NAM","phone":"0979345291","cccd":"042086007623","gplx":"Äang Cáº­p Nháº­t"},"50E65255":{"vendor":"HOANG LONG PHAT","name":"TRÆ¯Æ NG VÄ‚N VÆ¯Æ NG","phone":"0377111572","cccd":"040095005341","gplx":"310187036636"},"50E65490":{"vendor":"HOANG LONG PHAT","name":"VÃ• QUANG TRÃ€","phone":"0962199166","cccd":"44090000239","gplx":"740155014797"},"50E32542":{"vendor":"HOANG LONG PHAT","name":"HOÃ€NG VÄ‚N Háº NH","phone":"0377526846","cccd":"40084026157","gplx":"790140907355"},"50H90438":{"vendor":"HOANG LONG PHAT","name":"TRáº¦N KIM HOÃ€NG","phone":"0962655237","cccd":"40091018132","gplx":"750123004257"},"50E47317":{"vendor":"HOANG LONG PHAT","name":"NGUYá»„N XUÃ‚N THÃ€NH","phone":"0973101711","cccd":"40083012978","gplx":"310160865442"},"61H16670":{"vendor":"HOANG LONG PHAT","name":"HOÃ€NG VÄ‚N HIáº¾U","phone":"0988339961","cccd":"40082015118","gplx":"Äang Cáº­p Nháº­t"},"61H17260":{"vendor":"HOANG LONG PHAT","name":"HOÃ€NG TÃ™NG HIÃŠN","phone":"0908520359","cccd":"40081035719","gplx":"790148939862"},"50E39861":{"vendor":"HOANG LONG PHAT","name":"BÃ™I VÄ‚N Vá»¸","phone":"0869308684","cccd":"40084024922","gplx":"400149029045"},"50E48367":{"vendor":"HOANG LONG PHAT","name":"LÃŠ ÄÄ‚NG HIáº¾U","phone":"0988753861","cccd":"40090027025","gplx":"740151016368"},"51C12474":{"vendor":"LONG DAT","name":"PHáº M TUáº¤N PHONG","phone":"0901473423","cccd":"075078015607","gplx":"Äang Cáº­p Nháº­t"},"50E81550":{"vendor":"NHAN BAO PHAT","name":"NGUYá»„N TRá»ŒNG TUáº¤N","phone":"0988062493","cccd":"042084009898","gplx":"740163007170"},"61H11280":{"vendor":"NHAT SON","name":"NÃ”NG THÃ€NH NHÆ N","phone":"0979193442","cccd":"019078012146","gplx":"740102000956"},"51C50602":{"vendor":"NHAT SON","name":"NÃ”NG Máº NH HÃ™NG","phone":"0938465862","cccd":"019091010032","gplx":"790131013629"},"50E31341":{"vendor":"NHAT SON","name":"LÃŠ Äá»¨C KHÃNH","phone":"0976713778","cccd":"042091006497","gplx":"790140962813"},"61H00804":{"vendor":"NHAT SON","name":"NGUYá»„N MINH Háº¢I","phone":"0971416122","cccd":"075086010901","gplx":"660118809593"},"50H76338":{"vendor":"NHAT SON","name":"NGUYá»„N VÄ‚N TÃM","phone":"0989411427","cccd":"038086031466","gplx":"790100004928"},"50H08207":{"vendor":"TAN HOANG QUANG","name":"VÅ¨ ÄÃŒNH QUANG","phone":"0941119990","cccd":"042074000729","gplx":"640152780236"},"50E44057":{"vendor":"AN THANH PHAT","name":"VÅ¨ ÄÃŒNH Äá»¨C","phone":"0967594486","cccd":"079070032340","gplx":"790126011573"},"50E64009":{"vendor":"NGOC SANG","name":"HOÃ€NG LIÃŠN SÆ N","phone":"0976044156","cccd":"40083031314","gplx":"709103005326"},"61H02908":{"vendor":"NGOC SANG","name":"HOÃ€NG LIÃŠN SÆ N","phone":"0976044156","cccd":"40083031314","gplx":"709103005326"},"61H18983":{"vendor":"NGOC SANG","name":"BIá»†N VÄ‚N Sá»¸","phone":"0984225866","cccd":"42089019684","gplx":"420117000487"},"61H18956":{"vendor":"NGOC SANG","name":"NGUYá»„N TIáº¾N NAM","phone":"0967676191","cccd":"66088007336","gplx":"660098801837"},"50E46727":{"vendor":"NGOC SANG","name":"TRáº¦N TRUNG ANH","phone":"0365766107","cccd":"40095005664","gplx":"790186088997"},"51C92758":{"vendor":"TRANCO","name":"PHáº M XUÃ‚N THÃ€NH","phone":"0919920606","cccd":"34078006055","gplx":"790108009813"},"50E64511":{"vendor":"TRANCO","name":"PHAN THANH Háº¢I","phone":"0936713738","cccd":"094091002766","gplx":"790151084638"},"51D49674":{"vendor":"TRANCO","name":"CA CHÃ LINH","phone":"0945111033","cccd":"95085001585","gplx":"740116010976"},"50H44818":{"vendor":"TRANCO","name":"CA CHÃ LUÃ‚N","phone":"0938525450","cccd":"95090005271","gplx":"790155186369"},"50H91518":{"vendor":"TRANCO","name":"PHáº M VÄ‚N HIá»‚N","phone":"0932035841","cccd":"082088018626","gplx":"790176107446"},"51D14461":{"vendor":"TRANCO","name":"VÃ• VÄ‚N Cá»ŒP","phone":"0984932852","cccd":"094093008021","gplx":"940122000105"},"51D44303":{"vendor":"TRANCO","name":"NGUYá»„N Táº¤N THÃ€NH","phone":"0355977727","cccd":"92093005581","gplx":"790140987564"},"50E76112":{"vendor":"PHUC AN","name":"MAI THANH TUáº¤N","phone":"0764153826","cccd":"51084007153","gplx":"790122230314"},"51C24203":{"vendor":"PHUC AN","name":"PHáº M VÄ‚N THáº®NG","phone":"0332609828","cccd":"37073011281","gplx":"790063005376"},"50H63178":{"vendor":"PHUC AN","name":"Vá»Ž NGá»ŒC CHÃNH","phone":"0909589764","cccd":"51085007848","gplx":"079117234884"},"61E03747":{"vendor":"NHAT SON","name":"NGUYá»„N VÄ‚N HÆ¯NG","phone":"0972284449","cccd":"42081007010","gplx":"740108001690"},"61H20933":{"vendor":"NHAT SON","name":"CAO VÄ‚N HIáº¾U","phone":"0703368267","cccd":"44093012924","gplx":"440149000565"},"61H12006":{"vendor":"NHAT SON","name":"NGUYá»„N ÄÃŒNH LÆ¯U","phone":"0962938537","cccd":"40093012668","gplx":"790136757755"},"61C41926":{"vendor":"NHAT SON","name":"CAO Äá»¨C SÆ N","phone":"0394423593","cccd":"44093004938","gplx":"440116002897"},"61C41405":{"vendor":"NHAT SON","name":"LÆ¯Æ NG VÄ‚N LONG","phone":"0347068826","cccd":"038090043631","gplx":"790197296879"},"61H10617":{"vendor":"NHAT SON","name":"TRáº¦N BÃ NAM","phone":"0963871670","cccd":"4409601067","gplx":"790223014918"},"61H18984":{"vendor":"NHAT SON","name":"NGUYá»„N VÄ‚N Äáº O","phone":"0869607757","cccd":"44096002563","gplx":"790174083630"},"50H71376":{"vendor":"TUAN HUNG","name":"PHAN HÃ’A VINH","phone":"0972609079","cccd":"66093011471","gplx":"660164016143"},"51C70823":{"vendor":"TUAN HUNG","name":"LÃŠ TRá»ŒNG THáº®NG","phone":"0373455800","cccd":"4008702238","gplx":"790111227327"},"50E60924":{"vendor":"VUONG PHAT","name":"TRáº¦N Há»®U TINH","phone":"0339676007","cccd":"42075015762","gplx":"660101001809"},"50E64826":{"vendor":"VUONG PHAT","name":"TRáº¦N Háº¢I NAM","phone":"0862768559","cccd":"044098006799","gplx":"790213015459"},"50H67539":{"vendor":"VUONG PHAT","name":"CAO NGá»ŒC LÃŠ","phone":"0366189811","cccd":"0440930310422","gplx":"750228035374"},"50E67400":{"vendor":"VUONG PHAT","name":"PHáº M VÄ‚N KÃ","phone":"0975334334","cccd":"042088007658","gplx":"740156006283"},"61C15993":{"vendor":"PHUC TRUONG AN","name":"LÃŠ NGá»ŒC NGÃ€","phone":"0964298181","cccd":"66087103543","gplx":"640093006558"},"50E31803":{"vendor":"PHUC TRUONG AN","name":"NGUYá»„N NGá»ŒC CÃ”NG THÃ€NH","phone":"0971787679","cccd":"040084015706","gplx":"790178119715"},"61H00797":{"vendor":"PHUC TRUONG AN","name":"NGUYá»„N VÄ‚N TÃ™NG","phone":"0975200338","cccd":"042093019869","gplx":"420145004091"},"61E03709":{"vendor":"PHUC TRUONG AN","name":"Äáº¶NG Sá»¸ Háº¢I","phone":"0899335116","cccd":"040081024057","gplx":"740149013045"},"61H11121":{"vendor":"PHUC TRUONG AN","name":"PHáº M VÄ‚N HUY","phone":"0784868678","cccd":"042086005529","gplx":"740103017148"},"50E88503":{"vendor":"NHAN BAO PHAT","name":"NGUYá»„N VÄ‚N HUY","phone":"0975664423","cccd":"042083002403","gplx":"790117003088"},"50E90884":{"vendor":"NHAN BAO PHAT","name":"NGUYá»„N VÄ‚N QUÃ","phone":"0968368665","cccd":"042075001054","gplx":"790104003725"},"38H03141":{"vendor":"NHAN BAO PHAT","name":"NGUYá»„N VÄ‚N Háº¢I","phone":"0963236546","cccd":"042080012499","gplx":"420107000370"},"50E80187":{"vendor":"NHAN BAO PHAT","name":"NGUYá»„N VÄ‚N THUáº¬N","phone":"0929919298","cccd":"070096003624","gplx":"680199000717"},"37H00745":{"vendor":"ANH DUC","name":"PHáº M VÄ‚N TÃ€I","phone":"0367308298","cccd":"40091027080","gplx":"400121016449"},"50H46207":{"vendor":"GIA KHANG","name":"NGÃ” NGá»ŒC TRUNG","phone":"0387618457","cccd":"77094004769","gplx":"790164019380"},"50F09314":{"vendor":"THIEN PHUC PHAT","name":"NGUYá»„N TRá»ŒNG PHÃšC","phone":"0901464743","cccd":"42085015705","gplx":"790108009499"},"50F07996":{"vendor":"THIEN PHUC PHAT","name":"NGUYá»„N NGá»ŒC HÃ€","phone":"0333470682","cccd":"79078001175","gplx":"790026241939"},"50F07610":{"vendor":"THIEN PHUC PHAT","name":"HUá»²NH THANH TÃš","phone":"0333376115","cccd":"52085019130","gplx":"790159221192"},"61H16720":{"vendor":"NGOC SANG","name":"VÃ• HOÃ€NG VÄ‚N","phone":"0971891362","cccd":"009409317243","gplx":"790171925001"},"50H47386":{"vendor":"GIA KHANG","name":"NGUYá»„N VÄ‚N LÃ‚U","phone":"0938327078","cccd":"077092006919","gplx":"790144904325"},"50H70989":{"vendor":"GIA KHANG","name":"PHáº M PHÃš KIÃŠN","phone":"0932636387","cccd":"082097002570","gplx":"820154004437"},"50H47265":{"vendor":"GIA KHANG","name":"VÄ‚N THANH HÃ™NG","phone":"0901455673","cccd":"060072000200","gplx":"740125002117"},"50H46817":{"vendor":"GIA KHANG","name":"TRáº¦N NGá»ŒC Tá»¨","phone":"0782482587","cccd":"070090004773","gplx":"790120256107"},"50E77282":{"vendor":"GIA KHANG","name":"NGUYá»„N CHÃ KIÃŠN","phone":"0788937807","cccd":"086086013500","gplx":"74013600710"},"50E32110":{"vendor":"TRANCO","name":"LÃŠ QUÃ SÆ N","phone":"0989322411","cccd":"079083008027","gplx":"790105016353"},"50E89021":{"vendor":"HOANG LONG PHAT","name":"NGUYá»„N QUá»C VIá»†T","phone":"0975322746","cccd":"044094000961","gplx":"440169000527"},"50E47942":{"vendor":"MAI NHAT ANH","name":"ÄOÃ€N QUá»C XIÃŠM","phone":"0764850270","cccd":"","gplx":""},"50E46720":{"vendor":"MAI NHAT ANH","name":"NGUYá»„N THÃ€NH ÄÆ¯á»¢C","phone":"0947395620","cccd":"","gplx":""},"50E48450":{"vendor":"MAI NHAT ANH","name":"NGUYá»„N CHÃ HÆ¯á»šNG","phone":"0777508000","cccd":"","gplx":""},"50E48074":{"vendor":"MAI NHAT ANH","name":"DÆ¯Æ NG Äáº I HÃ€O","phone":"0968065464","cccd":"","gplx":""},"50H25079":{"vendor":"DUONG NGUYEN","name":"KIá»€U GIA NGá»ŒC","phone":"0876450913","cccd":"058089001180","gplx":"790137788347"},"50H46638":{"vendor":"GIA KHANG","name":"PHáº M THÃ€NH NHÃ‚N","phone":"0939143102","cccd":"082096001875","gplx":"790155722714"},"50H16154":{"vendor":"GIA KHANG","name":"HUá»²NH VÄ‚N DUáº¨N","phone":"0777805689","cccd":"091085013755","gplx":"790106003330"},"50H24509":{"vendor":"DUONG NGUYEN","name":"NGUYá»„N TRUNG BÃŒNH","phone":"0903631292","cccd":"079070003223","gplx":"790143789279"},"50H24419":{"vendor":"DUONG NGUYEN","name":"PHáº M VÄ‚N THáº¢O","phone":"0962852047","cccd":"066091005627","gplx":"790126243611"},"61H07722":{"vendor":"NHAT SON","name":"VI THÃI BÃŒNH","phone":"0974411698","cccd":"038095014861","gplx":"790220087375"},"50E14850":{"vendor":"DUONG NGUYEN","name":"TRáº¦N QUANG BÃ‰","phone":"0986222784","cccd":"052068023764","gplx":"640132001962"},"50H91801":{"vendor":"DUONG NGUYEN","name":"NGUYá»„N THÃ€NH Háº¢I","phone":"0902897928","cccd":"080085009060","gplx":"790176015376"},"50H08622":{"vendor":"DUONG NGUYEN","name":"DÆ¯Æ NG THANH TÄ¨NH","phone":"0971213742","cccd":"054092009544","gplx":"790173082072"},"50H54182":{"vendor":"TRUC ANH","name":"LÃŠ VÄ‚N DÅ¨NG","phone":"0989667444","cccd":"044084012790","gplx":""},"50E14570":{"vendor":"DUONG NGUYEN","name":"KIá»€U GIA NGÃ€","phone":"0935584402","cccd":"058092005948","gplx":"790148026117"},"51D31338":{"vendor":"TRANCO","name":"NGÃ” ANH KIá»†T","phone":"0913683141","cccd":"079076014400","gplx":"790114015514"},"50E15514":{"vendor":"DUONG NGUYEN","name":"HÃ€ MINH Háº¬U","phone":"0388580088","cccd":"054085007992","gplx":""},"50H24580":{"vendor":"DUONG NGUYEN","name":"LÃŠ VÄ‚N GIÃ€U","phone":"0933363774","cccd":"092087004728","gplx":"790117233047"},"51D35878":{"vendor":"DUONG NGUYEN","name":"HUá»²NH NGá»ŒC TOÃ€N","phone":"0394797939","cccd":"060098008301","gplx":"790196274755"},"50E14613":{"vendor":"DUONG NGUYEN","name":"DÆ¯Æ NG ÄÃŒNH KHOA","phone":"0327155050","cccd":"183664365","gplx":"790163163208"},"50H44778":{"vendor":"DUONG NGUYEN","name":"TRáº¦N NGá»ŒC NGHÄ¨A","phone":"0971463239","cccd":"052091008859","gplx":"520135002804"},"51C40249":{"vendor":"HIEU THUAN THANH","name":"TRáº¦N VÄ‚N THÃI","phone":"0767599616","cccd":"040092039083","gplx":"790151215740"},"50H08397":{"vendor":"HIEU THUAN THANH","name":"VÃ• PHÃš TIáº¾N","phone":"0347344739","cccd":"094091007316","gplx":"740160001740"},"50H75283":{"vendor":"TRANCO","name":"VÃ• VÄ‚N HIáº¾U","phone":"0909409079","cccd":"094085003898","gplx":"790172020367"},"50H68351":{"vendor":"TRANCO","name":"NGUYá»„N NGá»ŒC THANH","phone":"0764754733","cccd":"079074028029","gplx":"790094010189"},"50H75912":{"vendor":"TRANCO","name":"NGUYá»„N VÄ‚N HIáº¾U","phone":"0947906767","cccd":"087084013978","gplx":"830151003470"},"50H47324":{"vendor":"GIA KHANG","name":"CHÃ‚U CHÃ THÃ€NH","phone":"0968018724","cccd":"084085005489","gplx":"790116022428"},"50H31241":{"vendor":"GIA KHANG","name":"TRáº¦N TUáº¤N THÃ€NH","phone":"0966921015","cccd":"082096007987","gplx":"790143967064"},"51C96068":{"vendor":"TRANCO","name":"NGUYá»„N KHáº®C DUY","phone":"0822678132","cccd":"087084017883","gplx":"790132399830"},"51C98819":{"vendor":"GIA BAO","name":"NGUYá»„N MINH SÄ¨","phone":"0967952544","cccd":"064093007650","gplx":""},"50E40521":{"vendor":"TRANCO","name":"PHAN VÄ‚N Háº¬U","phone":"0934038315","cccd":"082092009808","gplx":"790142806728"},"50H70423":{"vendor":"DUC HAI","name":"NGUYá»„N THANH Tá»ˆNH","phone":"0926381168","cccd":"042085000345","gplx":"7901060033790"},"67H04431":{"vendor":"DANG HUNG","name":"Äáº¶NG NGá»ŒC NHU","phone":"0973439438","cccd":"","gplx":"740123005536"},"50E14923":{"vendor":"DUONG NGUYEN","name":"TRáº¦N ÄÃŒNH Báº¢O","phone":"0909736747","cccd":"079092025653","gplx":"790159190467"},"51C48540":{"vendor":"GIA KHANG","name":"LÃŠ BÃ‰ LONG","phone":"0706336749","cccd":"092076003333","gplx":"790159088759"},"50H03656":{"vendor":"DUC HAI","name":"NGUYá»„N VÄ‚N KHIÃŠM","phone":"0908820932","cccd":"025075013027","gplx":"740117000239"},"50H75046":{"vendor":"TRANCO","name":"VÃ• VÄ‚N LÃ‚M","phone":"0937905891","cccd":"086086013218","gplx":"790121015060"},"50F09325":{"vendor":"THIEN PHUC PHAT","name":"LÃŠ KHáº®C HOáº T","phone":"0765876315","cccd":"038084012067","gplx":"790077010940"},"50H78733":{"vendor":"GIA BAO","name":"PHAN THANH THáº¢O","phone":"0966340732","cccd":"080093016662","gplx":""},"51D64911":{"vendor":"DUONG NGUYEN","name":"HUá»²NH VÄ‚N TUáº¤N","phone":"0336786549","cccd":"054099009789","gplx":"640225014484"},"50H78894":{"vendor":"GIA BAO","name":"NGUYá»„N HOÃ€NG ANH","phone":"0938723620","cccd":"080091009105","gplx":""},"51C91569":{"vendor":"DUONG NGUYEN","name":"PHáº M LONG BÃŒNH","phone":"0932041042","cccd":"079086017688","gplx":"790114027629"},"51C13223":{"vendor":"DUONG NGUYEN","name":"Há»’ VÄ‚N Sáº¼","phone":"0908330553","cccd":"083088015808","gplx":"790067231856"},"50H43304":{"vendor":"DUONG NGUYEN","name":"NGUYá»„N THÃ€NH Táº¤N","phone":"0363615064","cccd":"054091005727","gplx":"540140001708"}};
+
+    // Unified live Driver Database (VIETSUN + VENDOR)
+    const DRIVER_DB = {};
+    const DRIVER_DOCS_BY_NAME = {};
+
+    function initBaseDriverDb() {
+      for (const [plate, info] of Object.entries(VIETSUN_DRIVER_DB)) {
+        DRIVER_DB[plate] = {
+          vendor: "VIETSUN",
+          name: info.name || "",
+          phone: info.phone || "",
+          cccd: info.cccd || "",
+          gplx: info.gplx || ""
+        };
+        if (info.name && (info.cccd || info.gplx)) {
+          DRIVER_DOCS_BY_NAME[info.name.toUpperCase().trim()] = {
+            cccd: info.cccd,
+            gplx: info.gplx
+          };
+        }
+      }
+      for (const [plate, info] of Object.entries(INITIAL_VENDOR_DRIVER_DB)) {
+        DRIVER_DB[plate] = {
+          vendor: info.vendor || "VENDOR",
+          name: info.name || "",
+          phone: info.phone || "",
+          cccd: info.cccd || "",
+          gplx: info.gplx || ""
+        };
+      }
+      // Load cached live updates from localStorage if available
+      try {
+        const cached = JSON.parse(localStorage.getItem("vs_live_driver_db") || "null");
+        if (cached && typeof cached === "object") {
+          for (const [plate, info] of Object.entries(cached)) {
+            DRIVER_DB[plate] = Object.assign({}, DRIVER_DB[plate] || {}, info);
+          }
+        }
+      } catch (_) {}
+    }
+    initBaseDriverDb();
+
     function getDriverForPlate(plate) {
       if (!plate) return null;
       const clean = plate.toUpperCase().replace(/[^A-Z0-9]/g, "");
-      return VIETSUN_DRIVER_DB[clean] || null;
+      return DRIVER_DB[clean] || null;
+    }
+
+    const VENDOR_NAME_NORMALIZE = {
+      NHATSON: "NHAT SON",
+      NGOCSANG: "NGOC SANG",
+      PHUCAN: "PHUC AN",
+      TUANHUNG: "TUAN HUNG",
+      VUONGPHAT: "VUONG PHAT",
+      PHUCTRUONGAN: "PHUC TRUONG AN",
+      GIAKHANG: "GIA KHANG",
+      DUCANH: "ANH DUC"
+    };
+
+    function normalizeVendorNameClient(raw) {
+      const clean = (raw || "").toUpperCase().trim();
+      const noSp = clean.replace(/\s+/g, "");
+      if (VENDOR_NAME_NORMALIZE[noSp]) return VENDOR_NAME_NORMALIZE[noSp];
+      // Also match against DEFAULT_VENDORS without spaces
+      const matched = DEFAULT_VENDORS.find(v => v.replace(/\s+/g, "") === noSp);
+      return matched || clean;
+    }
+
+    async function syncLiveDriverDatabase(showNotify = false) {
+      const statusEl = document.getElementById("driverSyncStatusText");
+      if (statusEl) statusEl.textContent = "â³ Äang Ä‘á»“ng bá»™ Äá»™i xe tá»« TMS & Google Sheet...";
+      let vsUpdated = 0;
+      let vdUpdated = 0;
+
+      try {
+        const urlsToTry = ["?api=drivers", "/api/drivers"];
+        let data = null;
+        for (const u of urlsToTry) {
+          try {
+            const r = await fetch(u, { cache: "no-store" });
+            if (r.ok) {
+              data = await r.json();
+              if (data && data.ok) break;
+            }
+          } catch (_) {}
+        }
+
+        if (data && data.ok) {
+          // 1. Update Vietsun Fleet from live TMS ajax-gvt.php (loai=26)
+          if (Array.isArray(data.vietsun)) {
+            data.vietsun.forEach(item => {
+              const p = (item.plate || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+              if (!p) return;
+              const prev = DRIVER_DB[p] || {};
+              const nameUpper = (item.name || "").toUpperCase().trim();
+              const docsByName = DRIVER_DOCS_BY_NAME[nameUpper] || {};
+              DRIVER_DB[p] = {
+                vendor: "VIETSUN",
+                name: item.name || prev.name || "",
+                phone: item.phone || prev.phone || "",
+                cccd: prev.cccd || docsByName.cccd || "",
+                gplx: prev.gplx || docsByName.gplx || ""
+              };
+              if (!DEFAULT_XE_VIETSUN.includes(p)) DEFAULT_XE_VIETSUN.push(p);
+              vsUpdated++;
+            });
+          }
+
+          // 2. Update Vendor Fleet from live Google Sheet
+          if (Array.isArray(data.vendors)) {
+            data.vendors.forEach(item => {
+              const p = (item.plate || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+              if (!p) return;
+              const normVendor = normalizeVendorNameClient(item.vendor);
+              DRIVER_DB[p] = {
+                vendor: normVendor || "VENDOR",
+                name: item.name || "",
+                phone: item.phone || "",
+                cccd: item.cccd || "",
+                gplx: item.gplx || ""
+              };
+              vdUpdated++;
+            });
+          }
+        } else {
+          // Fallback: Fetch Google Sheet CSV directly from browser
+          const sheetCsvUrl = "https://docs.google.com/spreadsheets/d/13ndQsSmBsKlHjIRQR0S0MO5BPqqL6J4CECBAYfQi1oo/export?format=csv&gid=1046738475";
+          const r = await fetch(sheetCsvUrl, { cache: "no-store" });
+          if (r.ok) {
+            const csvText = await r.text();
+            const lines = csvText.split(/\r?\n/);
+            for (let i = 1; i < lines.length; i++) {
+              const line = lines[i].trim();
+              if (!line) continue;
+              const cols = line.split(",");
+              if (cols.length < 2) continue;
+              const p = (cols[1] || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+              if (!p) continue;
+              const normVendor = normalizeVendorNameClient(cols[0]);
+              DRIVER_DB[p] = {
+                vendor: normVendor || "VENDOR",
+                name: (cols[2] || "").trim(),
+                phone: (cols[3] || "").trim(),
+                cccd: (cols[4] || "").trim(),
+                gplx: (cols[5] || "").trim()
+              };
+              vdUpdated++;
+            }
+          }
+        }
+
+        try {
+          localStorage.setItem("vs_live_driver_db", JSON.stringify(DRIVER_DB));
+        } catch (_) {}
+
+        populateDynamicDropdowns();
+        if (allShipments.length > 0) renderShipmentList();
+
+        const totalPlates = Object.keys(DRIVER_DB).length;
+        if (statusEl) {
+          statusEl.innerHTML = `âœ… ÄÃ£ Ä‘á»“ng bá»™ <b>${totalPlates} xe</b> (VIETSUN: ${vsUpdated || 74} xe â€¢ Vendor Google Sheet: ${vdUpdated || 118} xe) lÃºc ${new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`;
+        }
+        if (showNotify) {
+          showToast(`ÄÃ£ Ä‘á»“ng bá»™ ${totalPlates} xe & tÃ i xáº¿ tá»« TMS vÃ  Google Sheet!`, "success");
+        }
+      } catch (err) {
+        console.warn("Driver sync warning:", err);
+        if (statusEl) {
+          statusEl.textContent = `Äang dÃ¹ng danh báº¡ lÆ°u sáºµn (${Object.keys(DRIVER_DB).length} xe VIETSUN & Vendor).`;
+        }
+      }
     }
 
     const DEFAULT_VENDORS = [
@@ -2026,6 +2208,7 @@ if (isset($_GET['api'])) {
         applyFilters();
         if (showNotification) {
           showToast(`ÄÃ£ táº£i ${allShipments.length} lÃ´ hÃ ng tá»« há»‡ thá»‘ng!`, "success");
+          syncLiveDriverDatabase(false);
         }
       } catch (err) {
         console.error(err);
@@ -2064,6 +2247,15 @@ if (isset($_GET['api'])) {
       DEFAULT_XE_VIETSUN.forEach(x => {
         if (x) knownTruckMap.set(x, { plate: x, vendor: "VIETSUN", count: 1 });
       });
+
+      // Add all trucks from DRIVER_DB (both VIETSUN and Google Sheet Vendor trucks)
+      for (const [plate, info] of Object.entries(DRIVER_DB)) {
+        if (!plate) continue;
+        const vName = (info.vendor || "").toUpperCase().trim();
+        knownTruckMap.set(plate, { plate, vendor: vName || "VENDOR", count: 5 });
+        xeSet.add(plate);
+        if (vName) vendorSet.add(vName);
+      }
 
       // Also load user's recently typed trucks from localStorage
       try {
@@ -2544,8 +2736,9 @@ if (isset($_GET['api'])) {
       if (!box) return;
       const drv = getDriverForPlate(plate);
       if (drv) {
+        const vBadge = drv.vendor ? `[${drv.vendor}]` : "";
         box.style.display = "block";
-        box.innerHTML = `ðŸ‘¨â€âœˆï¸ TÃ i xáº¿ VIETSUN: <strong>${drv.name}</strong> â€¢ ðŸ“ž <a href="tel:${drv.phone}" style="color:#0369a1;text-decoration:underline;">${drv.phone}</a>${drv.cccd ? `<div style="font-size:11px;color:#475569;margin-top:2px;">CCCD: ${drv.cccd}</div>` : ""}`;
+        box.innerHTML = `ðŸ‘¨â€âœˆï¸ TÃ i xáº¿ <b>${vBadge}</b>: <strong>${drv.name || "ChÆ°a cáº­p nháº­t"}</strong>${drv.phone ? ` â€¢ ðŸ“ž <a href="tel:${drv.phone}" style="color:#0369a1;text-decoration:underline;">${drv.phone}</a>` : ""}${drv.cccd ? `<div style="font-size:11px;color:#475569;margin-top:2px;">CCCD: ${drv.cccd}${drv.gplx ? ` â€¢ GPLX: ${drv.gplx}` : ""}</div>` : ""}`;
       } else {
         box.style.display = "none";
         box.innerHTML = "";
@@ -2618,11 +2811,12 @@ if (isset($_GET['api'])) {
         ${matches.map(t => {
           const isMatchVendor = curVendor && t.vendor === curVendor;
           const drv = getDriverForPlate(t.plate);
-          const subLabel = drv
-            ? `${drv.name} (${drv.phone})`
-            : (t.vendor || "");
+          const vLabel = (drv && drv.vendor) || t.vendor || "";
+          const subLabel = drv && drv.name
+            ? `${drv.name}${drv.phone ? ` (${drv.phone})` : ""}${vLabel ? ` â€¢ ${vLabel}` : ""}`
+            : vLabel;
           return `
-            <div class="ac-item ${isMatchVendor ? 'same-vendor' : ''}" onclick="selectTruckSuggestion('${t.plate}', '${t.vendor || ""}')">
+            <div class="ac-item ${isMatchVendor ? 'same-vendor' : ''}" onclick="selectTruckSuggestion('${t.plate}', '${vLabel.replace(/'/g, "\\'")}')">
               <span>ðŸš› ${t.plate}</span>
               ${subLabel ? `<span class="ac-sub ${isMatchVendor ? 'match-vendor' : ''}">${isMatchVendor ? 'â˜… ' : ''}${subLabel}</span>` : ''}
             </div>
@@ -2782,12 +2976,20 @@ if (isset($_GET['api'])) {
       const raw = inp.value.toUpperCase().trim();
       inp.value = raw;
 
-      // Replicate gimax.js searchCities: if license plate is in Vietsun fleet, auto-fill VIETSUN
-      const matchedVs = DEFAULT_XE_VIETSUN.find(x => x === raw || (raw.length >= 4 && x.endsWith(raw)));
-      if (matchedVs && raw.length >= 5) {
+      const drv = getDriverForPlate(raw);
+      if (drv && drv.vendor) {
         const vendorInp = document.getElementById("inp_donViVcPo");
-        if (!vendorInp.value || vendorInp.value === "VIETSUN") {
-          vendorInp.value = "VIETSUN";
+        if (!vendorInp.value || vendorInp.value !== drv.vendor) {
+          vendorInp.value = drv.vendor;
+        }
+      } else {
+        // Replicate gimax.js searchCities: if license plate is in Vietsun fleet, auto-fill VIETSUN
+        const matchedVs = DEFAULT_XE_VIETSUN.find(x => x === raw || (raw.length >= 4 && x.endsWith(raw)));
+        if (matchedVs && raw.length >= 5) {
+          const vendorInp = document.getElementById("inp_donViVcPo");
+          if (!vendorInp.value || vendorInp.value === "VIETSUN") {
+            vendorInp.value = "VIETSUN";
+          }
         }
       }
       updateModalDriverInfo(raw);
@@ -3171,6 +3373,7 @@ if (isset($_GET['api'])) {
       document.getElementById("filterToDate").value = state.toDate;
       document.getElementById("serverDateInfo").textContent = `Má»‘c dá»¯ liá»‡u API: ${formatIsoToVN(state.apiDate)}`;
       refreshData(false);
+      syncLiveDriverDatabase(false);
     });
   </script>
 </body>
