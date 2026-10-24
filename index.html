@@ -1259,11 +1259,161 @@
         margin-right: auto;
       }
     }
+
+    /* =========================================================================
+       DESKTOP SPREADSHEET TABLE MODE (NHẬP NHANH ĐVVT & SỐ XE NHƯ EXCEL/TMS WEB)
+       ========================================================================= */
+    body.desktop-table-mode .list-container {
+      display: block !important;
+      max-width: 100% !important;
+      padding: 4px 10px 84px;
+    }
+
+    body.desktop-table-mode .summary-strip,
+    body.desktop-table-mode .filter-section,
+    body.desktop-table-mode .chuhang-bar {
+      max-width: 100% !important;
+    }
+
+    .pc-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      background: #ffffff;
+      border: 1px solid #94a3b8;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+    }
+
+    .pc-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      color: #0f172a;
+      table-layout: auto;
+    }
+
+    .pc-table th,
+    .pc-table td {
+      border: 1px solid #94a3b8;
+      padding: 4px 6px;
+      vertical-align: middle;
+      line-height: 1.25;
+    }
+
+    .pc-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #cfe8fc;
+      color: #0f172a;
+      font-weight: 800;
+      font-size: 11px;
+      text-align: center;
+      white-space: nowrap;
+      padding: 6px 5px;
+      text-transform: uppercase;
+    }
+
+    .pc-table tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    .pc-table tbody tr.pc-row-active {
+      background: #fef9c3 !important;
+    }
+
+    .pc-cell-cyan {
+      background: #d8f3ff !important;
+      padding: 0 !important;
+      min-width: 115px;
+    }
+
+    .pc-cell-edit {
+      padding: 0 !important;
+    }
+
+    .pc-inp {
+      width: 100%;
+      height: 28px;
+      border: 1.5px solid transparent;
+      background: transparent;
+      padding: 2px 6px;
+      font-size: 12.5px;
+      font-family: inherit;
+      color: #0f172a;
+      outline: none;
+      box-sizing: border-box;
+      transition: all 0.12s;
+    }
+
+    .pc-inp:focus {
+      background: #ffffff !important;
+      border-color: #2563eb !important;
+      box-shadow: inset 0 0 0 1px #2563eb;
+    }
+
+    .pc-inp.pc-saving {
+      background: #fef3c7 !important;
+    }
+
+    .pc-inp.pc-saved {
+      background: #dcfce7 !important;
+      color: #166534 !important;
+      font-weight: 800;
+    }
+
+    .pc-truncate {
+      max-width: 185px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pc-actions-cell {
+      white-space: nowrap;
+      text-align: center;
+      padding: 2px 4px !important;
+    }
+
+    .pc-act-btn {
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #0f172a;
+      border-radius: 5px;
+      padding: 2px 6px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      margin: 0 1px;
+    }
+
+    .pc-act-btn:hover {
+      background: #e2e8f0;
+    }
+
+    /* FLOATING AUTOCOMPLETE FOR DESKTOP TABLE CELLS */
+    .pc-ac-floating {
+      position: fixed;
+      z-index: 5000;
+      background: #ffffff;
+      border: 1.5px solid #2563eb;
+      border-radius: 10px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.25);
+      max-height: 240px;
+      width: 310px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .pc-ac-floating.open {
+      display: block;
+    }
   </style>
 </head>
 <body>
 
   <div class="toast-container" id="toastContainer"></div>
+  <div class="pc-ac-floating" id="pcAcFloating"></div>
 
   <!-- FULL-SCREEN LOGIN OVERLAY FOR MULTI-USER ACCESS -->
   <div class="login-overlay" id="loginOverlay">
@@ -1346,6 +1496,9 @@
         />
         <button class="clear-search" id="btnClearSearch" onclick="clearSearch()">✕</button>
       </div>
+      <button class="filter-toggle-btn" id="btnToggleDesktop" onclick="toggleDesktopMode()" title="Chuyển chế độ Danh sách Bảng PC (nhập nhanh ĐVVT & Số xe) / Thẻ Mobile">
+        <span id="lblDesktopMode">🖥️ Bảng PC</span>
+      </button>
       <button class="filter-toggle-btn" onclick="toggleAdvancedFilters()">
         <span>⚡ Lọc</span>
         <span class="filter-badge" id="activeFilterCount">1</span>
@@ -2248,7 +2401,8 @@
       contSize: "ALL",            // ALL | 20 | 40
       vendor: "ALL",
       province: "ALL",
-      searchQuery: ""
+      searchQuery: "",
+      viewMode: safeGetStorage("vs_view_mode", "cards") // "cards" | "table"
     };
 
     let currentEditingPo = null;
@@ -2744,8 +2898,37 @@
       updateSummaryCards(filteredShipments);
       updateActiveFilterBadge();
 
-      renderLimit = 60;
+      renderLimit = state.viewMode === "table" ? 300 : 60;
       renderShipmentList();
+    }
+
+    function applyViewModeUI() {
+      const isTable = state.viewMode === "table";
+      document.body.classList.toggle("desktop-table-mode", isTable);
+      const lbl = document.getElementById("lblDesktopMode");
+      const btn = document.getElementById("btnToggleDesktop");
+      if (lbl) lbl.textContent = isTable ? "📱 Thẻ Mobile" : "🖥️ Bảng PC";
+      if (btn) {
+        btn.style.background = isTable ? "#dcfce7" : "#ffffff";
+        btn.style.color = isTable ? "#15803d" : "#1e3a8a";
+      }
+    }
+
+    function toggleDesktopMode() {
+      closePcAcFloating();
+      state.viewMode = state.viewMode === "table" ? "cards" : "table";
+      try {
+        localStorage.setItem("vs_view_mode", state.viewMode);
+      } catch (_) {}
+      applyViewModeUI();
+      renderLimit = state.viewMode === "table" ? 300 : 60;
+      renderShipmentList();
+      showToast(
+        state.viewMode === "table"
+          ? "🖥️ Đã chuyển sang chế độ Bảng PC (Gõ trực tiếp ĐVVT & Số xe, bấm Enter / Mũi tên ⬆️⬇️ để nhảy dòng)"
+          : "📱 Đã chuyển về chế độ Thẻ Mobile",
+        "success"
+      );
     }
 
     function renderChuHangChips(listBeforeChuHang) {
@@ -2813,7 +2996,560 @@
     // =========================================================================
     // 6. RENDER SHIPMENT CARDS
     // =========================================================================
+    function escapeAttr(val) {
+      return String(val || "")
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function calcLuuFreeQuaHan(item) {
+      if (item.xuatNhapPo === "X") {
+        return {
+          col1: item.tinhXuatHangPo || "",
+          col2: item.noiLayContPo || "",
+          col3: item.hinhThucKHopPo || ""
+        };
+      }
+      // For Import (N): NGÀY TÀU CẬP = ngayTauChayPo + 2 days
+      const tauIso = item.ngayTauChayPo;
+      if (!tauIso || tauIso === "2021-11-11" || tauIso === "1970-01-01") {
+        return { col1: "", col2: "7", col3: "" };
+      }
+      const tauCapIso = addDaysISO(tauIso, 2);
+      const giaoIso = (!item.ngayTraHang || item.ngayTraHang === "2021-11-11" || item.ngayTraHang === "1970-01-01")
+        ? getTodayISO()
+        : item.ngayTraHang;
+      const d1 = new Date(tauCapIso + "T00:00:00");
+      const d2 = new Date(giaoIso + "T00:00:00");
+      const diffDays = Math.round((d2 - d1) / 86400000) + 1;
+      const ngayLuu = Math.max(1, diffDays);
+      const free = 7;
+      const quaHan = Math.max(0, ngayLuu - free);
+      return {
+        col1: String(ngayLuu),
+        col2: String(free),
+        col3: quaHan > 0 ? String(quaHan) : "0"
+      };
+    }
+
+    function renderDesktopTableView(slice, hasMore) {
+      const isOnlyXuat = state.xuatNhap === "X";
+      const subHeaders = isOnlyXuat
+        ? `<th>CẢNG ĐẾN</th><th>LẤY RỖNG</th><th>KẾT HỢP</th>`
+        : `<th>LƯU</th><th>FREE</th><th>QUÁ HẠN</th>`;
+
+      const rowsHtml = slice.map((item, idx) => {
+        const isXuat = item.xuatNhapPo === "X";
+        const isUnsetDate = !item.ngayTraHang || item.ngayTraHang === "2021-11-11" || item.ngayTraHang === "1970-01-01";
+        const ngayGiaoStr = isUnsetDate ? "" : formatIsoToVN(item.ngayTraHang);
+        const ngayTauDisplay = (!item.ngayTauChayPo || item.ngayTauChayPo === "2021-11-11")
+          ? ""
+          : isXuat
+          ? formatIsoToVN(item.ngayTauChayPo)
+          : formatIsoToVN(addDaysISO(item.ngayTauChayPo, 2));
+
+        const lfq = calcLuuFreeQuaHan(item);
+        const drvInfo = getDriverForPlate(item.soXePo);
+        const drvTooltip = drvInfo ? `Tài xế: ${drvInfo.name} - SĐT: ${drvInfo.phone || ""}` : "";
+
+        return `
+          <tr id="pc-row-${item.idPo}" data-row-idx="${idx}">
+            <td style="text-align:center;font-weight:700;cursor:pointer;color:#2563eb;" onclick="openEditModal('${item.idPo}')" title="Bấm để mở chi tiết #${item.idPo}">${item.idPo}</td>
+            <td style="text-align:center;white-space:nowrap;">${escapeAttr(item.chuyenPo)}</td>
+            <td style="text-align:center;font-weight:700;">${escapeAttr(item.chuHangPo)}</td>
+            <td class="pc-truncate" title="${escapeAttr(item.tenKhachPo)}">${escapeAttr(item.tenKhachPo)}</td>
+            <td class="pc-truncate" style="${!isXuat ? 'font-weight:700;color:#0f172a;' : ''}" title="${escapeAttr(item.khoNhanHangPo)}">${escapeAttr(item.khoNhanHangPo)}</td>
+            <td class="pc-truncate" title="${escapeAttr(item.lienHeNhanPo)}">${escapeAttr(item.lienHeNhanPo)}</td>
+            <td class="pc-truncate" style="max-width:230px;" title="${escapeAttr(item.diaChiNhanPo)}">${escapeAttr(item.diaChiNhanPo)}</td>
+            <td style="white-space:nowrap;">${escapeAttr(item.tinhNhanPo)}</td>
+            <td class="pc-cell-edit" style="min-width:105px;">
+              <input type="text" class="pc-inp" style="font-weight:800;text-align:center;text-transform:uppercase;"
+                id="pc_cont_${item.idPo}" value="${escapeAttr(item.soContPo)}"
+                data-row="${idx}" data-col="cont"
+                onfocus="onPcRowFocus(this)"
+                onkeydown="onPcCellKeyDown(event, ${idx}, 'cont', '${item.idPo}')"
+                onchange="saveInlinePcField('${item.idPo}', 'soContPo', this.value, this)"
+                ondblclick="openEditModal('${item.idPo}')" title="Nhấp đúp để mở chi tiết" />
+            </td>
+            <td class="pc-cell-edit" style="min-width:74px;">
+              <input type="text" class="pc-inp" style="font-weight:700;text-align:center;"
+                id="pc_seal_${item.idPo}" value="${escapeAttr(item.soSealPo)}"
+                data-row="${idx}" data-col="seal"
+                onfocus="onPcRowFocus(this)"
+                onkeydown="onPcCellKeyDown(event, ${idx}, 'seal', '${item.idPo}')"
+                onchange="saveInlinePcField('${item.idPo}', 'soSealPo', this.value, this)" />
+            </td>
+            <td style="text-align:center;font-weight:700;">${Number(item.cont20Po) > 0 ? "1" : ""}</td>
+            <td style="text-align:center;font-weight:700;">${Number(item.cont40Po) > 0 ? "1" : ""}</td>
+            <td style="text-align:center;">${escapeAttr(item.trongLuongPo)}</td>
+            <td class="pc-truncate" style="max-width:95px;text-align:center;" title="${escapeAttr(item.tenHangHoaPo)}">${escapeAttr(item.tenHangHoaPo)}</td>
+            <td style="text-align:center;white-space:nowrap;">${ngayTauDisplay}</td>
+            <td class="pc-cell-edit" style="min-width:88px;">
+              <input type="text" class="pc-inp" style="color:#991b1b;font-weight:700;text-align:center;"
+                id="pc_ngay_${item.idPo}" value="${ngayGiaoStr}" placeholder="DD/MM/YYYY"
+                data-row="${idx}" data-col="ngay"
+                onfocus="onPcRowFocus(this)"
+                onkeydown="onPcCellKeyDown(event, ${idx}, 'ngay', '${item.idPo}')"
+                onchange="saveInlinePcDate('${item.idPo}', this.value, this)" />
+            </td>
+            <td style="text-align:center;">${escapeAttr(lfq.col1)}</td>
+            <td style="text-align:center;color:#991b1b;font-weight:700;">${escapeAttr(lfq.col2)}</td>
+            <td style="text-align:center;">${escapeAttr(lfq.col3)}</td>
+            <td class="pc-cell-cyan">
+              <input type="text" class="pc-inp" style="font-weight:700;text-align:center;text-transform:uppercase;"
+                id="pc_dv_${item.idPo}" value="${escapeAttr(item.donViVcPo)}" placeholder="Gõ ĐVVT..."
+                autocomplete="off" data-row="${idx}" data-col="dv"
+                onfocus="onPcRowFocus(this); openPcVendorAc('${item.idPo}', this)"
+                oninput="openPcVendorAc('${item.idPo}', this)"
+                onblur="onPcCellBlur('${item.idPo}', 'donViVcPo', this)"
+                onkeydown="onPcCellKeyDown(event, ${idx}, 'dv', '${item.idPo}')" />
+            </td>
+            <td class="pc-cell-cyan">
+              <input type="text" class="pc-inp" style="font-weight:800;color:#0369a1;text-align:center;text-transform:uppercase;"
+                id="pc_xe_${item.idPo}" value="${escapeAttr(item.soXePo)}" placeholder="Gõ Số xe..."
+                autocomplete="off" data-row="${idx}" data-col="xe" title="${escapeAttr(drvTooltip)}"
+                onfocus="onPcRowFocus(this); openPcTruckAc('${item.idPo}', this)"
+                oninput="onPcTruckInput('${item.idPo}', this)"
+                onblur="onPcCellBlur('${item.idPo}', 'soXePo', this)"
+                onkeydown="onPcCellKeyDown(event, ${idx}, 'xe', '${item.idPo}')" />
+            </td>
+            <td class="pc-actions-cell">
+              ${!isXuat ? `<button type="button" class="pc-act-btn" onclick="copyPoInfoById('${item.idPo}', 2)" title="Copy Thông tin giao hàng">🚛</button>` : ""}
+              <button type="button" class="pc-act-btn" onclick="copyPoInfoById('${item.idPo}', 1)" title="${isXuat ? 'Copy Thông tin xe đóng hàng' : 'Copy Thông báo hàng đến'}">${isXuat ? "🚛 TT Xe" : "💬"}</button>
+              ${isXuat ? `<button type="button" class="pc-act-btn" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0;" onclick="openPklModal('${item.idPo}')" title="Phiếu PKL">📄 PKL</button>` : ""}
+              <button type="button" class="pc-act-btn" style="background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe;" onclick="openEditModal('${item.idPo}')" title="Mở cửa sổ chi tiết">✏️</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+      const moreBtnHtml = hasMore
+        ? `<button class="load-more-btn" onclick="loadMoreCards()">Xem thêm (${filteredShipments.length - renderLimit} lô hàng nữa)...</button>`
+        : "";
+
+      return `
+        <div class="pc-table-wrap">
+          <table class="pc-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>CHUYẾN</th>
+                <th>CHỦ HÀNG</th>
+                <th>KHÁCH HÀNG</th>
+                <th>KHO NHẬN / ĐÓNG</th>
+                <th>LIÊN HỆ</th>
+                <th>ĐỊA CHỈ</th>
+                <th>TỈNH</th>
+                <th>SỐ CONT</th>
+                <th>SEAL</th>
+                <th>20</th>
+                <th>40</th>
+                <th>TL</th>
+                <th>TÊN HÀNG</th>
+                <th>NGÀY TÀU</th>
+                <th>NGÀY GIAO/ĐÓNG</th>
+                ${subHeaders}
+                <th style="background:#a5f3fc;color:#0f172a;">ĐƠN VỊ V/C ⚡</th>
+                <th style="background:#a5f3fc;color:#0f172a;">SỐ XE ⚡</th>
+                <th>THAO TÁC</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+        ${moreBtnHtml}
+      `;
+    }
+
+    let activePcAcContext = null; // { idPo, field, inputEl }
+    let isSelectingPcAc = false;
+
+    function onPcRowFocus(inputEl) {
+      document.querySelectorAll(".pc-table tbody tr.pc-row-active").forEach(tr => tr.classList.remove("pc-row-active"));
+      const tr = inputEl.closest("tr");
+      if (tr) tr.classList.add("pc-row-active");
+    }
+
+    function positionPcAcFloating(inputEl) {
+      const box = document.getElementById("pcAcFloating");
+      if (!box || !inputEl) return;
+      const rect = inputEl.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const width = Math.max(290, rect.width);
+      box.style.width = `${width}px`;
+      const left = Math.min(window.innerWidth - width - 10, Math.max(8, rect.left));
+      box.style.left = `${left}px`;
+      if (spaceBelow < 220 && rect.top > 230) {
+        box.style.top = "auto";
+        box.style.bottom = `${window.innerHeight - rect.top + 3}px`;
+      } else {
+        box.style.bottom = "auto";
+        box.style.top = `${rect.bottom + 3}px`;
+      }
+    }
+
+    function closePcAcFloating() {
+      const box = document.getElementById("pcAcFloating");
+      if (box) box.classList.remove("open");
+      activePcAcContext = null;
+    }
+
+    document.addEventListener("mousedown", (e) => {
+      if (!e.target.closest("#pcAcFloating") && !e.target.closest(".pc-inp")) {
+        closePcAcFloating();
+      }
+    });
+
+    function openPcVendorAc(idPo, inputEl) {
+      activePcAcContext = { idPo, field: "donViVcPo", inputEl };
+      const po = allShipments.find(x => String(x.idPo) === String(idPo));
+      const q = (inputEl.value || "").toUpperCase().trim();
+      const isInitial = po && q === (po.donViVcPo || "").toUpperCase().trim();
+      const filterQ = isInitial ? "" : q;
+
+      const matches = knownVendorList.filter(v => !filterQ || v.includes(filterQ)).slice(0, 35);
+      const box = document.getElementById("pcAcFloating");
+      if (matches.length === 0) {
+        box.classList.remove("open");
+        return;
+      }
+
+      positionPcAcFloating(inputEl);
+      box.innerHTML = `
+        <div class="ac-header">
+          <span>🏢 Chọn ĐVVT (Lô #${idPo})</span>
+          <span onclick="closePcAcFloating()" style="cursor:pointer;color:#2563eb;">Đóng ✕</span>
+        </div>
+        ${matches.map(v => `
+          <div class="ac-item" onmousedown="selectPcVendorAc('${idPo}', '${v.replace(/'/g, "\\'")}')">
+            <span>🏢 ${v}</span>
+          </div>
+        `).join("")}
+      `;
+      box.classList.add("open");
+    }
+
+    function selectPcVendorAc(idPo, vendor) {
+      isSelectingPcAc = true;
+      const inp = document.getElementById(`pc_dv_${idPo}`);
+      if (inp) {
+        inp.value = vendor;
+        saveInlinePcField(idPo, "donViVcPo", vendor, inp);
+      }
+      closePcAcFloating();
+      // Move focus to Số Xe of the same row for ultra-fast entry
+      const xeInp = document.getElementById(`pc_xe_${idPo}`);
+      if (xeInp) setTimeout(() => { xeInp.focus(); xeInp.select(); }, 30);
+      setTimeout(() => { isSelectingPcAc = false; }, 250);
+    }
+
+    function openPcTruckAc(idPo, inputEl) {
+      activePcAcContext = { idPo, field: "soXePo", inputEl };
+      const po = allShipments.find(x => String(x.idPo) === String(idPo));
+      const dvInp = document.getElementById(`pc_dv_${idPo}`);
+      const curVendor = ((dvInp ? dvInp.value : (po && po.donViVcPo)) || "").toUpperCase().trim();
+      const q = (inputEl.value || "").toUpperCase().replace(/\s+/g, "").trim();
+      const isInitial = po && q === (po.soXePo || "").toUpperCase().trim();
+      const filterQ = isInitial ? "" : q;
+
+      const allTrucks = Array.from(knownTruckMap.values());
+      let matches = allTrucks.filter(t => !filterQ || t.plate.includes(filterQ));
+      matches.sort((a, b) => {
+        const aSameV = curVendor && a.vendor === curVendor ? 1 : 0;
+        const bSameV = curVendor && b.vendor === curVendor ? 1 : 0;
+        if (aSameV !== bSameV) return bSameV - aSameV;
+        if (filterQ) {
+          const aStarts = a.plate.startsWith(filterQ) ? 1 : 0;
+          const bStarts = b.plate.startsWith(filterQ) ? 1 : 0;
+          if (aStarts !== bStarts) return bStarts - aStarts;
+        }
+        return b.count - a.count;
+      });
+      matches = matches.slice(0, 35);
+
+      const box = document.getElementById("pcAcFloating");
+      if (matches.length === 0) {
+        box.classList.remove("open");
+        return;
+      }
+
+      positionPcAcFloating(inputEl);
+      box.innerHTML = `
+        <div class="ac-header">
+          <span>🚛 Gợi ý Số xe ${curVendor ? `(${curVendor})` : `(Lô #${idPo})`}</span>
+          <span onclick="closePcAcFloating()" style="cursor:pointer;color:#2563eb;">Đóng ✕</span>
+        </div>
+        ${matches.map(t => {
+          const isMatchVendor = curVendor && t.vendor === curVendor;
+          const drv = getDriverForPlate(t.plate);
+          const vLabel = (drv && drv.vendor) || t.vendor || "";
+          const subLabel = drv && drv.name
+            ? `${drv.name}${drv.phone ? ` (${drv.phone})` : ""}${vLabel ? ` • ${vLabel}` : ""}`
+            : vLabel;
+          return `
+            <div class="ac-item ${isMatchVendor ? 'same-vendor' : ''}" onmousedown="selectPcTruckAc('${idPo}', '${t.plate}', '${vLabel.replace(/'/g, "\\'")}')">
+              <span>🚛 ${t.plate}</span>
+              ${subLabel ? `<span class="ac-sub ${isMatchVendor ? 'match-vendor' : ''}">${isMatchVendor ? '★ ' : ''}${subLabel}</span>` : ''}
+            </div>
+          `;
+        }).join("")}
+      `;
+      box.classList.add("open");
+    }
+
+    function selectPcTruckAc(idPo, plate, vendor) {
+      isSelectingPcAc = true;
+      const xeInp = document.getElementById(`pc_xe_${idPo}`);
+      const dvInp = document.getElementById(`pc_dv_${idPo}`);
+      if (xeInp) xeInp.value = plate;
+      if (vendor && dvInp && dvInp.value !== vendor) {
+        dvInp.value = vendor;
+        saveInlinePcField(idPo, "donViVcPo", vendor, dvInp);
+      }
+      if (xeInp) {
+        saveInlinePcField(idPo, "soXePo", plate, xeInp);
+      }
+      closePcAcFloating();
+      // Automatically jump down to next row's Số Xe input for rapid dispatching!
+      if (xeInp) {
+        const curRow = Number(xeInp.dataset.row);
+        const nextXe = document.querySelector(`.pc-inp[data-row="${curRow + 1}"][data-col="xe"]`);
+        if (nextXe) setTimeout(() => { nextXe.focus(); nextXe.select(); }, 40);
+      }
+      setTimeout(() => { isSelectingPcAc = false; }, 250);
+    }
+
+    function onPcTruckInput(idPo, inputEl) {
+      const raw = (inputEl.value || "").toUpperCase().replace(/\s+/g, "");
+      inputEl.value = raw;
+      const drv = getDriverForPlate(raw);
+      const dvInp = document.getElementById(`pc_dv_${idPo}`);
+      if (drv && drv.vendor && dvInp) {
+        dvInp.value = drv.vendor;
+      } else if (raw.length >= 5) {
+        const matchedVs = DEFAULT_XE_VIETSUN.find(x => x === raw || x.endsWith(raw));
+        if (matchedVs && dvInp && (!dvInp.value || dvInp.value === "VIETSUN")) {
+          dvInp.value = "VIETSUN";
+        }
+      }
+      openPcTruckAc(idPo, inputEl);
+    }
+
+    function onPcCellBlur(idPo, fieldName, inputEl) {
+      setTimeout(() => {
+        if (isSelectingPcAc) return;
+        const po = allShipments.find(x => String(x.idPo) === String(idPo));
+        if (!po) return;
+        const val = (inputEl.value || "").toUpperCase().trim();
+        if (val !== (po[fieldName] || "").toUpperCase().trim()) {
+          saveInlinePcField(idPo, fieldName, val, inputEl);
+        }
+      }, 180);
+    }
+
+    function onPcCellKeyDown(e, rowIdx, colName, idPo) {
+      if (e.key === "Escape") {
+        closePcAcFloating();
+        return;
+      }
+      if (e.key === "Enter" || e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        closePcAcFloating();
+        const inputEl = e.target;
+        const val = (inputEl.value || "").trim();
+        const po = allShipments.find(x => String(x.idPo) === String(idPo));
+
+        // Save current cell if modified
+        if (po) {
+          if (colName === "ngay") {
+            saveInlinePcDate(idPo, val, inputEl);
+          } else {
+            const fieldMap = { cont: "soContPo", seal: "soSealPo", dv: "donViVcPo", xe: "soXePo" };
+            const fieldName = fieldMap[colName];
+            if (fieldName && val.toUpperCase() !== (po[fieldName] || "").toUpperCase()) {
+              // If typing short 4-5 digit plate in xe, auto-expand if unique match in knownTruckMap
+              let finalVal = val.toUpperCase();
+              if (colName === "xe" && finalVal.length >= 4 && finalVal.length < 7) {
+                const found = Array.from(knownTruckMap.values()).find(t => t.plate.endsWith(finalVal));
+                if (found) {
+                  finalVal = found.plate;
+                  inputEl.value = finalVal;
+                  const drv = getDriverForPlate(finalVal);
+                  const vName = (drv && drv.vendor) || found.vendor || "";
+                  const dvInp = document.getElementById(`pc_dv_${idPo}`);
+                  if (vName && dvInp) {
+                    dvInp.value = vName;
+                    saveInlinePcField(idPo, "donViVcPo", vName, dvInp);
+                  }
+                }
+              }
+              saveInlinePcField(idPo, fieldName, finalVal, inputEl);
+            }
+          }
+        }
+
+        // Move focus to next/previous row
+        const targetRow = e.key === "ArrowUp" ? rowIdx - 1 : rowIdx + 1;
+        const nextInp = document.querySelector(`.pc-inp[data-row="${targetRow}"][data-col="${colName}"]`);
+        if (nextInp) {
+          nextInp.focus();
+          nextInp.select();
+        }
+      }
+    }
+
+    async function saveInlinePcDate(idPo, vnDateStr, inputEl) {
+      const po = allShipments.find(x => String(x.idPo) === String(idPo));
+      if (!po) return;
+      const clean = (vnDateStr || "").trim();
+      let isoVal = "2021-11-11";
+      let payloadDate = "";
+      if (clean) {
+        const parts = clean.split(/[\/\-]/);
+        if (parts.length === 3) {
+          const dd = parts[0].padStart(2, "0");
+          const mm = parts[1].padStart(2, "0");
+          const yyyy = parts[2].length === 2 ? "20" + parts[2] : parts[2];
+          isoVal = `${yyyy}-${mm}-${dd}`;
+          payloadDate = `${dd}/${mm}/${yyyy}`;
+        }
+      }
+      if (isoVal === (po.ngayTraHang || "2021-11-11")) return;
+
+      if (inputEl) {
+        inputEl.classList.remove("pc-saved");
+        inputEl.classList.add("pc-saving");
+      }
+      try {
+        const kieuNgay = po.xuatNhapPo === "X" ? "8" : "9";
+        await postCrudUpdate({
+          TenDangNhap: state.username,
+          userString: state.userString,
+          cv: 3,
+          loai: 1,
+          iddt: 1,
+          cot: `b18<<|${kieuNgay}<<|20<<|${po.idPo}<<|ngayTraHang<<|${po.codePo}`,
+          thongtin: payloadDate
+        });
+        po.ngayTraHang = isoVal;
+        if (inputEl) {
+          inputEl.classList.remove("pc-saving");
+          inputEl.classList.add("pc-saved");
+        }
+        showToast(`Đã lưu Ngày (${payloadDate || "Chưa xếp"}) lô #${po.idPo}!`, "success");
+      } catch (err) {
+        if (inputEl) inputEl.classList.remove("pc-saving");
+        showToast(`Lỗi lưu ngày lô #${po.idPo}: ${err.message}`, "error");
+      }
+    }
+
+    async function saveInlinePcField(idPo, fieldName, rawVal, inputEl) {
+      const po = allShipments.find(x => String(x.idPo) === String(idPo));
+      if (!po) return;
+      rawVal = (rawVal || "").toUpperCase().trim();
+
+      if (inputEl) {
+        inputEl.classList.remove("pc-saved");
+        inputEl.classList.add("pc-saving");
+      }
+
+      try {
+        if (fieldName === "soContPo") {
+          await postCrudUpdate({
+            TenDangNhap: state.username,
+            userString: state.userString,
+            cv: 5,
+            loai: 21,
+            iddt: po.idPo,
+            cot: rawVal,
+            thongtin: po.codePo
+          });
+          await postCrudUpdate({
+            TenDangNhap: state.username,
+            userString: state.userString,
+            cv: 3,
+            loai: 1,
+            iddt: 1,
+            cot: `b18<<|4<<|50<<|${po.idPo}<<|soContPo<<|${po.codePo}`,
+            thongtin: rawVal
+          });
+          po.soContPo = rawVal;
+        } else if (fieldName === "soXePo") {
+          // Also check if driver DB has a vendor for this plate and sync donViVcPo automatically
+          const drv = getDriverForPlate(rawVal);
+          const dvInp = document.getElementById(`pc_dv_${po.idPo}`);
+          let autoVendor = (drv && drv.vendor) || "";
+          if (!autoVendor && DEFAULT_XE_VIETSUN.includes(rawVal)) autoVendor = "VIETSUN";
+
+          const htmlResp = await postCrudUpdate({
+            TenDangNhap: state.username,
+            userString: state.userString,
+            cv: 3,
+            loai: 1,
+            iddt: 1,
+            cot: `b18newtruck<<|4<<|50<<|${po.idPo}<<|soXePo<<|${po.codePo}`,
+            thongtin: rawVal
+          });
+          po.soXePo = rawVal;
+
+          if (htmlResp && htmlResp.includes("reload_input_ajax")) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlResp, "text/html");
+            const kqDv = doc.getElementById(`kq_donViVcPo_${po.idPo}`);
+            if (kqDv && kqDv.textContent && kqDv.textContent.trim()) {
+              autoVendor = kqDv.textContent.trim().toUpperCase();
+            }
+          }
+
+          if (autoVendor && po.donViVcPo !== autoVendor) {
+            po.donViVcPo = autoVendor;
+            if (dvInp) {
+              dvInp.value = autoVendor;
+              dvInp.classList.add("pc-saved");
+            }
+            await postCrudUpdate({
+              TenDangNhap: state.username,
+              userString: state.userString,
+              cv: 3,
+              loai: 1,
+              iddt: 1,
+              cot: `b18<<|4<<|30<<|${po.idPo}<<|donViVcPo<<|${po.codePo}`,
+              thongtin: autoVendor
+            });
+          }
+          saveRecentTruck(rawVal, po.donViVcPo || autoVendor);
+        } else {
+          const maxLen = fieldName === "donViVcPo" ? 30 : 50;
+          await postCrudUpdate({
+            TenDangNhap: state.username,
+            userString: state.userString,
+            cv: 3,
+            loai: 1,
+            iddt: 1,
+            cot: `b18<<|4<<|${maxLen}<<|${po.idPo}<<|${fieldName}<<|${po.codePo}`,
+            thongtin: rawVal
+          });
+          po[fieldName] = rawVal;
+        }
+
+        if (inputEl) {
+          inputEl.classList.remove("pc-saving");
+          inputEl.classList.add("pc-saved");
+        }
+        updateSummaryCards(filteredShipments);
+        showToast(`✅ Đã lưu ${fieldName === 'soXePo' ? 'Số xe' : fieldName === 'donViVcPo' ? 'ĐVVT' : fieldName}: ${rawVal || '(Trống)'} (Lô #${po.idPo})`, "success");
+      } catch (err) {
+        if (inputEl) inputEl.classList.remove("pc-saving");
+        showToast(`Lỗi lưu ${fieldName} lô #${po.idPo}: ${err.message}`, "error");
+      }
+    }
+
     function renderShipmentList() {
+      applyViewModeUI();
       const container = document.getElementById("poListContainer");
       if (filteredShipments.length === 0) {
         container.innerHTML = `
@@ -2828,6 +3564,13 @@
       }
 
       const slice = filteredShipments.slice(0, renderLimit);
+      const hasMore = filteredShipments.length > renderLimit;
+
+      if (state.viewMode === "table") {
+        container.innerHTML = renderDesktopTableView(slice, hasMore);
+        return;
+      }
+
       const todayIso = getTodayISO();
 
       const cardsHtml = slice.map(item => {
@@ -2971,7 +3714,6 @@
         `;
       }).join("");
 
-      const hasMore = filteredShipments.length > renderLimit;
       const moreBtnHtml = hasMore
         ? `<button class="load-more-btn" onclick="loadMoreCards()">Xem thêm (${filteredShipments.length - renderLimit} lô hàng nữa)...</button>`
         : "";
@@ -2980,7 +3722,7 @@
     }
 
     function loadMoreCards() {
-      renderLimit += 60;
+      renderLimit += state.viewMode === "table" ? 300 : 60;
       renderShipmentList();
     }
 
