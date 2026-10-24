@@ -1471,11 +1471,17 @@ if (isset($_GET['api'])) {
     <!-- Quick Date Chips -->
     <div class="quick-tabs" id="quickDateTabs">
       <button class="chip active" data-date-mode="today" onclick="setQuickDate('today')">📅 Hôm nay</button>
-      <button class="chip" data-date-mode="tomorrow" onclick="setQuickDate('tomorrow')">⏭️ Ngày mai</button>
+      <button class="chip" data-date-mode="tomorrow" onclick="setQuickDate('tomorrow')" id="chipTomorrow">⏭️ Ngày mai</button>
+      <button class="chip" data-date-mode="d2" onclick="setQuickDate('d2')" id="chipD2">📆 Ngày D+2</button>
+      <button class="chip" data-date-mode="d3" onclick="setQuickDate('d3')" id="chipD3">📆 Ngày D+3</button>
       <button class="chip" data-date-mode="yesterday" onclick="setQuickDate('yesterday')">⏮️ Hôm qua</button>
+      <label class="chip" data-date-mode="single" id="chipSingleDate" style="position:relative;cursor:pointer;margin:0;">
+        <span id="chipSingleDateLabel">🎯 Chọn ngày</span>
+        <input type="date" id="quickSingleDatePicker" onchange="onQuickSingleDatePick(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none;" />
+      </label>
       <button class="chip" data-date-mode="3days" onclick="setQuickDate('3days')">📆 ±3 ngày</button>
       <button class="chip" data-date-mode="unset" onclick="setQuickDate('unset')">⚠️ Chưa xếp ngày</button>
-      <button class="chip" data-date-mode="all" onclick="setQuickDate('all')">🗂️ Tất cả (30 ngày)</button>
+      <button class="chip" data-date-mode="all" onclick="setQuickDate('all')">🗂️ Tất cả</button>
     </div>
 
     <!-- Collapsible Advanced Filters -->
@@ -1498,12 +1504,12 @@ if (isset($_GET['api'])) {
           </select>
         </div>
         <div class="filter-field">
-          <label>Từ ngày</label>
-          <input type="date" id="filterFromDate" onchange="onCustomDateChange()" />
+          <label>Từ ngày (Hoặc chọn 1 ngày)</label>
+          <input type="date" id="filterFromDate" onchange="onCustomDateChange('from')" />
         </div>
         <div class="filter-field">
           <label>Đến ngày</label>
-          <input type="date" id="filterToDate" onchange="onCustomDateChange()" />
+          <input type="date" id="filterToDate" onchange="onCustomDateChange('to')" />
         </div>
         <div class="filter-field">
           <label>Đơn vị vận tải (Vendor)</label>
@@ -2450,11 +2456,50 @@ if (isset($_GET['api'])) {
       return window.location.hostname.includes("vietsunlogistics.com");
     }
 
-    async function fetchShipmentsFromApi(ngayParam) {
+    const loadedCycleSet = new Set();
+
+    // Vietsun TMS return_json.php groups shipments by billing period: 26th of (M-1) -> 25th of M
+    function getBillingCycleParam(isoStr) {
+      if (!isoStr || typeof isoStr !== "string") isoStr = getTodayISO();
+      const parts = isoStr.split("-").map(Number);
+      if (parts.length !== 3 || isNaN(parts[0])) return getTodayISO();
+      let [y, m, d] = parts;
+      if (d >= 26) {
+        m += 1;
+        if (m > 12) {
+          m = 1;
+          y += 1;
+        }
+      }
+      return `${y}-${String(m).padStart(2, "0")}-01`;
+    }
+
+    function normalizeShipmentRecord(item) {
+      return {
+        ...item,
+        tenKhachPo: decodeHtmlEntities(item.tenKhachPo || ""),
+        khoNhanHangPo: decodeHtmlEntities(item.khoNhanHangPo || ""),
+        diaChiNhanPo: decodeHtmlEntities(item.diaChiNhanPo || ""),
+        tinhNhanPo: decodeHtmlEntities(item.tinhNhanPo || ""),
+        lienHeNhanPo: decodeHtmlEntities(item.lienHeNhanPo || ""),
+        tenHangHoaPo: decodeHtmlEntities(item.tenHangHoaPo || ""),
+        noiLayContPo: decodeHtmlEntities(item.noiLayContPo || ""),
+        cangDiPo: decodeHtmlEntities(item.cangDiPo || ""),
+        cangDenPo: decodeHtmlEntities(item.cangDenPo || ""),
+        tinhXuatHangPo: decodeHtmlEntities(item.tinhXuatHangPo || "").trim(),
+        soContPo: (item.soContPo || "").trim(),
+        soSealPo: (item.soSealPo || "").trim(),
+        soXePo: (item.soXePo || "").trim(),
+        donViVcPo: (item.donViVcPo || "").trim(),
+        chuHangPo: (item.chuHangPo || "").trim()
+      };
+    }
+
+    async function fetchSingleCycleFromApi(cycleDateParam) {
       const urlsToTry = [
-        `?api=return_json&ngay=${encodeURIComponent(ngayParam)}`,
-        `/api/return_json?ngay=${encodeURIComponent(ngayParam)}`,
-        `${REMOTE_BASE}/return_json.php?ngay=${encodeURIComponent(ngayParam)}`
+        `?api=return_json&ngay=${encodeURIComponent(cycleDateParam)}`,
+        `/api/return_json?ngay=${encodeURIComponent(cycleDateParam)}`,
+        `${REMOTE_BASE}/return_json.php?ngay=${encodeURIComponent(cycleDateParam)}`
       ];
 
       let lastErr = null;
@@ -2471,6 +2516,83 @@ if (isset($_GET['api'])) {
         }
       }
       throw lastErr || new Error("Không thể kết nối API");
+    }
+
+    async function fetchShipmentsFromApi(ngayParam) {
+      const baseIso = ngayParam || getTodayISO();
+      // Always cover -10 days to +15 days across Vietsun's 25th-of-month cutoff (so D+1, D+2, D+3, etc. are always present)
+      const cyclesToFetch = Array.from(new Set([
+        getBillingCycleParam(addDaysISO(baseIso, -10)),
+        getBillingCycleParam(baseIso),
+        getBillingCycleParam(addDaysISO(baseIso, 15))
+      ]));
+
+      const results = await Promise.all(
+        cyclesToFetch.map(c => fetchSingleCycleFromApi(c).catch(err => {
+          console.warn("Cycle fetch warning:", c, err);
+          return null;
+        }))
+      );
+
+      const validArrays = results.filter(r => Array.isArray(r));
+      if (validArrays.length === 0) {
+        throw new Error("Không thể kết nối API");
+      }
+
+      loadedCycleSet.clear();
+      cyclesToFetch.forEach((c, idx) => {
+        if (Array.isArray(results[idx])) loadedCycleSet.add(c);
+      });
+
+      const mergedMap = new Map();
+      validArrays.forEach(arr => {
+        arr.forEach(item => {
+          if (item && item.idPo) {
+            mergedMap.set(String(item.idPo), item);
+          }
+        });
+      });
+      return Array.from(mergedMap.values());
+    }
+
+    async function ensureDateCyclesLoaded(fromIso, toIso) {
+      const needed = new Set();
+      if (fromIso) needed.add(getBillingCycleParam(fromIso));
+      if (toIso) needed.add(getBillingCycleParam(toIso));
+      const missing = Array.from(needed).filter(c => !loadedCycleSet.has(c));
+      if (missing.length === 0) return;
+
+      try {
+        showToast(`⏳ Đang tải thêm dữ liệu kỳ ${missing.join(", ")}...`, "success");
+        const extraArrays = await Promise.all(
+          missing.map(c => fetchSingleCycleFromApi(c).catch(() => []))
+        );
+        const existingMap = new Map();
+        allShipments.forEach(s => existingMap.set(String(s.idPo), s));
+
+        let added = 0;
+        extraArrays.forEach((arr, idx) => {
+          if (Array.isArray(arr) && arr.length > 0) {
+            loadedCycleSet.add(missing[idx]);
+            arr.forEach(raw => {
+              if (raw && raw.idPo && !existingMap.has(String(raw.idPo))) {
+                existingMap.set(String(raw.idPo), normalizeShipmentRecord(raw));
+                added++;
+              }
+            });
+          }
+        });
+
+        if (added > 0) {
+          allShipments = Array.from(existingMap.values());
+          allShipments.sort((a, b) => Number(b.idPo) - Number(a.idPo));
+          populateDynamicDropdowns();
+          applyFilters();
+          showToast(`Đã bổ sung ${added} lô hàng cho ngày đã chọn!`, "success");
+        }
+      } catch (e) {
+        console.warn("Extra cycle load error:", e);
+      }
     }
 
     async function postCrudUpdate(payloadObj) {
@@ -2978,9 +3100,24 @@ if (isset($_GET['api'])) {
     // =========================================================================
     // 7. FILTER UI ACTIONS
     // =========================================================================
+    function updateQuickDateChipLabels() {
+      const today = state.apiDate || getTodayISO();
+      const d1 = addDaysISO(today, 1);
+      const d2 = addDaysISO(today, 2);
+      const d3 = addDaysISO(today, 3);
+      const elTom = document.getElementById("chipTomorrow");
+      const elD2 = document.getElementById("chipD2");
+      const elD3 = document.getElementById("chipD3");
+      if (elTom) elTom.textContent = `⏭️ Ngày mai (${d1.slice(8, 10)}/${d1.slice(5, 7)})`;
+      if (elD2) elD2.textContent = `📆 Ngày D+2 (${d2.slice(8, 10)}/${d2.slice(5, 7)})`;
+      if (elD3) elD3.textContent = `📆 Ngày D+3 (${d3.slice(8, 10)}/${d3.slice(5, 7)})`;
+    }
+    updateQuickDateChipLabels();
+
     function setQuickDate(mode) {
       state.dateMode = mode;
       const today = state.apiDate || getTodayISO();
+      updateQuickDateChipLabels();
 
       if (mode === "today") {
         state.fromDate = today;
@@ -2988,29 +3125,90 @@ if (isset($_GET['api'])) {
       } else if (mode === "tomorrow") {
         state.fromDate = addDaysISO(today, 1);
         state.toDate = addDaysISO(today, 1);
+      } else if (mode === "d2") {
+        state.fromDate = addDaysISO(today, 2);
+        state.toDate = addDaysISO(today, 2);
+      } else if (mode === "d3") {
+        state.fromDate = addDaysISO(today, 3);
+        state.toDate = addDaysISO(today, 3);
       } else if (mode === "yesterday") {
         state.fromDate = addDaysISO(today, -1);
         state.toDate = addDaysISO(today, -1);
       } else if (mode === "3days") {
         state.fromDate = addDaysISO(today, -1);
-        state.toDate = addDaysISO(today, 2);
+        state.toDate = addDaysISO(today, 3);
       }
 
       document.getElementById("filterFromDate").value = state.fromDate;
       document.getElementById("filterToDate").value = state.toDate;
 
+      const singleLbl = document.getElementById("chipSingleDateLabel");
+      if (singleLbl) singleLbl.textContent = "🎯 Chọn ngày";
+
       document.querySelectorAll("#quickDateTabs .chip").forEach(btn => {
         btn.classList.toggle("active", btn.dataset.dateMode === mode);
       });
 
+      if (mode !== "all" && mode !== "unset") {
+        ensureDateCyclesLoaded(state.fromDate, state.toDate);
+      }
       applyFilters();
     }
 
-    function onCustomDateChange() {
+    function onQuickSingleDatePick(isoVal) {
+      if (!isoVal) return;
+      state.dateMode = "single";
+      state.fromDate = isoVal;
+      state.toDate = isoVal;
+      document.getElementById("filterFromDate").value = isoVal;
+      document.getElementById("filterToDate").value = isoVal;
+
+      const singleLbl = document.getElementById("chipSingleDateLabel");
+      if (singleLbl) {
+        singleLbl.textContent = `🎯 Ngày ${isoVal.slice(8, 10)}/${isoVal.slice(5, 7)}`;
+      }
+      document.querySelectorAll("#quickDateTabs .chip").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.dateMode === "single");
+      });
+
+      ensureDateCyclesLoaded(isoVal, isoVal);
+      applyFilters();
+    }
+
+    function onCustomDateChange(which) {
+      const fromInp = document.getElementById("filterFromDate");
+      const toInp = document.getElementById("filterToDate");
+      const prevMode = state.dateMode;
       state.dateMode = "custom";
-      state.fromDate = document.getElementById("filterFromDate").value;
-      state.toDate = document.getElementById("filterToDate").value;
-      document.querySelectorAll("#quickDateTabs .chip").forEach(btn => btn.classList.remove("active"));
+
+      if (which === "from" && fromInp.value) {
+        // If user just switched from a quick tab to pick a specific date, or if ToDate < FromDate, sync ToDate = FromDate
+        if (prevMode !== "custom" || !toInp.value || toInp.value < fromInp.value) {
+          toInp.value = fromInp.value;
+        }
+      } else if (which === "to" && toInp.value) {
+        if (!fromInp.value || fromInp.value > toInp.value) {
+          fromInp.value = toInp.value;
+        }
+      }
+
+      state.fromDate = fromInp.value;
+      state.toDate = toInp.value;
+
+      const singleLbl = document.getElementById("chipSingleDateLabel");
+      if (singleLbl) {
+        if (state.fromDate && state.fromDate === state.toDate) {
+          singleLbl.textContent = `🎯 Ngày ${state.fromDate.slice(8, 10)}/${state.fromDate.slice(5, 7)}`;
+        } else {
+          singleLbl.textContent = "🎯 Chọn ngày";
+        }
+      }
+
+      document.querySelectorAll("#quickDateTabs .chip").forEach(btn => {
+        btn.classList.toggle("active", state.fromDate === state.toDate && btn.dataset.dateMode === "single");
+      });
+
+      ensureDateCyclesLoaded(state.fromDate, state.toDate);
       applyFilters();
     }
 

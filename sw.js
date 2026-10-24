@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vietsun-tms-v13';
+const CACHE_NAME = 'vietsun-tms-v14';
 const ASSETS = [
   './',
   './index.html',
