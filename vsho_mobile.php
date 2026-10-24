@@ -1640,69 +1640,124 @@ if (isset($_GET['api'])) {
             </div>
           </div>
 
-          <div class="form-section-title">
-            <span>2. Bãi / Cảng & Kết Hợp</span>
+          <!-- MỤC 2 CHO HÀNG XUẤT: BÃI / CẢNG & KẾT HỢP -->
+          <div id="secXuatPort">
+            <div class="form-section-title">
+              <span>2. Bãi / Cảng & Kết Hợp</span>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label><span>🏗️ Nơi lấy cont / rỗng</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="inp_noiLayContPo"
+                  placeholder="VD: VS, KH 20', KH 40'..."
+                  onchange="onFieldChanged('noiLayContPo')"
+                />
+              </div>
+
+              <div class="form-group">
+                <label><span>⚓ Cảng đi / Hạ cont</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="inp_cangDiPo"
+                  placeholder="VD: BẾN NGHÉ"
+                  onchange="onFieldChanged('cangDiPo')"
+                />
+              </div>
+
+              <div class="form-group">
+                <label><span>🚢 Cảng đến (Phía Bắc)</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="inp_tinhXuatHangPo"
+                  list="dlCangDen"
+                  placeholder="VD: CLO, HPG, DAN..."
+                  onchange="onFieldChanged('tinhXuatHangPo')"
+                />
+              </div>
+
+              <div class="form-group">
+                <label><span>🔄 Hình thức kết hợp</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="inp_hinhThucKHopPo"
+                  list="dlKetHop"
+                  placeholder="VD: 80%, Kết hợp, Hạ rỗng"
+                  onchange="onFieldChanged('hinhThucKHopPo')"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>
+                  <span>⏱️ Thời gian hạ cont</span>
+                  <button type="button" class="mini-btn" style="padding:1px 5px;font-size:10px;" onclick="setPortTimeNow()">Giờ hiện tại</button>
+                </label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="inp_portTimePo"
+                  placeholder="DD/MM/YYYY HH:mm"
+                  onchange="onFieldChanged('portTimePo')"
+                />
+              </div>
+            </div>
           </div>
 
-          <div class="form-grid">
-            <div class="form-group">
-              <label><span>🏗️ Nơi lấy cont / rỗng</span></label>
-              <input
-                type="text"
-                class="form-control"
-                id="inp_noiLayContPo"
-                placeholder="VD: VS, KH 20', KH 40'..."
-                onchange="onFieldChanged('noiLayContPo')"
-              />
+          <!-- MỤC 2 CHO HÀNG NHẬP: THÔNG TIN TÀU - CẢNG (LẤY TỪ TMS) -->
+          <div id="secNhapVessel" style="display:none;">
+            <div class="form-section-title">
+              <span>2. Thông Tin Tàu & Cảng (TMS)</span>
             </div>
 
-            <div class="form-group">
-              <label><span>⚓ Cảng đi / Hạ cont</span></label>
-              <input
-                type="text"
-                class="form-control"
-                id="inp_cangDiPo"
-                placeholder="VD: BẾN NGHÉ"
-                onchange="onFieldChanged('cangDiPo')"
-              />
-            </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label><span>🚢 Tên Tàu (TÀU)</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="inp_tauPo"
+                  placeholder="VD: VIETSUN CONFIDENT"
+                  onchange="onFieldChanged('tauPo')"
+                />
+              </div>
 
-            <div class="form-group">
-              <label><span>🚢 Cảng đến (Phía Bắc)</span></label>
-              <input
-                type="text"
-                class="form-control"
-                id="inp_tinhXuatHangPo"
-                list="dlCangDen"
-                placeholder="VD: CLO, HPG, DAN..."
-                onchange="onFieldChanged('tinhXuatHangPo')"
-              />
-            </div>
+              <div class="form-group">
+                <label><span>🧭 Số Chuyến (CHUYẾN)</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="inp_chuyenPo"
+                  placeholder="VD: 1131S"
+                  onchange="onFieldChanged('chuyenPo')"
+                />
+              </div>
 
-            <div class="form-group">
-              <label><span>🔄 Hình thức kết hợp</span></label>
-              <input
-                type="text"
-                class="form-control"
-                id="inp_hinhThucKHopPo"
-                list="dlKetHop"
-                placeholder="VD: 80%, Kết hợp, Hạ rỗng"
-                onchange="onFieldChanged('hinhThucKHopPo')"
-              />
-            </div>
+              <div class="form-group">
+                <label><span>⚓ Cảng cập / POD</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="inp_cangDenPo"
+                  placeholder="VD: BEN NGHE"
+                  onchange="onFieldChanged('cangDenPo')"
+                />
+              </div>
 
-            <div class="form-group">
-              <label>
-                <span>⏱️ Thời gian hạ cont</span>
-                <button type="button" class="mini-btn" style="padding:1px 5px;font-size:10px;" onclick="setPortTimeNow()">Giờ hiện tại</button>
-              </label>
-              <input
-                type="text"
-                class="form-control"
-                id="inp_portTimePo"
-                placeholder="DD/MM/YYYY HH:mm"
-                onchange="onFieldChanged('portTimePo')"
-              />
+              <div class="form-group">
+                <label><span>📅 Ngày tàu chạy / cập</span></label>
+                <input
+                  type="date"
+                  class="form-control"
+                  id="inp_ngayTauChayPo"
+                  onchange="onFieldChanged('ngayTauChayPo')"
+                />
+              </div>
             </div>
           </div>
 
@@ -1756,10 +1811,10 @@ if (isset($_GET['api'])) {
       </div>
 
       <div class="sheet-footer">
-        <button type="button" class="btn-secondary-lg" onclick="copyCurrentPoToZalo(2)" title="Copy THÔNG TIN GIAO HÀNG (kèm Tài xế & SĐT)">
+        <button type="button" class="btn-secondary-lg" id="btnModalDelivery" onclick="copyCurrentPoToZalo(2)" title="Copy THÔNG TIN GIAO HÀNG (kèm Tài xế & SĐT)">
           🚛 Giao Hàng
         </button>
-        <button type="button" class="btn-secondary-lg" onclick="copyCurrentPoToZalo(1)" title="Copy THÔNG BÁO HÀNG ĐẾN / ĐÓNG HÀNG">
+        <button type="button" class="btn-secondary-lg" id="btnModalTb" onclick="copyCurrentPoToZalo(1)" title="Copy THÔNG BÁO HÀNG ĐẾN / THÔNG TIN XE ĐÓNG HÀNG">
           💬 Copy TB
         </button>
         <button type="button" class="btn-secondary-lg" id="btnModalPkl" style="display:none;background:#ecfdf5;color:#047857;border-color:#a7f3d0;" onclick="openPklFromEditModal()" title="Xuất / In Phiếu PKL Vào Cổng">
@@ -2697,6 +2752,33 @@ if (isset($_GET['api'])) {
           .filter(x => x && x !== "." && x !== "THONG BAO SAU");
         const locationText = locationParts.length > 0 ? locationParts.join(" • ") : "Địa chỉ: Thông báo sau";
 
+        // For Import (N): Highlight Warehouse Name (khoNhanHangPo) prominently instead of Customer Name
+        const rawKho = (item.khoNhanHangPo && item.khoNhanHangPo !== ".") ? item.khoNhanHangPo.trim() : "";
+        const isKhoTbs = !rawKho || rawKho.toUpperCase() === "THONG BAO SAU";
+        const addrOnlyParts = [item.diaChiNhanPo, item.tinhNhanPo]
+          .filter(x => x && x !== "." && x !== "THONG BAO SAU");
+        const addrOnlyText = addrOnlyParts.length > 0 ? addrOnlyParts.join(" • ") : "Địa chỉ: Thông báo sau";
+
+        const customerOrWarehouseHtml = isXuat
+          ? `
+              <div class="customer-name">
+                <span>👤 ${item.tenKhachPo || "Khách lẻ"}</span>
+                <span style="font-size:11.5px;font-weight:600;color:#64748b;">${item.tenHangHoaPo || ""} ${item.trongLuongPo ? `(${item.trongLuongPo}T)` : ""}</span>
+              </div>
+              <div class="warehouse-addr">📍 ${locationText}</div>
+            `
+          : `
+              <div class="customer-name">
+                <span style="color:${isKhoTbs ? '#d97706' : '#0f172a'};font-size:14.5px;font-weight:800;">🏭 ${rawKho || "Chưa cập nhật Kho"}</span>
+                <span style="font-size:11.5px;font-weight:600;color:#64748b;">${item.tenHangHoaPo || ""} ${item.trongLuongPo ? `(${item.trongLuongPo}T)` : ""}</span>
+              </div>
+              <div class="warehouse-addr">📍 ${addrOnlyText} • <span style="color:#334155;font-weight:600;">👤 KH: ${item.tenKhachPo || "Khách lẻ"}</span></div>
+            `;
+
+        const portBadgeHtml = isXuat
+          ? (item.tinhXuatHangPo ? `<span class="badge" style="background:#e0f2fe;color:#0369a1;">🚢 ${item.tinhXuatHangPo}</span>` : "")
+          : (item.cangDenPo ? `<span class="badge" style="background:#dcfce7;color:#15803d;">⚓ ${item.cangDenPo}</span>` : "");
+
         return `
           <div class="po-card type-${item.xuatNhapPo} ${!hasTruck ? 'no-truck' : ''}" id="card-${item.idPo}">
             <div class="card-top">
@@ -2704,7 +2786,7 @@ if (isset($_GET['api'])) {
                 ${typeBadge}
                 <span class="badge badge-chuhang">🏢 ${item.chuHangPo || "N/A"}</span>
                 ${sizeBadge}
-                ${item.tinhXuatHangPo ? `<span class="badge" style="background:#e0f2fe;color:#0369a1;">🚢 ${item.tinhXuatHangPo}</span>` : ""}
+                ${portBadgeHtml}
                 ${item.hinhThucKHopPo ? `<span class="badge" style="background:#f3e8ff;color:#7e22ce;">🔗 ${item.hinhThucKHopPo}</span>` : ""}
               </div>
               <span class="po-id">#${item.idPo}</span>
@@ -2724,17 +2806,13 @@ if (isset($_GET['api'])) {
             </div>
 
             <div class="customer-row" onclick="openEditModal('${item.idPo}')">
-              <div class="customer-name">
-                <span>👤 ${item.tenKhachPo || "Khách lẻ"}</span>
-                <span style="font-size:11.5px;font-weight:600;color:#64748b;">${item.tenHangHoaPo || ""} ${item.trongLuongPo ? `(${item.trongLuongPo}T)` : ""}</span>
-              </div>
-              <div class="warehouse-addr">📍 ${locationText}</div>
+              ${customerOrWarehouseHtml}
               ${item.lienHeNhanPo && item.lienHeNhanPo !== "." ? `<div style="font-size:11.5px;color:#0369a1;margin-top:2px;font-weight:600;">📞 LH: ${item.lienHeNhanPo}</div>` : ""}
             </div>
 
             <div class="card-meta">
               <div class="meta-item">
-                <span>🚢 ${item.tauPo || "--"} (${item.chuyenPo || "--"})</span>
+                <span>🚢 ${item.tauPo || "--"} (${item.chuyenPo || "--"})${!isXuat && item.ngayTauChayPo ? ` • ${formatIsoToVN(item.ngayTauChayPo)}` : ""}</span>
               </div>
               <div class="meta-item">
                 <span class="date-pill ${dateClass}">📅 ${dateLabelPrefix}: ${dateFormatted}</span>
@@ -2745,11 +2823,13 @@ if (isset($_GET['api'])) {
               <button class="btn-card btn-edit" onclick="openEditModal('${item.idPo}')">
                 ✏️ Cập nhật
               </button>
+              ${!isXuat ? `
               <button class="btn-card btn-zalo" onclick="copyPoInfoById('${item.idPo}', 2)" title="Copy THÔNG TIN GIAO HÀNG (Biểu tượng xe)">
                 🚛 Giao hàng
               </button>
-              <button class="btn-card btn-zalo" onclick="copyPoInfoById('${item.idPo}', 1)" title="Copy THÔNG BÁO HÀNG ĐẾN / ĐÓNG HÀNG">
-                💬 TB
+              ` : ""}
+              <button class="btn-card btn-zalo" onclick="copyPoInfoById('${item.idPo}', 1)" title="${isXuat ? 'Copy THÔNG TIN XE ĐÓNG HÀNG' : 'Copy THÔNG BÁO HÀNG ĐẾN'}">
+                ${isXuat ? "🚛 Thông tin xe" : "💬 TB"}
               </button>
               ${isXuat ? `<button class="btn-card btn-zalo" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0;" onclick="openPklModal('${item.idPo}')" title="In / Gửi Phiếu PKL Hạ Cảng">📄 PKL</button>` : ""}
               ${cleanPhone ? `<a href="tel:${cleanPhone}" class="btn-card btn-call" title="Gọi liên hệ kho">📞</a>` : ""}
@@ -2879,10 +2959,23 @@ if (isset($_GET['api'])) {
       badge.textContent = isXuat ? "📤 HÀNG XUẤT" : "📥 HÀNG NHẬP";
 
       document.getElementById("modalTitleText").textContent = `Lô #${po.idPo} (${po.chuHangPo || ""})`;
-      document.getElementById("modalCustomerName").textContent = po.tenKhachPo || "Khách hàng";
-      const cangDenSub = po.tinhXuatHangPo ? ` • Cảng đến: ${po.tinhXuatHangPo}` : "";
-      document.getElementById("modalRouteSub").textContent =
-        `Tàu: ${po.tauPo || "--"} (${po.chuyenPo || "--"}) • Ngày tàu: ${formatIsoToVN(po.ngayTauChayPo)} • Loại: ${Number(po.cont40Po) > 0 ? "40'" : "20'"}${cangDenSub}`;
+      if (isXuat) {
+        document.getElementById("modalCustomerName").textContent = `👤 ${po.tenKhachPo || "Khách hàng"}`;
+        const cangDenSub = po.tinhXuatHangPo ? ` • Cảng đến: ${po.tinhXuatHangPo}` : "";
+        document.getElementById("modalRouteSub").textContent =
+          `Tàu: ${po.tauPo || "--"} (${po.chuyenPo || "--"}) • Ngày tàu: ${formatIsoToVN(po.ngayTauChayPo)} • Loại: ${Number(po.cont40Po) > 0 ? "40'" : "20'"}${cangDenSub}`;
+      } else {
+        const khoDisplay = (po.khoNhanHangPo && po.khoNhanHangPo !== ".") ? po.khoNhanHangPo : "Chưa cập nhật Kho";
+        document.getElementById("modalCustomerName").textContent = `🏭 Kho: ${khoDisplay}`;
+        document.getElementById("modalRouteSub").textContent =
+          `👤 Khách: ${po.tenKhachPo || "--"} • Tàu: ${po.tauPo || "--"} (${po.chuyenPo || "--"}) • Cảng: ${po.cangDenPo || "--"} • Loại: ${Number(po.cont40Po) > 0 ? "40'" : "20'"}`;
+      }
+
+      // Toggle Section 2: Export (Bãi/Cảng & Kết hợp) vs Import (Thông tin Tàu & Cảng)
+      const secXuat = document.getElementById("secXuatPort");
+      const secNhap = document.getElementById("secNhapVessel");
+      if (secXuat) secXuat.style.display = isXuat ? "block" : "none";
+      if (secNhap) secNhap.style.display = isXuat ? "none" : "block";
 
       document.getElementById("lblNgayTraHang").textContent =
         isXuat ? "📅 Ngày Đóng Hàng (ngayTraHang)" : "📅 Ngày Giao / Trả Hàng (ngayTraHang)";
@@ -2900,9 +2993,17 @@ if (isset($_GET['api'])) {
       document.getElementById("inp_donViVcPo").value = po.donViVcPo || "";
       document.getElementById("inp_noiLayContPo").value = po.noiLayContPo || "";
       document.getElementById("inp_cangDiPo").value = po.cangDiPo || po.noiHaContPo || "";
-      document.getElementById("inp_tinhXuatHangPo").value = po.tinhXuatHangPo || po.cangDenPo || "";
+      document.getElementById("inp_tinhXuatHangPo").value = po.tinhXuatHangPo || "";
       document.getElementById("inp_hinhThucKHopPo").value = po.hinhThucKHopPo || "";
       document.getElementById("inp_portTimePo").value = po.portTimePo || "";
+
+      // Populate Import Vessel & Port fields
+      document.getElementById("inp_tauPo").value = po.tauPo || "";
+      document.getElementById("inp_chuyenPo").value = po.chuyenPo || "";
+      document.getElementById("inp_cangDenPo").value = po.cangDenPo || "";
+      const isUnsetVesselDate = !po.ngayTauChayPo || po.ngayTauChayPo === "2021-11-11" || po.ngayTauChayPo === "1970-01-01";
+      document.getElementById("inp_ngayTauChayPo").value = isUnsetVesselDate ? "" : po.ngayTauChayPo;
+
       document.getElementById("inp_khoNhanHangPo").value = po.khoNhanHangPo || "";
       document.getElementById("inp_tinhNhanPo").value = po.tinhNhanPo || "";
       document.getElementById("inp_diaChiNhanPo").value = po.diaChiNhanPo || "";
@@ -2915,6 +3016,12 @@ if (isset($_GET['api'])) {
 
       onContInput();
       updateModalDriverInfo(po.soXePo || "");
+
+      // Configure Modal Footer Buttons for Export vs Import
+      const btnDeliv = document.getElementById("btnModalDelivery");
+      if (btnDeliv) btnDeliv.style.display = isXuat ? "none" : "inline-flex";
+      const btnTb = document.getElementById("btnModalTb");
+      if (btnTb) btnTb.textContent = isXuat ? "🚛 Thông tin xe" : "💬 Copy TB";
       const btnPkl = document.getElementById("btnModalPkl");
       if (btnPkl) btnPkl.style.display = isXuat ? "inline-flex" : "none";
       document.getElementById("editModal").classList.add("open");
@@ -3240,6 +3347,19 @@ if (isset($_GET['api'])) {
             thongtin: vnDate
           });
           currentEditingPo.ngayTraHang = rawVal || "2021-11-11";
+        } else if (fieldName === "ngayTauChayPo") {
+          const vnDate = rawVal ? formatIsoToPayloadDate(rawVal) : "";
+          const kieuNgay = isXuat ? "8" : "9";
+          await postCrudUpdate({
+            TenDangNhap: state.username,
+            userString: state.userString,
+            cv: 3,
+            loai: 1,
+            iddt: 1,
+            cot: `b18<<|${kieuNgay}<<|20<<|${idPo}<<|ngayTauChayPo<<|${codePo}`,
+            thongtin: vnDate
+          });
+          currentEditingPo.ngayTauChayPo = rawVal || "";
         } else if (fieldName === "soXePo") {
           rawVal = rawVal.toUpperCase();
           const htmlResp = await postCrudUpdate({
@@ -3280,6 +3400,9 @@ if (isset($_GET['api'])) {
             tinhXuatHangPo: 50,
             hinhThucKHopPo: 50,
             portTimePo: 20,
+            tauPo: 30,
+            chuyenPo: 30,
+            cangDenPo: 30,
             khoNhanHangPo: 150,
             tinhNhanPo: 50,
             diaChiNhanPo: 220,
@@ -3321,18 +3444,25 @@ if (isset($_GET['api'])) {
       btn.textContent = "⏳ Đang lưu lên TMS...";
 
       try {
-        const fieldsToCheck = [
-          "ngayTraHang", "soContPo", "soSealPo", "soXePo", "donViVcPo",
-          "noiLayContPo", "cangDiPo", "tinhXuatHangPo", "hinhThucKHopPo", "portTimePo",
-          "khoNhanHangPo", "tinhNhanPo", "diaChiNhanPo", "lienHeNhanPo"
-        ];
+        const isXuat = currentEditingPo.xuatNhapPo === "X";
+        const fieldsToCheck = isXuat
+          ? [
+              "ngayTraHang", "soContPo", "soSealPo", "soXePo", "donViVcPo",
+              "noiLayContPo", "cangDiPo", "tinhXuatHangPo", "hinhThucKHopPo", "portTimePo",
+              "khoNhanHangPo", "tinhNhanPo", "diaChiNhanPo", "lienHeNhanPo"
+            ]
+          : [
+              "ngayTraHang", "soContPo", "soSealPo", "soXePo", "donViVcPo",
+              "tauPo", "chuyenPo", "cangDenPo", "ngayTauChayPo",
+              "khoNhanHangPo", "tinhNhanPo", "diaChiNhanPo", "lienHeNhanPo"
+            ];
 
         for (const f of fieldsToCheck) {
           const inp = document.getElementById(`inp_${f}`);
           if (!inp) continue;
           const val = inp.value.trim();
-          const curVal = f === "ngayTraHang"
-            ? (currentEditingPo.ngayTraHang === "2021-11-11" ? "" : (currentEditingPo.ngayTraHang || ""))
+          const curVal = (f === "ngayTraHang" || f === "ngayTauChayPo")
+            ? (currentEditingPo[f] === "2021-11-11" ? "" : (currentEditingPo[f] || ""))
             : (currentEditingPo[f] || "");
           if (val !== curVal || dirtyFields.has(f)) {
             await syncSingleFieldToServer(f);
