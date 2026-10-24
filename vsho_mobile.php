@@ -1709,10 +1709,11 @@ if (isset($_GET['api'])) {
             </div>
           </div>
 
-          <!-- MỤC 2 CHO HÀNG NHẬP: THÔNG TIN TÀU - CẢNG (LẤY TỪ TMS) -->
+          <!-- MỤC 2 CHO HÀNG NHẬP: THÔNG TIN TÀU - CẢNG (LẤY TỪ TMS - DỮ LIỆU CỨNG KHÓA CHỈ XEM) -->
           <div id="secNhapVessel" style="display:none;">
             <div class="form-section-title">
               <span>2. Thông Tin Tàu & Cảng (TMS)</span>
+              <span style="font-size:11px; color:#64748b; font-weight:600;">🔒 Dữ liệu cố định</span>
             </div>
 
             <div class="form-grid">
@@ -1722,8 +1723,9 @@ if (isset($_GET['api'])) {
                   type="text"
                   class="form-control"
                   id="inp_tauPo"
-                  placeholder="VD: VIETSUN CONFIDENT"
-                  onchange="onFieldChanged('tauPo')"
+                  readonly
+                  disabled
+                  style="background:#f1f5f9;color:#475569;cursor:not-allowed;"
                 />
               </div>
 
@@ -1733,8 +1735,9 @@ if (isset($_GET['api'])) {
                   type="text"
                   class="form-control"
                   id="inp_chuyenPo"
-                  placeholder="VD: 1131S"
-                  onchange="onFieldChanged('chuyenPo')"
+                  readonly
+                  disabled
+                  style="background:#f1f5f9;color:#475569;cursor:not-allowed;"
                 />
               </div>
 
@@ -1744,8 +1747,9 @@ if (isset($_GET['api'])) {
                   type="text"
                   class="form-control"
                   id="inp_cangDenPo"
-                  placeholder="VD: BEN NGHE"
-                  onchange="onFieldChanged('cangDenPo')"
+                  readonly
+                  disabled
+                  style="background:#f1f5f9;color:#475569;cursor:not-allowed;"
                 />
               </div>
 
@@ -1755,7 +1759,9 @@ if (isset($_GET['api'])) {
                   type="date"
                   class="form-control"
                   id="inp_ngayTauChayPo"
-                  onchange="onFieldChanged('ngayTauChayPo')"
+                  readonly
+                  disabled
+                  style="background:#f1f5f9;color:#475569;cursor:not-allowed;"
                 />
               </div>
             </div>
@@ -3453,7 +3459,6 @@ if (isset($_GET['api'])) {
             ]
           : [
               "ngayTraHang", "soContPo", "soSealPo", "soXePo", "donViVcPo",
-              "tauPo", "chuyenPo", "cangDenPo", "ngayTauChayPo",
               "khoNhanHangPo", "tinhNhanPo", "diaChiNhanPo", "lienHeNhanPo"
             ];
 
