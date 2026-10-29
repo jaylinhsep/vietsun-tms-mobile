@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /**
  * VIETSUN TMS MOBILE - STANDALONE HOSTING EDITION
  * Hoáº¡t Ä‘á»™ng Ä‘á»™c láº­p 100% trÃªn Domain / Hosting riÃªng cá»§a báº¡n.
@@ -69,17 +69,42 @@ if (isset($_GET['api'])) {
     if ($api === 'return_json') {
         header('Content-Type: application/json; charset=utf-8');
         $ngay = isset($_GET['ngay']) ? urlencode($_GET['ngay']) : date('Y-m-d');
+        if (!file_exists($COOKIE_FILE) || filesize($COOKIE_FILE) < 10) {
+            tms_remote_login('trucking14', '1', $REMOTE_BASE, $COOKIE_FILE);
+        }
         $ch = curl_init("$REMOTE_BASE/return_json.php?ngay=$ngay");
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_COOKIEJAR      => $COOKIE_FILE,
+            CURLOPT_COOKIEFILE     => $COOKIE_FILE,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_SSL_VERIFYHOST => false,
             CURLOPT_TIMEOUT        => 30,
+            CURLOPT_USERAGENT      => 'Mozilla/5.0 (Linux; Android 14) VietsunTMSMobile/1.0',
             CURLOPT_ENCODING       => ''
         ]);
         $json = curl_exec($ch);
         curl_close($ch);
+
+        if (!$json || substr(trim($json), 0, 1) !== '[') {
+            tms_remote_login('trucking14', '1', $REMOTE_BASE, $COOKIE_FILE);
+            $ch = curl_init("$REMOTE_BASE/return_json.php?ngay=$ngay");
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_COOKIEJAR      => $COOKIE_FILE,
+                CURLOPT_COOKIEFILE     => $COOKIE_FILE,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false,
+                CURLOPT_TIMEOUT        => 30,
+                CURLOPT_USERAGENT      => 'Mozilla/5.0 (Linux; Android 14) VietsunTMSMobile/1.0',
+                CURLOPT_ENCODING       => ''
+            ]);
+            $json = curl_exec($ch);
+            curl_close($ch);
+        }
+
         echo $json ? trim($json) : '[]';
         exit;
     }
@@ -3167,18 +3192,20 @@ if (isset($_GET['api'])) {
             <td class="pc-truncate" style="max-width:260px;" title="${escapeAttr(item.diaChiNhanPo)}">${escapeAttr(item.diaChiNhanPo)}</td>
             <td style="text-align:center;white-space:nowrap;">${escapeAttr(item.tinhNhanPo)}</td>
             <td class="pc-cell-edit" style="min-width:110px;">
-              <input type="text" class="pc-inp" style="font-weight:800;text-align:center;text-transform:uppercase;"
+              <input type="text" class="pc-inp" style="font-weight:800;text-align:center;text-transform:uppercase;${!isXuat ? 'background:#f1f5f9;cursor:not-allowed;' : ''}"
                 id="pc_cont_${item.idPo}" value="${escapeAttr(item.soContPo)}"
                 data-row="${idx}" data-col="cont"
+                ${!isXuat ? 'readonly title="Số cont hàng nhập không được sửa"' : ''}
                 onfocus="onPcRowFocus(this)"
                 onkeydown="onPcCellKeyDown(event, ${idx}, 'cont', '${item.idPo}')"
                 onchange="saveInlinePcField('${item.idPo}', 'soContPo', this.value, this)"
-                ondblclick="openEditModal('${item.idPo}')" title="Nhấp đúp để mở chi tiết" />
+                ondblclick="openEditModal('${item.idPo}')" />
             </td>
             <td class="pc-cell-edit" style="min-width:80px;">
-              <input type="text" class="pc-inp" style="font-weight:700;text-align:center;"
+              <input type="text" class="pc-inp" style="font-weight:700;text-align:center;${!isXuat ? 'background:#f1f5f9;cursor:not-allowed;' : ''}"
                 id="pc_seal_${item.idPo}" value="${escapeAttr(item.soSealPo)}"
                 data-row="${idx}" data-col="seal"
+                ${!isXuat ? 'readonly title="Số seal hàng nhập không được sửa"' : ''}
                 onfocus="onPcRowFocus(this)"
                 onkeydown="onPcCellKeyDown(event, ${idx}, 'seal', '${item.idPo}')"
                 onchange="saveInlinePcField('${item.idPo}', 'soSealPo', this.value, this)" />
@@ -3212,6 +3239,15 @@ if (isset($_GET['api'])) {
                 onblur="onPcCellBlur('${item.idPo}', 'soXePo', this)"
                 onkeydown="onPcCellKeyDown(event, ${idx}, 'xe', '${item.idPo}')" />
             </td>
+            <td class="pc-actions-cell">
+              ${isXuat ? `
+                <button type="button" class="pc-act-btn" onclick="copyPoInfoById('${item.idPo}', 1)" title="Copy Thông tin xe đóng hàng">🚛 TT Xe</button>
+                <button type="button" class="pc-act-btn" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0;" onclick="openPklModal('${item.idPo}')" title="Phiếu PKL">📄 PKL</button>
+              ` : `
+                <button type="button" class="pc-act-btn" onclick="copyPoInfoById('${item.idPo}', 2)" title="Copy Thông tin giao hàng">🚛 Giao hàng</button>
+                <button type="button" class="pc-act-btn" onclick="copyPoInfoById('${item.idPo}', 1)" title="Copy Thông báo hàng đến">💬 TB</button>
+              `}
+            </td>
           </tr>
         `;
       }).join("");
@@ -3239,6 +3275,7 @@ if (isset($_GET['api'])) {
                 <th style="width:65px;text-align:center;">QUÁ HẠN</th>
                 <th style="background:#a5f3fc;color:#0f172a;min-width:125px;">ĐƠN VỊ V/C ⚡</th>
                 <th style="background:#a5f3fc;color:#0f172a;min-width:115px;">SỐ XE ⚡</th>
+                <th style="width:130px;text-align:center;">THAO TÁC</th>
               </tr>
             </thead>
             <tbody>
@@ -3535,6 +3572,9 @@ if (isset($_GET['api'])) {
     async function saveInlinePcField(idPo, fieldName, rawVal, inputEl) {
       const po = allShipments.find(x => String(x.idPo) === String(idPo));
       if (!po) return;
+      if (po.xuatNhapPo !== "X" && (fieldName === "soContPo" || fieldName === "soSealPo")) {
+        return; // Khóa cứng cont/seal hàng nhập
+      }
       rawVal = (rawVal || "").toUpperCase().trim();
 
       if (inputEl) {
@@ -4065,6 +4105,22 @@ if (isset($_GET['api'])) {
       onContInput();
       updateModalDriverInfo(po.soXePo || "");
 
+      // Khóa cứng số cont, số seal ở Tab Nhập
+      const contInp = document.getElementById("inp_soContPo");
+      const sealInp = document.getElementById("inp_soSealPo");
+      if (contInp) {
+        contInp.readOnly = !isXuat;
+        contInp.style.backgroundColor = !isXuat ? "#f1f5f9" : "";
+        contInp.style.cursor = !isXuat ? "not-allowed" : "";
+        contInp.title = !isXuat ? "Số cont hàng nhập là dữ liệu cứng từ hãng tàu, không được sửa" : "";
+      }
+      if (sealInp) {
+        sealInp.readOnly = !isXuat;
+        sealInp.style.backgroundColor = !isXuat ? "#f1f5f9" : "";
+        sealInp.style.cursor = !isXuat ? "not-allowed" : "";
+        sealInp.title = !isXuat ? "Số seal hàng nhập là dữ liệu cứng từ hãng tàu, không được sửa" : "";
+      }
+
       // Configure Modal Footer Buttons for Export vs Import
       const btnDeliv = document.getElementById("btnModalDelivery");
       if (btnDeliv) btnDeliv.style.display = isXuat ? "none" : "inline-flex";
@@ -4355,6 +4411,9 @@ if (isset($_GET['api'])) {
       if (!inpEl) return;
 
       let rawVal = inpEl.value.trim();
+      if (!isXuat && (fieldName === "soContPo" || fieldName === "soSealPo")) {
+        return; // Khóa cứng cont/seal hàng nhập
+      }
       inpEl.classList.remove("saved");
       inpEl.classList.add("saving");
 
