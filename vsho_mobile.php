@@ -1545,6 +1545,24 @@ if (isset($_GET['api'])) {
       background: #e2e8f0;
     }
 
+    .pc-del-btn {
+      border: 1px solid #fecaca;
+      background: #fff1f2;
+      color: #dc2626;
+      border-radius: 4px;
+      padding: 1px 4px;
+      font-size: 11px;
+      line-height: 1.2;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .pc-del-btn:hover {
+      background: #fee2e2;
+      border-color: #f87171;
+      transform: scale(1.1);
+    }
+
     /* FLOATING AUTOCOMPLETE FOR DESKTOP TABLE CELLS */
     .pc-ac-floating {
       position: fixed;
@@ -2120,6 +2138,9 @@ if (isset($_GET['api'])) {
         <button type="button" class="btn-secondary-lg" id="btnModalPkl" style="display:none;background:#ecfdf5;color:#047857;border-color:#a7f3d0;" onclick="openPklFromEditModal()" title="Xuất / In Phiếu PKL Vào Cổng">
           📄 Phiếu PKL
         </button>
+        <button type="button" class="btn-secondary-lg" style="background:#fff1f2;color:#dc2626;border-color:#fecaca;" onclick="if(currentEditingPo) openDeleteBookingModal(currentEditingPo.idPo)" title="Xóa booking thừa">
+          🗑️ Xóa
+        </button>
         <button type="button" class="btn-primary-lg" id="btnSaveAll" onclick="saveAllChanges(event)">
           💾 Lưu TMS
         </button>
@@ -2156,6 +2177,28 @@ if (isset($_GET['api'])) {
         <button type="button" class="btn-primary-lg" onclick="printPklCanvas()">
           🖨️ In Phiếu PKL
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL XÁC NHẬN XÓA BOOKING THỪA -->
+  <div class="modal-backdrop" id="deleteConfirmModal" style="align-items:center;justify-content:center;z-index:9999;" onclick="if(event.target===this) closeDeleteModal()">
+    <div style="background:#ffffff;border-radius:16px;box-shadow:0 25px 60px rgba(0,0,0,0.35);max-width:420px;width:92%;padding:22px;text-align:center;">
+      <div style="font-size:38px;margin-bottom:6px;">🗑️</div>
+      <div style="font-size:16px;font-weight:800;color:#dc2626;margin-bottom:8px;">XÁC NHẬN XÓA BOOKING THỪA</div>
+      <div id="deleteModalDesc" style="font-size:13px;color:#334155;line-height:1.55;margin-bottom:14px;">
+        Bạn có chắc muốn xóa booking thừa này không?
+      </div>
+      <div style="font-size:12.5px;color:#64748b;margin-bottom:8px;">
+        Nhập chữ <b style="color:#dc2626;background:#fee2e2;padding:1px 6px;border-radius:4px;font-family:monospace;">ok</b> để mở khóa nút xóa:
+      </div>
+      <input type="text" id="deleteConfirmInput" class="form-control" placeholder="Gõ: ok"
+        autocomplete="off" autocapitalize="off" spellcheck="false"
+        style="text-align:center;font-weight:800;font-size:16px;max-width:160px;margin:0 auto 16px;border:2px solid #cbd5e1;border-radius:8px;"
+        oninput="checkDeleteOkInput(this)" onkeydown="if(event.key==='Enter') executeDeleteBooking()" />
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button type="button" class="btn-card" style="padding:8px 16px;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;border-radius:8px;font-weight:600;cursor:pointer;" onclick="closeDeleteModal()">Hủy bỏ</button>
+        <button type="button" id="btnConfirmDelete" style="padding:8px 18px;background:#dc2626;color:#ffffff;border:none;border-radius:8px;font-weight:700;opacity:0.35;cursor:not-allowed;transition:all 0.15s ease;" disabled onclick="executeDeleteBooking()">Xác nhận xóa</button>
       </div>
     </div>
   </div>
@@ -3193,21 +3236,21 @@ if (isset($_GET['api'])) {
         const isXuat = item.xuatNhapPo === "X";
         const isUnsetDate = !item.ngayTraHang || item.ngayTraHang === "2021-11-11" || item.ngayTraHang === "1970-01-01";
         const ngayGiaoStr = isUnsetDate ? "" : formatIsoToVN(item.ngayTraHang);
-        const lfq = calcLuuFreeQuaHan(item);
-        const quaHanDisplay = isXuat ? "-" : (lfq.col3 || "0");
-        const quaHanStyle = !isXuat && Number(lfq.col3) > 0 ? "color:#dc2626;font-weight:800;" : "color:#64748b;";
         const drvInfo = getDriverForPlate(item.soXePo);
         const drvTooltip = drvInfo ? `Tài xế: ${drvInfo.name} - SĐT: ${drvInfo.phone || ""}` : "";
-
+        const cangDenVal = isXuat ? (item.tinhXuatHangPo || item.cangDenPo || "") : (item.cangDenPo || "");
         const rowClass = isXuat ? "pc-row-xuat" : "pc-row-nhap";
 
         return `
           <tr id="pc-row-${item.idPo}" data-row-idx="${idx}" class="${rowClass}" ondblclick="openEditModal('${item.idPo}')" title="Nhấp đúp chuột để mở chi tiết #${item.idPo}">
+            <td style="text-align:center;padding:2px 3px !important;width:36px;">
+              <button type="button" class="pc-del-btn" onclick="openDeleteBookingModal('${item.idPo}')" title="Xóa booking thừa #${item.idPo}">🗑️</button>
+            </td>
             <td style="text-align:center;white-space:nowrap;font-weight:700;color:#2563eb;cursor:pointer;" onclick="openEditModal('${item.idPo}')" title="Bấm mở chi tiết #${item.idPo}">${escapeAttr(item.chuyenPo)}</td>
             <td class="pc-truncate" title="${escapeAttr(item.tenKhachPo)}">${escapeAttr(item.tenKhachPo)}</td>
             <td class="pc-truncate" style="${!isXuat ? 'font-weight:700;color:#0f172a;' : ''}" title="${escapeAttr(item.khoNhanHangPo)}">${escapeAttr(item.khoNhanHangPo)}</td>
-            <td class="pc-truncate" title="${escapeAttr(item.lienHeNhanPo)}">${escapeAttr(item.lienHeNhanPo)}</td>
-            <td class="pc-truncate" style="max-width:260px;" title="${escapeAttr(item.diaChiNhanPo)}">${escapeAttr(item.diaChiNhanPo)}</td>
+            <td class="pc-truncate" style="max-width:105px;" title="${escapeAttr(item.lienHeNhanPo)}">${escapeAttr(item.lienHeNhanPo)}</td>
+            <td class="pc-truncate" style="max-width:160px;" title="${escapeAttr(item.diaChiNhanPo)}">${escapeAttr(item.diaChiNhanPo)}</td>
             <td style="text-align:center;white-space:nowrap;">${escapeAttr(item.tinhNhanPo)}</td>
             <td class="pc-cell-edit" style="min-width:110px;">
               <input type="text" class="pc-inp" style="font-weight:800;text-align:center;text-transform:uppercase;${!isXuat ? 'background:#f1f5f9;cursor:not-allowed;' : ''}"
@@ -3238,7 +3281,7 @@ if (isset($_GET['api'])) {
                 onkeydown="onPcCellKeyDown(event, ${idx}, 'ngay', '${item.idPo}')"
                 onchange="saveInlinePcDate('${item.idPo}', this.value, this)" />
             </td>
-            <td style="text-align:center;${quaHanStyle}">${escapeAttr(quaHanDisplay)}</td>
+            <td style="text-align:center;font-weight:700;color:#0369a1;white-space:nowrap;" title="${escapeAttr(cangDenVal)}">${escapeAttr(cangDenVal) || "-"}</td>
             <td class="pc-cell-cyan">
               <input type="text" class="pc-inp" style="font-weight:700;text-align:center;text-transform:uppercase;"
                 id="pc_dv_${item.idPo}" value="${escapeAttr(item.donViVcPo)}" placeholder="Gõ ĐVVT..."
@@ -3279,21 +3322,22 @@ if (isset($_GET['api'])) {
           <table class="pc-table">
             <thead>
               <tr>
-                <th style="width:75px;text-align:center;">CHUYẾN</th>
+                <th style="width:36px;text-align:center;" title="Xóa booking thừa">XÓA</th>
+                <th style="width:72px;text-align:center;">CHUYẾN</th>
                 <th>KHÁCH HÀNG</th>
                 <th>KHO NHẬN/ĐÓNG</th>
-                <th>LIÊN HỆ</th>
-                <th>ĐỊA CHỈ</th>
+                <th style="width:100px;max-width:105px;">LIÊN HỆ</th>
+                <th style="width:150px;max-width:160px;">ĐỊA CHỈ</th>
                 <th style="width:65px;text-align:center;">TỈNH</th>
-                <th style="width:115px;text-align:center;">SỐ CONT</th>
-                <th style="width:85px;text-align:center;">SEAL</th>
-                <th style="width:38px;text-align:center;">20</th>
-                <th style="width:38px;text-align:center;">40</th>
-                <th style="width:96px;text-align:center;">NGÀY GIAO/ĐÓNG</th>
-                <th style="width:65px;text-align:center;">QUÁ HẠN</th>
-                <th style="background:#a5f3fc;color:#0f172a;min-width:125px;">ĐƠN VỊ V/C ⚡</th>
-                <th style="background:#a5f3fc;color:#0f172a;min-width:115px;">SỐ XE ⚡</th>
-                <th style="width:130px;text-align:center;">THAO TÁC</th>
+                <th style="width:110px;text-align:center;">SỐ CONT</th>
+                <th style="width:80px;text-align:center;">SEAL</th>
+                <th style="width:35px;text-align:center;">20</th>
+                <th style="width:35px;text-align:center;">40</th>
+                <th style="width:92px;text-align:center;">NGÀY GIAO/ĐÓNG</th>
+                <th style="width:75px;text-align:center;">CẢNG ĐẾN</th>
+                <th style="background:#a5f3fc;color:#0f172a;min-width:120px;">ĐƠN VỊ V/C ⚡</th>
+                <th style="background:#a5f3fc;color:#0f172a;min-width:110px;">SỐ XE ⚡</th>
+                <th style="width:125px;text-align:center;">THAO TÁC</th>
               </tr>
             </thead>
             <tbody>
@@ -4810,6 +4854,106 @@ if (isset($_GET['api'])) {
 
     function closePklModal() {
       document.getElementById("pklModal").classList.remove("open");
+    }
+
+    // =========================================================================
+    // 9. XÓA BOOKING THỪA (index-crud.php: cv=4, loai=19)
+    // =========================================================================
+    let pendingDeletePoId = null;
+
+    function openDeleteBookingModal(idPo) {
+      const po = allShipments.find(x => String(x.idPo) === String(idPo));
+      pendingDeletePoId = idPo;
+      const descEl = document.getElementById("deleteModalDesc");
+      if (descEl) {
+        const info = po
+          ? `lô <b>#${po.idPo}</b> (Chuyến: <b>${po.chuyenPo || "--"}</b> • KH: <b>${po.tenKhachPo || "--"}</b>${po.soContPo ? ` • Cont: <b>${po.soContPo}</b>` : ""})`
+          : `lô <b>#${idPo}</b>`;
+        descEl.innerHTML = `Bạn có chắc chắn muốn xóa booking thừa ${info} không?<br><span style="color:#dc2626;font-size:12px;font-weight:600;">Hành động này sẽ gửi lệnh xóa trực tiếp lên hệ thống TMS Vietsun.</span>`;
+      }
+      const inp = document.getElementById("deleteConfirmInput");
+      if (inp) {
+        inp.value = "";
+      }
+      const btn = document.getElementById("btnConfirmDelete");
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = "0.35";
+        btn.style.cursor = "not-allowed";
+        btn.textContent = "Xác nhận xóa";
+      }
+      const modal = document.getElementById("deleteConfirmModal");
+      if (modal) {
+        modal.classList.add("open");
+        setTimeout(() => { if (inp) inp.focus(); }, 120);
+      }
+    }
+
+    function checkDeleteOkInput(el) {
+      const val = (el.value || "").trim().toLowerCase();
+      const btn = document.getElementById("btnConfirmDelete");
+      if (!btn) return;
+      if (val === "ok") {
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.style.cursor = "pointer";
+      } else {
+        btn.disabled = true;
+        btn.style.opacity = "0.35";
+        btn.style.cursor = "not-allowed";
+      }
+    }
+
+    function closeDeleteModal() {
+      const modal = document.getElementById("deleteConfirmModal");
+      if (modal) modal.classList.remove("open");
+      pendingDeletePoId = null;
+    }
+
+    async function executeDeleteBooking() {
+      const inp = document.getElementById("deleteConfirmInput");
+      if (!inp || (inp.value || "").trim().toLowerCase() !== "ok") {
+        showToast("Vui lòng gõ chữ 'ok' để xác nhận xóa!", "warning");
+        return;
+      }
+      if (!pendingDeletePoId) return;
+      const targetId = pendingDeletePoId;
+      const btn = document.getElementById("btnConfirmDelete");
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Đang xóa...";
+      }
+
+      try {
+        await postCrudUpdate({
+          TenDangNhap: state.username,
+          userString: state.userString,
+          cv: 4,
+          loai: 19,
+          iddt: 1,
+          cot: 0,
+          thongtin: String(targetId)
+        });
+
+        // Xóa khỏi danh sách bộ nhớ
+        allShipments = allShipments.filter(x => String(x.idPo) !== String(targetId));
+        filteredShipments = filteredShipments.filter(x => String(x.idPo) !== String(targetId));
+
+        closeDeleteModal();
+        if (currentEditingPo && String(currentEditingPo.idPo) === String(targetId)) {
+          closeEditModal();
+        }
+        applyFilters();
+        showToast(`Đã xóa booking thừa #${targetId} thành công!`, "success");
+      } catch (err) {
+        console.error("Lỗi khi xóa booking:", err);
+        showToast("Lỗi khi xóa booking: " + (err.message || "Không thể kết nối TMS"), "error");
+      } finally {
+        if (btn) {
+          btn.textContent = "Xác nhận xóa";
+          btn.disabled = false;
+        }
+      }
     }
 
     function drawUnderlinedText(ctx, text, x, y, align = "left") {
