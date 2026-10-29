@@ -495,11 +495,13 @@
     }
 
     .po-card.type-X {
-      border-left: 4px solid #0284c7;
+      border-left: 5px solid #ea580c;
+      background: #fffbf5;
     }
 
     .po-card.type-N {
-      border-left: 4px solid #16a34a;
+      border-left: 5px solid #16a34a;
+      background: #ffffff;
     }
 
     .po-card.no-truck {
@@ -532,13 +534,15 @@
     }
 
     .badge-xuat {
-      background: #e0f2fe;
-      color: #0369a1;
+      background: #ffedd5;
+      color: #c2410c;
+      border: 1px solid #fed7aa;
     }
 
     .badge-nhap {
       background: #dcfce7;
       color: #15803d;
+      border: 1px solid #bbf7d0;
     }
 
     .badge-chuhang {
@@ -1314,12 +1318,24 @@
       text-transform: uppercase;
     }
 
-    .pc-table tbody tr:hover {
-      background: #f8fafc;
+    .pc-table tbody tr.pc-row-xuat {
+      background-color: #fff7ed !important;
+    }
+
+    .pc-table tbody tr.pc-row-xuat:hover {
+      background-color: #fed7aa !important;
+    }
+
+    .pc-table tbody tr.pc-row-nhap {
+      background-color: #ffffff;
+    }
+
+    .pc-table tbody tr.pc-row-nhap:hover {
+      background-color: #f1f5f9;
     }
 
     .pc-table tbody tr.pc-row-active {
-      background: #fef9c3 !important;
+      background: #fef08a !important;
     }
 
     .pc-cell-cyan {
@@ -3045,8 +3061,10 @@
         const drvInfo = getDriverForPlate(item.soXePo);
         const drvTooltip = drvInfo ? `Tài xế: ${drvInfo.name} - SĐT: ${drvInfo.phone || ""}` : "";
 
+        const rowClass = isXuat ? "pc-row-xuat" : "pc-row-nhap";
+
         return `
-          <tr id="pc-row-${item.idPo}" data-row-idx="${idx}" ondblclick="openEditModal('${item.idPo}')" title="Nhấp đúp chuột để mở chi tiết #${item.idPo}">
+          <tr id="pc-row-${item.idPo}" data-row-idx="${idx}" class="${rowClass}" ondblclick="openEditModal('${item.idPo}')" title="Nhấp đúp chuột để mở chi tiết #${item.idPo}">
             <td style="text-align:center;white-space:nowrap;font-weight:700;color:#2563eb;cursor:pointer;" onclick="openEditModal('${item.idPo}')" title="Bấm mở chi tiết #${item.idPo}">${escapeAttr(item.chuyenPo)}</td>
             <td class="pc-truncate" title="${escapeAttr(item.tenKhachPo)}">${escapeAttr(item.tenKhachPo)}</td>
             <td class="pc-truncate" style="${!isXuat ? 'font-weight:700;color:#0f172a;' : ''}" title="${escapeAttr(item.khoNhanHangPo)}">${escapeAttr(item.khoNhanHangPo)}</td>
