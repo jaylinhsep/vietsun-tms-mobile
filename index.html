@@ -3035,36 +3035,25 @@
     }
 
     function renderDesktopTableView(slice, hasMore) {
-      const isOnlyXuat = state.xuatNhap === "X";
-      const subHeaders = isOnlyXuat
-        ? `<th>CẢNG ĐẾN</th><th>LẤY RỖNG</th><th>KẾT HỢP</th>`
-        : `<th>LƯU</th><th>FREE</th><th>QUÁ HẠN</th>`;
-
       const rowsHtml = slice.map((item, idx) => {
         const isXuat = item.xuatNhapPo === "X";
         const isUnsetDate = !item.ngayTraHang || item.ngayTraHang === "2021-11-11" || item.ngayTraHang === "1970-01-01";
         const ngayGiaoStr = isUnsetDate ? "" : formatIsoToVN(item.ngayTraHang);
-        const ngayTauDisplay = (!item.ngayTauChayPo || item.ngayTauChayPo === "2021-11-11")
-          ? ""
-          : isXuat
-          ? formatIsoToVN(item.ngayTauChayPo)
-          : formatIsoToVN(addDaysISO(item.ngayTauChayPo, 2));
-
         const lfq = calcLuuFreeQuaHan(item);
+        const quaHanDisplay = isXuat ? "-" : (lfq.col3 || "0");
+        const quaHanStyle = !isXuat && Number(lfq.col3) > 0 ? "color:#dc2626;font-weight:800;" : "color:#64748b;";
         const drvInfo = getDriverForPlate(item.soXePo);
         const drvTooltip = drvInfo ? `Tài xế: ${drvInfo.name} - SĐT: ${drvInfo.phone || ""}` : "";
 
         return `
-          <tr id="pc-row-${item.idPo}" data-row-idx="${idx}">
-            <td style="text-align:center;font-weight:700;cursor:pointer;color:#2563eb;" onclick="openEditModal('${item.idPo}')" title="Bấm để mở chi tiết #${item.idPo}">${item.idPo}</td>
-            <td style="text-align:center;white-space:nowrap;">${escapeAttr(item.chuyenPo)}</td>
-            <td style="text-align:center;font-weight:700;">${escapeAttr(item.chuHangPo)}</td>
+          <tr id="pc-row-${item.idPo}" data-row-idx="${idx}" ondblclick="openEditModal('${item.idPo}')" title="Nhấp đúp chuột để mở chi tiết #${item.idPo}">
+            <td style="text-align:center;white-space:nowrap;font-weight:700;color:#2563eb;cursor:pointer;" onclick="openEditModal('${item.idPo}')" title="Bấm mở chi tiết #${item.idPo}">${escapeAttr(item.chuyenPo)}</td>
             <td class="pc-truncate" title="${escapeAttr(item.tenKhachPo)}">${escapeAttr(item.tenKhachPo)}</td>
             <td class="pc-truncate" style="${!isXuat ? 'font-weight:700;color:#0f172a;' : ''}" title="${escapeAttr(item.khoNhanHangPo)}">${escapeAttr(item.khoNhanHangPo)}</td>
             <td class="pc-truncate" title="${escapeAttr(item.lienHeNhanPo)}">${escapeAttr(item.lienHeNhanPo)}</td>
-            <td class="pc-truncate" style="max-width:230px;" title="${escapeAttr(item.diaChiNhanPo)}">${escapeAttr(item.diaChiNhanPo)}</td>
-            <td style="white-space:nowrap;">${escapeAttr(item.tinhNhanPo)}</td>
-            <td class="pc-cell-edit" style="min-width:105px;">
+            <td class="pc-truncate" style="max-width:260px;" title="${escapeAttr(item.diaChiNhanPo)}">${escapeAttr(item.diaChiNhanPo)}</td>
+            <td style="text-align:center;white-space:nowrap;">${escapeAttr(item.tinhNhanPo)}</td>
+            <td class="pc-cell-edit" style="min-width:110px;">
               <input type="text" class="pc-inp" style="font-weight:800;text-align:center;text-transform:uppercase;"
                 id="pc_cont_${item.idPo}" value="${escapeAttr(item.soContPo)}"
                 data-row="${idx}" data-col="cont"
@@ -3073,7 +3062,7 @@
                 onchange="saveInlinePcField('${item.idPo}', 'soContPo', this.value, this)"
                 ondblclick="openEditModal('${item.idPo}')" title="Nhấp đúp để mở chi tiết" />
             </td>
-            <td class="pc-cell-edit" style="min-width:74px;">
+            <td class="pc-cell-edit" style="min-width:80px;">
               <input type="text" class="pc-inp" style="font-weight:700;text-align:center;"
                 id="pc_seal_${item.idPo}" value="${escapeAttr(item.soSealPo)}"
                 data-row="${idx}" data-col="seal"
@@ -3083,10 +3072,7 @@
             </td>
             <td style="text-align:center;font-weight:700;">${Number(item.cont20Po) > 0 ? "1" : ""}</td>
             <td style="text-align:center;font-weight:700;">${Number(item.cont40Po) > 0 ? "1" : ""}</td>
-            <td style="text-align:center;">${escapeAttr(item.trongLuongPo)}</td>
-            <td class="pc-truncate" style="max-width:95px;text-align:center;" title="${escapeAttr(item.tenHangHoaPo)}">${escapeAttr(item.tenHangHoaPo)}</td>
-            <td style="text-align:center;white-space:nowrap;">${ngayTauDisplay}</td>
-            <td class="pc-cell-edit" style="min-width:88px;">
+            <td class="pc-cell-edit" style="min-width:92px;">
               <input type="text" class="pc-inp" style="color:#991b1b;font-weight:700;text-align:center;"
                 id="pc_ngay_${item.idPo}" value="${ngayGiaoStr}" placeholder="DD/MM/YYYY"
                 data-row="${idx}" data-col="ngay"
@@ -3094,9 +3080,7 @@
                 onkeydown="onPcCellKeyDown(event, ${idx}, 'ngay', '${item.idPo}')"
                 onchange="saveInlinePcDate('${item.idPo}', this.value, this)" />
             </td>
-            <td style="text-align:center;">${escapeAttr(lfq.col1)}</td>
-            <td style="text-align:center;color:#991b1b;font-weight:700;">${escapeAttr(lfq.col2)}</td>
-            <td style="text-align:center;">${escapeAttr(lfq.col3)}</td>
+            <td style="text-align:center;${quaHanStyle}">${escapeAttr(quaHanDisplay)}</td>
             <td class="pc-cell-cyan">
               <input type="text" class="pc-inp" style="font-weight:700;text-align:center;text-transform:uppercase;"
                 id="pc_dv_${item.idPo}" value="${escapeAttr(item.donViVcPo)}" placeholder="Gõ ĐVVT..."
@@ -3115,12 +3099,6 @@
                 onblur="onPcCellBlur('${item.idPo}', 'soXePo', this)"
                 onkeydown="onPcCellKeyDown(event, ${idx}, 'xe', '${item.idPo}')" />
             </td>
-            <td class="pc-actions-cell">
-              ${!isXuat ? `<button type="button" class="pc-act-btn" onclick="copyPoInfoById('${item.idPo}', 2)" title="Copy Thông tin giao hàng">🚛</button>` : ""}
-              <button type="button" class="pc-act-btn" onclick="copyPoInfoById('${item.idPo}', 1)" title="${isXuat ? 'Copy Thông tin xe đóng hàng' : 'Copy Thông báo hàng đến'}">${isXuat ? "🚛 TT Xe" : "💬"}</button>
-              ${isXuat ? `<button type="button" class="pc-act-btn" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0;" onclick="openPklModal('${item.idPo}')" title="Phiếu PKL">📄 PKL</button>` : ""}
-              <button type="button" class="pc-act-btn" style="background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe;" onclick="openEditModal('${item.idPo}')" title="Mở cửa sổ chi tiết">✏️</button>
-            </td>
           </tr>
         `;
       }).join("");
@@ -3134,26 +3112,20 @@
           <table class="pc-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>CHUYẾN</th>
-                <th>CHỦ HÀNG</th>
+                <th style="width:75px;text-align:center;">CHUYẾN</th>
                 <th>KHÁCH HÀNG</th>
-                <th>KHO NHẬN / ĐÓNG</th>
+                <th>KHO NHẬN/ĐÓNG</th>
                 <th>LIÊN HỆ</th>
                 <th>ĐỊA CHỈ</th>
-                <th>TỈNH</th>
-                <th>SỐ CONT</th>
-                <th>SEAL</th>
-                <th>20</th>
-                <th>40</th>
-                <th>TL</th>
-                <th>TÊN HÀNG</th>
-                <th>NGÀY TÀU</th>
-                <th>NGÀY GIAO/ĐÓNG</th>
-                ${subHeaders}
-                <th style="background:#a5f3fc;color:#0f172a;">ĐƠN VỊ V/C ⚡</th>
-                <th style="background:#a5f3fc;color:#0f172a;">SỐ XE ⚡</th>
-                <th>THAO TÁC</th>
+                <th style="width:65px;text-align:center;">TỈNH</th>
+                <th style="width:115px;text-align:center;">SỐ CONT</th>
+                <th style="width:85px;text-align:center;">SEAL</th>
+                <th style="width:38px;text-align:center;">20</th>
+                <th style="width:38px;text-align:center;">40</th>
+                <th style="width:96px;text-align:center;">NGÀY GIAO/ĐÓNG</th>
+                <th style="width:65px;text-align:center;">QUÁ HẠN</th>
+                <th style="background:#a5f3fc;color:#0f172a;min-width:125px;">ĐƠN VỊ V/C ⚡</th>
+                <th style="background:#a5f3fc;color:#0f172a;min-width:115px;">SỐ XE ⚡</th>
               </tr>
             </thead>
             <tbody>
