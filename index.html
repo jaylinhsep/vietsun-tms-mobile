@@ -2968,6 +2968,21 @@
         return true;
       });
 
+      // Ưu tiên các dòng chưa có Đơn vị V/C và Số xe lên top đầu (cho cả hàng Nhập & Xuất)
+      filteredShipments.sort((a, b) => {
+        const getPriority = (item) => {
+          const hasV = !!(item.donViVcPo && item.donViVcPo.trim());
+          const hasX = !!(item.soXePo && item.soXePo.trim());
+          if (!hasV && !hasX) return 0; // Chưa có cả ĐVVC lẫn Số xe -> Ưu tiên cao nhất
+          if (!hasX || !hasV) return 1; // Thiếu 1 trong 2 -> Ưu tiên kế tiếp
+          return 2;                     // Đã có đủ cả 2 -> Xếp sau
+        };
+        const pA = getPriority(a);
+        const pB = getPriority(b);
+        if (pA !== pB) return pA - pB;
+        return Number(b.idPo) - Number(a.idPo);
+      });
+
       // Update Summary Stats
       updateSummaryCards(filteredShipments);
       updateActiveFilterBadge();
