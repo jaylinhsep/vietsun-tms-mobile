@@ -135,7 +135,6 @@ if (isset($_GET['api'])) {
         exit;
     }
 }
-?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -1682,11 +1681,11 @@ if (isset($_GET['api'])) {
   <section class="filter-section">
     <!-- Quick Date Chips -->
     <div class="quick-tabs" id="quickDateTabs">
-      <button class="chip active" data-date-mode="today" onclick="setQuickDate('today')">📅 Hôm nay</button>
+      <button class="chip active" data-date-mode="today" onclick="setQuickDate('today')" id="chipToday">📅 Hôm nay</button>
       <button class="chip" data-date-mode="tomorrow" onclick="setQuickDate('tomorrow')" id="chipTomorrow">⏭️ Ngày mai</button>
       <button class="chip" data-date-mode="d2" onclick="setQuickDate('d2')" id="chipD2">📆 Ngày D+2</button>
       <button class="chip" data-date-mode="d3" onclick="setQuickDate('d3')" id="chipD3">📆 Ngày D+3</button>
-      <button class="chip" data-date-mode="yesterday" onclick="setQuickDate('yesterday')">⏮️ Hôm qua</button>
+      <button class="chip" data-date-mode="yesterday" onclick="setQuickDate('yesterday')" id="chipYesterday">⏮️ Hôm qua</button>
       <label class="chip" data-date-mode="single" id="chipSingleDate" style="position:relative;cursor:pointer;margin:0;">
         <span id="chipSingleDateLabel">🎯 Chọn ngày</span>
         <input type="date" id="quickSingleDatePicker" onchange="onQuickSingleDatePick(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none;" />
@@ -2587,7 +2586,7 @@ if (isset($_GET['api'])) {
       username: isExplicitlyLoggedIn ? safeGetStorage("vs_username", "") : "",
       password: isExplicitlyLoggedIn ? safeGetStorage("vs_password", "") : "",
       userString: isExplicitlyLoggedIn ? safeGetStorage("vs_userString", "") : "",
-      apiDate: safeGetStorage("vs_apiDate", getTodayISO()),
+      apiDate: getTodayISO(),
       dateMode: "today",          // today | tomorrow | yesterday | 3days | unset | all | custom
       dateType: "ngayTraHang",    // ngayTraHang | ngayTauChayPo
       fromDate: getTodayISO(),
@@ -2866,6 +2865,21 @@ if (isset($_GET['api'])) {
     // 5. DATA LOADING & FILTERING
     // =========================================================================
     async function refreshData(showNotification = false) {
+      const realToday = getTodayISO();
+      // Tự động nhảy sang ngày hôm nay mới nếu qua đêm hoặc đang ở chế độ xem Hôm nay
+      if (state.dateMode === "today" || !state.apiDate || state.apiDate < realToday) {
+        state.apiDate = realToday;
+        if (state.dateMode === "today") {
+          state.fromDate = realToday;
+          state.toDate = realToday;
+          const elFrom = document.getElementById("filterFromDate");
+          const elTo = document.getElementById("filterToDate");
+          if (elFrom) elFrom.value = realToday;
+          if (elTo) elTo.value = realToday;
+        }
+      }
+      updateQuickDateChipLabels();
+
       const syncLbl = document.getElementById("syncTimeLabel");
       syncLbl.textContent = "Đang đồng bộ...";
       try {
@@ -3917,22 +3931,58 @@ if (isset($_GET['api'])) {
     // 7. FILTER UI ACTIONS
     // =========================================================================
     function updateQuickDateChipLabels() {
-      const today = state.apiDate || getTodayISO();
-      const d1 = addDaysISO(today, 1);
-      const d2 = addDaysISO(today, 2);
-      const d3 = addDaysISO(today, 3);
+      const realToday = getTodayISO();
+      const d_prev = addDaysISO(realToday, -1);
+      const d1 = addDaysISO(realToday, 1);
+      const d2 = addDaysISO(realToday, 2);
+      const d3 = addDaysISO(realToday, 3);
+      const elToday = document.getElementById("chipToday") || document.querySelector('[data-date-mode="today"]');
       const elTom = document.getElementById("chipTomorrow");
       const elD2 = document.getElementById("chipD2");
       const elD3 = document.getElementById("chipD3");
+      const elYest = document.getElementById("chipYesterday") || document.querySelector('[data-date-mode="yesterday"]');
+      if (elToday) elToday.textContent = `📅 Hôm nay (${realToday.slice(8, 10)}/${realToday.slice(5, 7)})`;
       if (elTom) elTom.textContent = `⏭️ Ngày mai (${d1.slice(8, 10)}/${d1.slice(5, 7)})`;
       if (elD2) elD2.textContent = `📆 Ngày D+2 (${d2.slice(8, 10)}/${d2.slice(5, 7)})`;
       if (elD3) elD3.textContent = `📆 Ngày D+3 (${d3.slice(8, 10)}/${d3.slice(5, 7)})`;
+      if (elYest) elYest.textContent = `⏮️ Hôm qua (${d_prev.slice(8, 10)}/${d_prev.slice(5, 7)})`;
+      const serverDateEl = document.getElementById("serverDateInfo");
+      if (serverDateEl) serverDateEl.textContent = `Mốc dữ liệu API: ${formatIsoToVN(state.apiDate || realToday)}`;
     }
     updateQuickDateChipLabels();
 
+    // Tự động kiểm tra sang ngày mới khi người dùng mở lại điện thoại hoặc tab trình duyệt
+    let lastSeenDateISO = getTodayISO();
+    function checkCalendarDateRollover() {
+      const currentToday = getTodayISO();
+      if (currentToday !== lastSeenDateISO) {
+        console.log("[Calendar] Phát hiện sang ngày mới:", lastSeenDateISO, "->", currentToday);
+        lastSeenDateISO = currentToday;
+        state.apiDate = currentToday;
+        if (state.dateMode === "today") {
+          state.fromDate = currentToday;
+          state.toDate = currentToday;
+          const elFrom = document.getElementById("filterFromDate");
+          const elTo = document.getElementById("filterToDate");
+          if (elFrom) elFrom.value = currentToday;
+          if (elTo) elTo.value = currentToday;
+        }
+        updateQuickDateChipLabels();
+        refreshData(false);
+      } else {
+        updateQuickDateChipLabels();
+      }
+    }
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") checkCalendarDateRollover();
+    });
+    window.addEventListener("focus", checkCalendarDateRollover);
+    setInterval(checkCalendarDateRollover, 60000);
+
     function setQuickDate(mode) {
       state.dateMode = mode;
-      const today = state.apiDate || getTodayISO();
+      const today = getTodayISO();
+      state.apiDate = today;
       updateQuickDateChipLabels();
 
       if (mode === "today") {
@@ -5563,6 +5613,14 @@ if (isset($_GET['api'])) {
 
     // Initialize App
     window.addEventListener("DOMContentLoaded", () => {
+      const realToday = getTodayISO();
+      state.apiDate = realToday;
+      if (state.dateMode === "today") {
+        state.fromDate = realToday;
+        state.toDate = realToday;
+      }
+      updateQuickDateChipLabels();
+
       if (isIOS && !isStandalone) {
         document.getElementById("btnInstallPwa").style.display = "inline-flex";
       }
