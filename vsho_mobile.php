@@ -135,6 +135,7 @@ if (isset($_GET['api'])) {
         exit;
     }
 }
+?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
