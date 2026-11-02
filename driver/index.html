@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1e40af" />
+  <title>Tài Xế - Vietsun TMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1e40af;
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 14px;
+      --safe-bottom: env(safe-area-inset-bottom, 12px);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0; padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14.5px;
+      line-height: 1.45;
+      padding-bottom: calc(75px + var(--safe-bottom));
+    }
+
+    /* HEADER */
+    .driver-header {
+      position: sticky; top: 0; z-index: 50;
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+      color: #fff;
+      padding: 12px 16px;
+      box-shadow: 0 4px 14px rgba(30, 58, 138, 0.2);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-user { display: flex; align-items: center; gap: 10px; }
+    .driver-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: #fff; color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .driver-name { font-weight: 700; font-size: 15px; }
+    .driver-plate {
+      display: inline-block; background: #fbbf24; color: #000;
+      font-weight: 800; font-size: 12px; padding: 2px 6px;
+      border-radius: 6px; margin-top: 2px; letter-spacing: 0.5px;
+    }
+
+    /* TABS */
+    .tabs-bar {
+      display: flex; background: #fff; border-bottom: 1px solid var(--border);
+      position: sticky; top: 64px; z-index: 40;
+    }
+    .tab-btn {
+      flex: 1; padding: 12px 0; text-align: center;
+      font-weight: 700; font-size: 14px; color: var(--text-muted);
+      border: none; background: none; cursor: pointer;
+      border-bottom: 3px solid transparent; transition: all 0.2s;
+    }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    /* CONTENT */
+    .container { padding: 14px; max-width: 600px; margin: 0 auto; }
+    .trip-card {
+      background: var(--card); border-radius: var(--radius);
+      border: 1px solid var(--border); padding: 14px;
+      margin-bottom: 14px; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+    }
+    .trip-card.xuat-card { border-left: 5px solid #f97316; background: #fffaf5; }
+    .trip-card.nhap-card { border-left: 5px solid #2563eb; background: #ffffff; }
+
+    .badge {
+      display: inline-block; padding: 3px 8px; border-radius: 6px;
+      font-weight: 700; font-size: 11.5px;
+    }
+    .badge-xuat { background: #ffedd5; color: #c2410c; }
+    .badge-nhap { background: #dbeafe; color: #1d4ed8; }
+
+    .info-row { display: flex; align-items: flex-start; gap: 8px; margin: 7px 0; font-size: 13.5px; }
+    .info-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+    /* ACTION BUTTONS */
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+    .btn {
+      flex: 1; padding: 10px 12px; border-radius: 10px; font-weight: 700;
+      font-size: 13px; text-align: center; border: none; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      text-decoration: none;
+    }
+    .btn-call { background: #dcfce7; color: #15803d; }
+    .btn-update { background: var(--primary); color: #fff; }
+    .btn-expense { background: #fef3c7; color: #b45309; }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      display: none; align-items: flex-end; justify-content: center;
+      z-index: 100;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-sheet {
+      background: #fff; width: 100%; max-width: 500px;
+      border-radius: 20px 20px 0 0; padding: 18px 18px calc(20px + var(--safe-bottom));
+      max-height: 85vh; overflow-y: auto; box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+    }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 5px; color: #334155; }
+    .form-control {
+      width: 100%; padding: 11px 12px; border-radius: 10px;
+      border: 1px solid var(--border); font-size: 14.5px; font-weight: 600;
+    }
+    .form-control:focus { outline: none; border-color: var(--primary); }
+
+    /* LOGIN OVERLAY */
+    .login-overlay {
+      position: fixed; inset: 0; background: #f8fafc; z-index: 200;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 24px; max-width: 420px; margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN FORM -->
+  <div class="login-overlay" id="driverLoginView">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:46px;margin-bottom:8px;">🚛</div>
+      <h2 style="margin:0;font-size:22px;font-weight:800;color:#1e3a8a;">VIETSUN TMS - TÀI XẾ</h2>
+      <p style="margin:4px 0 0;color:var(--text-muted);font-size:13.5px;">Nhập SĐT & Mã PIN để nhận chuyến</p>
+    </div>
+    <form id="driverLoginForm" onsubmit="handleDriverLogin(event)">
+      <div class="form-group">
+        <label>Số điện thoại tài xế</label>
+        <input type="tel" id="loginPhone" class="form-control" placeholder="VD: 0911000001" required autocomplete="tel" />
+      </div>
+      <div class="form-group" style="margin-top:14px;">
+        <label>Mã PIN (6 số)</label>
+        <input type="password" id="loginPin" class="form-control" placeholder="Nhập mã PIN" required maxlength="6" inputmode="numeric" />
+      </div>
+      <div id="loginError" style="color:var(--danger);font-size:13px;font-weight:600;margin:8px 0;display:none;"></div>
+      <button type="submit" class="btn btn-update" style="width:100%;padding:14px;font-size:16px;margin-top:14px;">ĐĂNG NHẬP NHANH</button>
+    </form>
+  </div>
+
+  <!-- MAIN APP -->
+  <header class="driver-header">
+    <div class="header-user">
+      <div class="driver-avatar" id="avatarLetter">TX</div>
+      <div>
+        <div class="driver-name" id="displayDriverName">Tài xế</div>
+        <div class="driver-plate" id="displayDriverPlate">--</div>
+      </div>
+    </div>
+    <button onclick="handleLogout()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Đăng xuất</button>
+  </header>
+
+  <div class="tabs-bar">
+    <button class="tab-btn active" id="tabAll" onclick="switchTab('ALL')">Tất cả chuyến (<span id="cntAll">0</span>)</button>
+    <button class="tab-btn" id="tabN" onclick="switchTab('N')">📥 Hàng Nhập (<span id="cntN">0</span>)</button>
+    <button class="tab-btn" id="tabX" onclick="switchTab('X')">📤 Hàng Xuất (<span id="cntX">0</span>)</button>
+  </div>
+
+  <main class="container" id="tripsContainer">
+    <div style="text-align:center;padding:40px 0;color:var(--text-muted);">
+      <div style="font-size:32px;margin-bottom:8px;">⏳</div>
+      <div>Đang tải danh sách chuyến...</div>
+    </div>
+  </main>
+
+  <!-- MODAL: CẬP NHẬT HÀNG XUẤT (CONT, SEAL, CẢNG ĐẾN...) -->
+  <div class="modal-overlay" id="updateTripModal">
+    <div class="modal-sheet">
+      <h3 style="margin:0 0 14px;font-size:17px;font-weight:800;color:#1e3a8a;">📝 Cập nhật thông tin hàng xuất</h3>
+      <input type="hidden" id="modalPoId" />
+      <div class="form-group">
+        <label>Số Container (4 chữ + 7 số)</label>
+        <input type="text" id="modalSoCont" class="form-control" placeholder="VD: DRYU9969790" style="text-transform:uppercase;" />
+      </div>
+      <div class="form-group">
+        <label>Số Seal</label>
+        <input type="text" id="modalSoSeal" class="form-control" placeholder="VD: 678504" />
+      </div>
+      <div class="form-group">
+        <label>Cảng đến (Phía Bắc)</label>
+        <input type="text" id="modalCangDen" class="form-control" placeholder="VD: BEN NGHE, HP, DN..." style="text-transform:uppercase;" />
+      </div>
+      <div class="form-group">
+        <label>Giờ vào cảng / Port Time</label>
+        <input type="text" id="modalPortTime" class="form-control" placeholder="VD: 26/10/2026 14:30" />
+      </div>
+      <div class="btn-row" style="margin-top:18px;">
+        <button class="btn" style="background:#e2e8f0;color:#334155;" onclick="closeModal('updateTripModal')">Đóng</button>
+        <button class="btn btn-update" onclick="saveTripUpdate()">ĐẨY VỀ TMS VIETSUN</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: BÁO CHI PHÍ PHÁT SINH -->
+  <div class="modal-overlay" id="expenseModal">
+    <div class="modal-sheet">
+      <h3 style="margin:0 0 14px;font-size:17px;font-weight:800;color:#b45309;">💰 Báo chi phí phát sinh</h3>
+      <input type="hidden" id="expPoId" />
+      <div class="form-group">
+        <label>Loại chi phí phát sinh</label>
+        <select id="expType" class="form-control">
+          <option value="Neo xe">⏳ Neo xe / Chờ đóng hàng</option>
+          <option value="Nâng hạ rỗng">🏗️ Nâng hạ cont rỗng</option>
+          <option value="Cân xe">⚖️ Cân xe</option>
+          <option value="Rửa cont">🚿 Rửa container</option>
+          <option value="Lưu đêm">🌙 Lưu đêm</option>
+          <option value="Khác">🏷️ Chi phí khác</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Số tiền phát sinh (VNĐ)</label>
+        <input type="number" id="expAmount" class="form-control" placeholder="VD: 200000" step="10000" />
+      </div>
+      <div class="form-group">
+        <label>Ghi chú lý do</label>
+        <textarea id="expNote" class="form-control" rows="2" placeholder="VD: Kho đóng trễ 4 tiếng do thiếu hàng..."></textarea>
+      </div>
+      <div class="btn-row" style="margin-top:18px;">
+        <button class="btn" style="background:#e2e8f0;color:#334155;" onclick="closeModal('expenseModal')">Hủy</button>
+        <button class="btn btn-expense" onclick="saveExpense()">GỬI XÁC NHẬN CÔNG NỢ</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentTrips = [];
+    let currentFilter = 'ALL';
+    const API_BASE = '/api';
+
+    // 1. Kiểm tra phiên đăng nhập tài xế
+    window.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('vs_driver_token');
+      if (token) {
+        document.getElementById('driverLoginView').style.display = 'none';
+        loadDriverData();
+      }
+    });
+
+    async function handleDriverLogin(e) {
+      e.preventDefault();
+      const phone = document.getElementById('loginPhone').value.trim();
+      const pin = document.getElementById('loginPin').value.trim();
+      const errBox = document.getElementById('loginError');
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/driver-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, pin })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          errBox.textContent = data.error || 'Đăng nhập thất bại!';
+          errBox.style.display = 'block';
+          return;
+        }
+
+        localStorage.setItem('vs_driver_token', data.token);
+        localStorage.setItem('vs_driver_info', JSON.stringify(data.driver));
+        document.getElementById('driverLoginView').style.display = 'none';
+        loadDriverData();
+      } catch (err) {
+        errBox.textContent = 'Lỗi kết nối máy chủ!';
+        errBox.style.display = 'block';
+      }
+    }
+
+    function handleLogout() {
+      if (confirm('Bạn có muốn đăng xuất tài khoản?')) {
+        localStorage.removeItem('vs_driver_token');
+        localStorage.removeItem('vs_driver_info');
+        location.reload();
+      }
+    }
+
+    // 2. Tải danh sách chuyến xe
+    async function loadDriverData() {
+      const token = localStorage.getItem('vs_driver_token');
+      try {
+        const res = await fetch(`${API_BASE}/driver/my-trips`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.status === 401 || res.status === 403) {
+          handleLogout();
+          return;
+        }
+        const data = await res.json();
+        if (data.ok) {
+          currentTrips = data.trips || [];
+          renderDriverHeader(data.driverInfo);
+          renderTrips();
+        }
+      } catch (err) {
+        console.error('Fetch error:', err);
+      }
+    }
+
+    function renderDriverHeader(info) {
+      if (!info) return;
+      document.getElementById('displayDriverName').textContent = info.name || 'Tài xế';
+      document.getElementById('displayDriverPlate').textContent = info.plate || '--';
+      document.getElementById('avatarLetter').textContent = (info.name || 'TX').slice(0, 2).toUpperCase();
+    }
+
+    function switchTab(type) {
+      currentFilter = type;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      if (type === 'ALL') document.getElementById('tabAll').classList.add('active');
+      if (type === 'N') document.getElementById('tabN').classList.add('active');
+      if (type === 'X') document.getElementById('tabX').classList.add('active');
+      renderTrips();
+    }
+
+    function renderTrips() {
+      const cntAll = currentTrips.length;
+      const cntN = currentTrips.filter(t => t.xuatNhapPo === 'N').length;
+      const cntX = currentTrips.filter(t => t.xuatNhapPo === 'X').length;
+
+      document.getElementById('cntAll').textContent = cntAll;
+      document.getElementById('cntN').textContent = cntN;
+      document.getElementById('cntX').textContent = cntX;
+
+      const filtered = currentTrips.filter(t => {
+        if (currentFilter === 'ALL') return true;
+        return t.xuatNhapPo === currentFilter;
+      });
+
+      const container = document.getElementById('tripsContainer');
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div style="text-align:center;padding:50px 0;color:var(--text-muted);">
+            <div style="font-size:42px;margin-bottom:8px;">✅</div>
+            <div style="font-weight:700;font-size:16px;color:#334155;">Hôm nay bạn chưa có chuyến nào</div>
+            <div style="font-size:13px;margin-top:4px;">Khi điều phối gán biển số xe của bạn, chuyến sẽ tự hiện ở đây.</div>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(t => {
+        const isXuat = t.xuatNhapPo === 'X';
+        const typeClass = isXuat ? 'xuat-card' : 'nhap-card';
+        const typeBadge = isXuat ? '<span class="badge badge-xuat">📤 HÀNG XUẤT</span>' : '<span class="badge badge-nhap">📥 HÀNG NHẬP</span>';
+        const phoneClean = (t.lienHeNhanPo || '').replace(/[^0-9]/g, '');
+
+        return `
+          <div class="trip-card ${typeClass}">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <div>${typeBadge} <b style="font-size:13px;color:#1e3a8a;margin-left:4px;">#${t.idPo}</b></div>
+              <span class="badge" style="background:#f1f5f9;color:#334155;">Cont ${Number(t.cont40Po) > 0 ? "40'" : "20'"}</span>
+            </div>
+
+            <div class="info-row">
+              <span class="info-icon">🏢</span>
+              <div><b>Khách hàng:</b> ${t.tenKhachPo || '--'}</div>
+            </div>
+
+            <div class="info-row">
+              <span class="info-icon">📍</span>
+              <div><b>Kho / Địa chỉ:</b> ${t.khoNhanHangPo || ''} - ${t.diaChiNhanPo || ''}</div>
+            </div>
+
+            ${t.lienHeNhanPo ? `
+            <div class="info-row">
+              <span class="info-icon">📞</span>
+              <div><b>Liên hệ:</b> ${t.lienHeNhanPo}</div>
+            </div>` : ''}
+
+            <div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12.5px;">
+              <div><b>Số Cont:</b> <span style="color:#2563eb;font-weight:700;">${t.soContPo || '(Chưa có)'}</span></div>
+              <div><b>Số Seal:</b> <span style="color:#2563eb;font-weight:700;">${t.soSealPo || '(Chưa có)'}</span></div>
+              ${isXuat ? `<div><b>Cảng đến:</b> <span style="color:#d97706;font-weight:700;">${t.cangDenPo || t.tinhXuatHangPo || '--'}</span></div>` : ''}
+              <div><b>Ngày:</b> ${t.ngayTraHang || '--'}</div>
+            </div>
+
+            <div class="btn-row">
+              ${phoneClean ? `<a href="tel:${phoneClean}" class="btn btn-call">📞 Gọi kho</a>` : ''}
+              ${isXuat ? `<button class="btn btn-update" onclick="openUpdateModal('${t.idPo}', '${t.soContPo || ''}', '${t.soSealPo || ''}', '${t.cangDenPo || ''}')">✏️ Nhập Cont/Seal</button>` : ''}
+              <button class="btn btn-expense" onclick="openExpenseModal('${t.idPo}')">💰 Báo chi phí</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Modal controls
+    function openUpdateModal(idPo, soCont, soSeal, cangDen) {
+      document.getElementById('modalPoId').value = idPo;
+      document.getElementById('modalSoCont').value = soCont;
+      document.getElementById('modalSoSeal').value = soSeal;
+      document.getElementById('modalCangDen').value = cangDen;
+      document.getElementById('modalPortTime').value = '';
+      document.getElementById('updateTripModal').classList.add('open');
+    }
+
+    function openExpenseModal(idPo) {
+      document.getElementById('expPoId').value = idPo;
+      document.getElementById('expAmount').value = '';
+      document.getElementById('expNote').value = '';
+      document.getElementById('expenseModal').classList.add('open');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('open');
+    }
+
+    // Cập nhật Cont/Seal đẩy ngược về Vietsun TMS
+    async function saveTripUpdate() {
+      const token = localStorage.getItem('vs_driver_token');
+      const idPo = document.getElementById('modalPoId').value;
+      const soCont = document.getElementById('modalSoCont').value.trim();
+      const soSeal = document.getElementById('modalSoSeal').value.trim();
+      const cangDen = document.getElementById('modalCangDen').value.trim();
+      const portTime = document.getElementById('modalPortTime').value.trim();
+
+      try {
+        const res = await fetch(`${API_BASE}/driver/update-trip`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ idPo, soCont, soSeal, cangDen, portTime })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          alert('✅ Đã cập nhật và đẩy ngược về Vietsun TMS thành công!');
+          closeModal('updateTripModal');
+          loadDriverData();
+        } else {
+          alert('Lỗi: ' + (data.error || 'Không thể lưu!'));
+        }
+      } catch (err) {
+        alert('Lỗi kết nối máy chủ!');
+      }
+    }
+
+    // Báo chi phí phát sinh
+    async function saveExpense() {
+      const token = localStorage.getItem('vs_driver_token');
+      const idPo = document.getElementById('expPoId').value;
+      const expenseType = document.getElementById('expType').value;
+      const amount = document.getElementById('expAmount').value;
+      const note = document.getElementById('expNote').value.trim();
+
+      if (!amount || amount <= 0) {
+        alert('Vui lòng nhập số tiền phát sinh hợp lệ!');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/driver/add-expense`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ idPo, expenseType, amount, note })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          alert('✅ Đã gửi chi phí phát sinh vào hệ thống đối soát!');
+          closeModal('expenseModal');
+        } else {
+          alert('Lỗi: ' + (data.error || 'Không thể lưu!'));
+        }
+      } catch (err) {
+        alert('Lỗi kết nối máy chủ!');
+      }
+    }
+  </script>
+</body>
+</html>

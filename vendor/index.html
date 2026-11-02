@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vendor Portal - Quản Lý Đội Xe & Đối Chiếu Công Nợ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1e40af;
+      --secondary: #0ea5e9;
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0;
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg); color: var(--text);
+      font-size: 14px;
+    }
+
+    .vendor-nav {
+      background: var(--primary); color: #fff;
+      padding: 12px 24px; display: flex;
+      justify-content: space-between; align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .nav-brand { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    .nav-user { display: flex; align-items: center; gap: 14px; font-size: 13.5px; }
+
+    .main-layout { max-width: 1400px; margin: 20px auto; padding: 0 16px; }
+
+    /* SUMMARY STATS */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px; margin-bottom: 22px;
+    }
+    .stat-card {
+      background: var(--card); padding: 18px; border-radius: 12px;
+      border: 1px solid var(--border); box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+    .stat-label { font-size: 12.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+    .stat-value { font-size: 24px; font-weight: 800; margin-top: 6px; }
+
+    /* CONTROLS BAR */
+    .controls-bar {
+      background: var(--card); padding: 16px; border-radius: 12px;
+      border: 1px solid var(--border); margin-bottom: 18px;
+      display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center;
+    }
+    .btn {
+      padding: 9px 16px; border-radius: 8px; font-weight: 700;
+      font-size: 13.5px; border: none; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+
+    /* TABLE */
+    .table-container {
+      background: var(--card); border-radius: 12px;
+      border: 1px solid var(--border); overflow-x: auto;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    th {
+      background: #f1f5f9; padding: 12px 14px; font-weight: 700;
+      color: #334155; border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:hover { background: #f8fafc; }
+
+    /* LOGIN MODAL */
+    .login-overlay {
+      position: fixed; inset: 0; background: #0f172a;
+      display: flex; align-items: center; justify-content: center; z-index: 200;
+    }
+    .login-box {
+      background: #fff; padding: 32px; border-radius: 16px;
+      width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; }
+    .form-control {
+      width: 100%; padding: 10px 12px; border-radius: 8px;
+      border: 1px solid var(--border); font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN OVERLAY -->
+  <div class="login-overlay" id="vendorLoginView">
+    <div class="login-box">
+      <div style="text-align:center;margin-bottom:20px;">
+        <div style="font-size:42px;margin-bottom:6px;">🏢</div>
+        <h2 style="margin:0;font-size:20px;font-weight:800;color:var(--primary);">CỔNG QUẢN LÝ VENDOR</h2>
+        <p style="margin:4px 0 0;color:var(--text-muted);font-size:13px;">Theo dõi đội xe & Đối chiếu công nợ</p>
+      </div>
+      <form onsubmit="handleVendorLogin(event)">
+        <div class="form-group">
+          <label>Mã nhà xe (Vendor Code)</label>
+          <input type="text" id="vCode" class="form-control" placeholder="VD: HLP, TRANCO, VIETSUN..." required style="text-transform:uppercase;" />
+        </div>
+        <div class="form-group">
+          <label>Mật khẩu</label>
+          <input type="password" id="vPass" class="form-control" placeholder="Nhập mật khẩu" required />
+        </div>
+        <div id="vLoginErr" style="color:var(--danger);font-size:13px;font-weight:600;margin:8px 0;display:none;"></div>
+        <button type="submit" class="btn btn-primary" style="width:100%;padding:12px;font-size:15px;margin-top:10px;">ĐĂNG NHẬP VENDOR</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN VENDOR INTERFACE -->
+  <nav class="vendor-nav">
+    <div class="nav-brand">
+      <span>🚚</span> <span id="navVendorTitle">PORTAL NHÀ XE</span>
+    </div>
+    <div class="nav-user">
+      <span id="navVendorName" style="font-weight:700;">--</span>
+      <button onclick="handleVendorLogout()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;">Đăng xuất</button>
+    </div>
+  </nav>
+
+  <main class="main-layout">
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Tổng chuyến đội xe chạy</div>
+        <div class="stat-value" id="valTotalTrips" style="color:var(--primary);">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Tổng Doanh Thu Cước (Debit)</div>
+        <div class="stat-value" id="valRevenue" style="color:var(--success);">0 đ</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Chi phí phát sinh (Xe báo)</div>
+        <div class="stat-value" id="valExpenses" style="color:var(--warning);">0 đ</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Tổng Thanh Toán Vietsun</div>
+        <div class="stat-value" id="valNetTotal" style="color:#7c3aed;">0 đ</div>
+      </div>
+    </div>
+
+    <!-- CONTROLS & DATE FILTER -->
+    <div class="controls-bar">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <label style="font-weight:700;">Kỳ đối soát:</label>
+        <input type="date" id="reportFromDate" class="form-control" style="width:150px;" />
+        <span>đến</span>
+        <input type="date" id="reportToDate" class="form-control" style="width:150px;" />
+        <button class="btn btn-primary" onclick="loadVendorData()">🔍 Lọc dữ liệu</button>
+      </div>
+      <div>
+        <button class="btn btn-success" onclick="exportExcel()">📊 Xuất Bảng Đối Soát Excel</button>
+      </div>
+    </div>
+
+    <!-- TABLE OF BOOKINGS -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Loại</th>
+            <th>Số Xe</th>
+            <th>Khách Hàng</th>
+            <th>Kho Nhận / Giao</th>
+            <th>Số Cont / Seal</th>
+            <th>Loại Cont</th>
+            <th>Cước Vietsun (Debit)</th>
+            <th>Cước Điều Chỉnh</th>
+            <th>Phát Sinh</th>
+            <th>Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody id="vendorTripsBody">
+          <tr><td colspan="11" style="text-align:center;padding:30px;color:var(--text-muted);">Đang tải dữ liệu chuyến xe...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    const API_BASE = '/api';
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('vs_vendor_token');
+      if (token) {
+        document.getElementById('vendorLoginView').style.display = 'none';
+        initDates();
+        loadVendorData();
+      }
+    });
+
+    function initDates() {
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      // Mặc định từ ngày 26 tháng trước đến 25 tháng này (Chu kỳ Vietsun)
+      document.getElementById('reportFromDate').value = `${yyyy}-${String(now.getMonth()).padStart(2, '0')}-26`;
+      document.getElementById('reportToDate').value = `${yyyy}-${mm}-25`;
+    }
+
+    async function handleVendorLogin(e) {
+      e.preventDefault();
+      const code = document.getElementById('vCode').value.trim();
+      const password = document.getElementById('vPass').value.trim();
+      const errBox = document.getElementById('vLoginErr');
+
+      try {
+        const res = await fetch(`${API_BASE}/auth/vendor-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, password })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          errBox.textContent = data.error || 'Sai mã nhà xe hoặc mật khẩu!';
+          errBox.style.display = 'block';
+          return;
+        }
+
+        localStorage.setItem('vs_vendor_token', data.token);
+        localStorage.setItem('vs_vendor_info', JSON.stringify(data.vendor));
+        document.getElementById('vendorLoginView').style.display = 'none';
+        initDates();
+        loadVendorData();
+      } catch (err) {
+        errBox.textContent = 'Lỗi kết nối máy chủ!';
+        errBox.style.display = 'block';
+      }
+    }
+
+    function handleVendorLogout() {
+      if (confirm('Bạn có muốn đăng xuất?')) {
+        localStorage.removeItem('vs_vendor_token');
+        localStorage.removeItem('vs_vendor_info');
+        location.reload();
+      }
+    }
+
+    async function loadVendorData() {
+      const token = localStorage.getItem('vs_vendor_token');
+      const vInfo = JSON.parse(localStorage.getItem('vs_vendor_info') || '{}');
+      document.getElementById('navVendorName').textContent = vInfo.name || 'Vendor';
+
+      const fromDate = document.getElementById('reportFromDate').value;
+      const toDate = document.getElementById('reportToDate').value;
+
+      try {
+        // 1. Kéo chuyến live đang chạy
+        const resLive = await fetch(`${API_BASE}/vendor/trips`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const liveData = await resLive.json();
+
+        // 2. Kéo báo cáo doanh thu & công nợ
+        const resRev = await fetch(`${API_BASE}/vendor/revenue-report?fromDate=${fromDate}&toDate=${toDate}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const revData = await resRev.json();
+
+        if (liveData.ok) {
+          renderTable(liveData.trips || []);
+        }
+        if (revData.ok && revData.summary) {
+          document.getElementById('valTotalTrips').textContent = liveData.trips ? liveData.trips.length : 0;
+          document.getElementById('valRevenue').textContent = (revData.summary.totalRevenue || 0).toLocaleString('vi-VN') + ' đ';
+          document.getElementById('valExpenses').textContent = (revData.summary.totalExpenses || 0).toLocaleString('vi-VN') + ' đ';
+          document.getElementById('valNetTotal').textContent = (revData.summary.netTotal || 0).toLocaleString('vi-VN') + ' đ';
+        }
+      } catch (err) {
+        console.error('Error loading vendor data:', err);
+      }
+    }
+
+    function renderTable(trips) {
+      const tbody = document.getElementById('vendorTripsBody');
+      if (!trips || trips.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--text-muted);">Không có booking nào của đội xe trong khoảng thời gian này.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = trips.map(t => {
+        const isXuat = t.xuatNhapPo === 'X';
+        const typeBadge = isXuat ? '<span style="color:#ea580c;font-weight:700;">📤 XUẤT</span>' : '<span style="color:#2563eb;font-weight:700;">📥 NHẬP</span>';
+
+        return `
+          <tr>
+            <td><b>#${t.idPo}</b></td>
+            <td>${typeBadge}</td>
+            <td><b style="color:#1e3a8a;">${t.soXePo || '(Chưa có xe)'}</b></td>
+            <td>${t.tenKhachPo || '--'}</td>
+            <td>${t.khoNhanHangPo || ''}</td>
+            <td>${t.soContPo || '--'} / ${t.soSealPo || '--'}</td>
+            <td>${Number(t.cont40Po) > 0 ? "40'" : "20'"}</td>
+            <td><b>${(2500000).toLocaleString('vi-VN')} đ</b></td>
+            <td><span style="color:var(--success);font-weight:700;">--</span></td>
+            <td><span style="color:var(--warning);font-weight:700;">--</span></td>
+            <td>
+              <button onclick="adjustRatePrompt('${t.idPo}')" style="background:#f1f5f9;border:1px solid var(--border);padding:4px 8px;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;">✏️ Chỉnh cước</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function adjustRatePrompt(idPo) {
+      const newRate = prompt('Nhập giá cước mới cần điều chỉnh (VNĐ):', '2500000');
+      if (!newRate) return;
+      const reason = prompt('Lý do điều chỉnh (VD: Phụ phí vượt tải, giá thỏa thuận lại...):', '');
+
+      const token = localStorage.getItem('vs_vendor_token');
+      try {
+        const res = await fetch(`${API_BASE}/vendor/adjust-rate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ idPo, adjustedRate: Number(newRate), reason })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          alert('✅ Đã cập nhật giá cước đối soát thành công!');
+          loadVendorData();
+        } else {
+          alert('Lỗi: ' + (data.error || 'Không thể lưu!'));
+        }
+      } catch (err) {
+        alert('Lỗi kết nối máy chủ!');
+      }
+    }
+
+    function exportExcel() {
+      alert('Đang kết xuất bảng đối chiếu công nợ chuẩn form Vietsun TMS...');
+    }
+  </script>
+</body>
+</html>
