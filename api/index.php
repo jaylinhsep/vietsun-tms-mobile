@@ -5,6 +5,9 @@
  * quản lý Vendor, Tài xế/Số xe, Báo cáo doanh thu & Chi phí phát sinh.
  */
 error_reporting(0);
+@ini_set('memory_limit', '512M');
+@ini_set('pcre.backtrack_limit', '10000000');
+@set_time_limit(120);
 date_default_timezone_set('Asia/Ho_Chi_Minh');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
@@ -438,22 +441,42 @@ function fetch_single_cycle($cycleDate, $forceRefresh = false) {
 
 function parse_tms_ajax_debit_html($html, &$map) {
     if (!$html) return;
-    $fields = ['donGiaDebitPo', 'donGia1ThucTraChoxePo', 'ghiChuPo', 'hinhThucKHopPo', 'notePo'];
-    foreach ($fields as $prefix) {
+    $numFields = [
+        'donGiaDebitPo',
+        'donGia1ThucTraChoxePo',
+        'donGIaPhuLuc',
+        'bocXep2ChiHoPo',
+        'cpBocXepChiHoPo',
+        'bocXep1GnChiPo',
+        'veCauDuongPo',
+        'neoXeDuongCamPo',
+        'chiPhiNeoXePo',
+        'cpduongcam',
+        'cpkhacpo',
+        'chiHoNangContPo',
+        'chiHoHaContPo'
+    ];
+    foreach ($numFields as $prefix) {
+        if (preg_match_all('/id="' . $prefix . '(\d+)"[^>]*value="([^"]*)"/i', $html, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $m) {
+                $id = $m[1];
+                $num = (int)preg_replace('/[^0-9]/', '', $m[2]);
+                if (!isset($map[$id])) $map[$id] = [];
+                if ($num > 0 || !isset($map[$id][$prefix])) {
+                    $map[$id][$prefix] = $num;
+                }
+            }
+        }
+    }
+    $strFields = ['ghiChuPo', 'hinhThucKHopPo', 'notePo'];
+    foreach ($strFields as $prefix) {
         if (preg_match_all('/id="' . $prefix . '(\d+)"[^>]*value="([^"]*)"/i', $html, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $m) {
                 $id = $m[1];
                 $val = html_entity_decode(trim($m[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8');
                 if (!isset($map[$id])) $map[$id] = [];
-                if ($prefix === 'donGiaDebitPo' || $prefix === 'donGia1ThucTraChoxePo') {
-                    $num = (int)preg_replace('/[^0-9]/', '', $val);
-                    if ($num > 0 || !isset($map[$id][$prefix])) {
-                        $map[$id][$prefix] = $num;
-                    }
-                } else {
-                    if ($val !== '' || !isset($map[$id][$prefix])) {
-                        $map[$id][$prefix] = $val;
-                    }
+                if (($val !== '' && $val !== '.') || !isset($map[$id][$prefix])) {
+                    $map[$id][$prefix] = $val;
                 }
             }
         }
@@ -484,7 +507,7 @@ function call_tms_post($endpoint, $postFields) {
 function fetch_tms_debit_map($startDate, $endDate, $forceRefresh = false) {
     global $COOKIE_FILE;
     $safeKey = preg_replace('/[^0-9\-]/', '', $startDate . '_' . $endDate);
-    $cacheFile = sys_get_temp_dir() . '/vietsun_debit_map_' . $safeKey . '.json';
+    $cacheFile = sys_get_temp_dir() . '/vietsun_debit_map_v3_' . $safeKey . '.json';
     if (!$forceRefresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 120)) {
         $cached = json_decode(file_get_contents($cacheFile), true);
         if (is_array($cached) && count($cached) > 0) return $cached;
@@ -497,7 +520,7 @@ function fetch_tms_debit_map($startDate, $endDate, $forceRefresh = false) {
     $userString = 'trucking14<<|7<<|a0b923820d<<|1<<|0.0.0.0.0.0.1.0.1.1.0.1.0.1.';
     $map = [];
 
-    // 1. Lấy cước Debit của toàn bộ Hàng Nhập (NHẬP - ALL: kieuXemTrucking = 7)
+    // 1. Lấy cước Debit toàn bộ Hàng Nhập qua view NHẬP (kieuXemTrucking = 6, idxem = 6: giới hạn 4000 dòng, bao phủ tới idPo mới nhất)
     call_tms_post('index-crud.php', [
         'TenDangNhap' => 'trucking14',
         'userString'  => $userString,
@@ -505,9 +528,9 @@ function fetch_tms_debit_map($startDate, $endDate, $forceRefresh = false) {
         'loai'        => 1,
         'iddt'        => 1,
         'cot'         => 't9<<|1<<|1<<|20<<|kieuXemTrucking',
-        'thongtin'    => '7'
+        'thongtin'    => '6'
     ]);
-    $htmlNhap = call_tms_post('index-ajax.php', [
+    $htmlNhap6 = call_tms_post('index-ajax.php', [
         'userString' => $userString,
         'cv'         => 78,
         'idxem'      => 6,
@@ -517,7 +540,7 @@ function fetch_tms_debit_map($startDate, $endDate, $forceRefresh = false) {
         'endDate'    => $endDate,
         'widthmh'    => 1920
     ]);
-    if (strpos($htmlNhap, 'donGiaDebitPo') === false) {
+    if (strpos($htmlNhap6, 'donGiaDebitPo') === false) {
         vietsun_login();
         call_tms_post('index-crud.php', [
             'TenDangNhap' => 'trucking14',
@@ -526,9 +549,9 @@ function fetch_tms_debit_map($startDate, $endDate, $forceRefresh = false) {
             'loai'        => 1,
             'iddt'        => 1,
             'cot'         => 't9<<|1<<|1<<|20<<|kieuXemTrucking',
-            'thongtin'    => '7'
+            'thongtin'    => '6'
         ]);
-        $htmlNhap = call_tms_post('index-ajax.php', [
+        $htmlNhap6 = call_tms_post('index-ajax.php', [
             'userString' => $userString,
             'cv'         => 78,
             'idxem'      => 6,
@@ -539,9 +562,42 @@ function fetch_tms_debit_map($startDate, $endDate, $forceRefresh = false) {
             'widthmh'    => 1920
         ]);
     }
-    parse_tms_ajax_debit_html($htmlNhap, $map);
+    parse_tms_ajax_debit_html($htmlNhap6, $map);
+    $htmlNhap6 = null;
 
-    // 2. Lấy cước Debit & Tỷ lệ kết hợp của Hàng Xuất (XUẤT - CHI PHÍ: kieuXemTrucking = 3)
+    // 2. Lấy thêm chi tiết Hàng Nhập (Chi hộ bốc xếp, Vé cầu đường, Phí khác, Hình thức kết hợp) qua NHẬP - ALL (kieuXemTrucking = 7, idxem = 7)
+    // Chia 2 khoảng 12 ngày để không chạm ngưỡng LIMIT 1700 dòng của SQL trên TMS
+    call_tms_post('index-crud.php', [
+        'TenDangNhap' => 'trucking14',
+        'userString'  => $userString,
+        'cv'          => 3,
+        'loai'        => 1,
+        'iddt'        => 1,
+        'cot'         => 't9<<|1<<|1<<|20<<|kieuXemTrucking',
+        'thongtin'    => '7'
+    ]);
+    $endTs = strtotime($endDate) ?: time();
+    $nhapWindows = [
+        [date('Y-m-d', $endTs - 24 * 86400), date('Y-m-d', $endTs - 12 * 86400)],
+        [date('Y-m-d', $endTs - 11 * 86400), $endDate]
+    ];
+    foreach ($nhapWindows as $win) {
+        $htmlNhap7 = call_tms_post('index-ajax.php', [
+            'userString' => $userString,
+            'cv'         => 78,
+            'idxem'      => 7,
+            'kieuxem'    => 0,
+            'loaiload'   => 4,
+            'startDate'  => $win[0],
+            'endDate'    => $win[1],
+            'widthmh'    => 1920
+        ]);
+        parse_tms_ajax_debit_html($htmlNhap7, $map);
+        $htmlNhap7 = null;
+    }
+
+    // 3. Lấy cước Debit, Chi hộ bốc xếp & Tỷ lệ kết hợp của Hàng Xuất (XUẤT - CHI PHÍ: kieuXemTrucking = 3, idxem = 2, kieuxem = 0)
+    // Chia 2 khoảng để không chạm ngưỡng LIMIT 1200 dòng của SQL trên TMS
     call_tms_post('index-crud.php', [
         'TenDangNhap' => 'trucking14',
         'userString'  => $userString,
@@ -551,17 +607,26 @@ function fetch_tms_debit_map($startDate, $endDate, $forceRefresh = false) {
         'cot'         => 't9<<|1<<|1<<|20<<|kieuXemTrucking',
         'thongtin'    => '3'
     ]);
-    $htmlXuat = call_tms_post('index-ajax.php', [
-        'userString' => $userString,
-        'cv'         => 78,
-        'idxem'      => 3,
-        'kieuxem'    => 99,
-        'loaiload'   => 4,
-        'startDate'  => $startDate,
-        'endDate'    => $endDate,
-        'widthmh'    => 1920
-    ]);
-    parse_tms_ajax_debit_html($htmlXuat, $map);
+    $startTs = strtotime($startDate) ?: ($endTs - 35 * 86400);
+    $midTs   = (int)(($startTs + $endTs) / 2);
+    $xuatWindows = [
+        [$startDate, date('Y-m-d', $midTs)],
+        [date('Y-m-d', $midTs + 86400), $endDate]
+    ];
+    foreach ($xuatWindows as $win) {
+        $htmlXuat = call_tms_post('index-ajax.php', [
+            'userString' => $userString,
+            'cv'         => 78,
+            'idxem'      => 2,
+            'kieuxem'    => 0,
+            'loaiload'   => 4,
+            'startDate'  => $win[0],
+            'endDate'    => $win[1],
+            'widthmh'    => 1920
+        ]);
+        parse_tms_ajax_debit_html($htmlXuat, $map);
+        $htmlXuat = null;
+    }
 
     // Khôi phục kieuXemTrucking = 6 (NHẬP mặc định)
     call_tms_post('index-crud.php', [
@@ -593,7 +658,7 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false) {
     if (!$baseTs) $baseTs = time();
 
     $cycles = array_unique([
-        get_billing_cycle_param(date('Y-m-d', $baseTs - 10 * 86400)),
+        get_billing_cycle_param(date('Y-m-d', $baseTs - 20 * 86400)),
         get_billing_cycle_param(date('Y-m-d', $baseTs)),
         get_billing_cycle_param(date('Y-m-d', $baseTs + 15 * 86400))
     ]);
@@ -610,12 +675,38 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false) {
         }
     }
 
-    // Lấy bảng giá Debit & Tỷ lệ kết hợp từ TMS trong khoảng [baseTs - 35 ngày, baseTs + 10 ngày]
+    // Lấy chi phí phát sinh do Tài xế báo trên App (/driver) để gộp vào cột Chi hộ bốc xếp & Chi phí khác
+    $drvBocXepMap = [];
+    $drvCpKhacMap = [];
+    $drvExpNoteMap = [];
+    try {
+        $pdo = get_db();
+        $stExp = $pdo->query("SELECT booking_id_po, expense_type, amount, note FROM trip_expenses ORDER BY id ASC");
+        if ($stExp) {
+            foreach ($stExp->fetchAll() as $er) {
+                $pid = (string)($er['booking_id_po'] ?? '');
+                if ($pid === '') continue;
+                $amt = (int)round((float)($er['amount'] ?? 0));
+                $etype = trim($er['expense_type'] ?? '');
+                $enote = trim($er['note'] ?? '');
+                if (stripos($etype, 'bốc xếp') !== false || stripos($etype, 'boc xep') !== false) {
+                    $drvBocXepMap[$pid] = ($drvBocXepMap[$pid] ?? 0) + $amt;
+                } else {
+                    $drvCpKhacMap[$pid] = ($drvCpKhacMap[$pid] ?? 0) + $amt;
+                }
+                if ($enote !== '') {
+                    $drvExpNoteMap[$pid] = isset($drvExpNoteMap[$pid]) ? ($drvExpNoteMap[$pid] . '; ' . $enote) : $enote;
+                }
+            }
+        }
+    } catch (Exception $e) {}
+
+    // Lấy bảng giá Debit & Chi hộ bốc xếp & Tỷ lệ kết hợp từ TMS trong khoảng [baseTs - 35 ngày, baseTs + 10 ngày]
     $startDate = date('Y-m-d', $baseTs - 35 * 86400);
     $endDate   = date('Y-m-d', $baseTs + 10 * 86400);
     $debitMap  = fetch_tms_debit_map($startDate, $endDate, $forceRefresh);
 
-    // Gắn thông tin donGiaDebitPo, ghiChuPo, hinhThucKHopPo vào từng chuyến và lập chỉ mục Hàng Nhập theo Số Cont
+    // Gắn thông tin donGiaDebitPo, bocXep, ghiChuPo, hinhThucKHopPo vào từng chuyến và lập chỉ mục Hàng Nhập theo Số Cont
     $nhapByCont = [];
     foreach ($merged as $idPo => &$item) {
         $dInfo = $debitMap[$idPo] ?? [];
@@ -624,18 +715,37 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false) {
         if (!empty($dInfo['hinhThucKHopPo'])) {
             $item['hinhThucKHopPo'] = $dInfo['hinhThucKHopPo'];
         }
-        if (!empty($dInfo['ghiChuPo'])) {
+        if (!empty($dInfo['ghiChuPo']) && $dInfo['ghiChuPo'] !== '.') {
             $item['ghiChuPo'] = $dInfo['ghiChuPo'];
         }
 
+        // Chi hộ bốc xếp (TMS hoặc Tài xế báo)
+        $tmsBocXep = max((int)($dInfo['bocXep2ChiHoPo'] ?? 0), (int)($dInfo['cpBocXepChiHoPo'] ?? 0));
+        $drvBocXep = (int)($drvBocXepMap[(string)$idPo] ?? 0);
+        $item['_chiHoBocXep'] = $tmsBocXep > 0 ? $tmsBocXep : $drvBocXep;
+
+        // Chi phí phát sinh khác (Neo xe, đường cấm, nâng hạ, phí khác...)
+        $tmsCpKhac = (int)($dInfo['cpkhacpo'] ?? 0)
+            + max((int)($dInfo['neoXeDuongCamPo'] ?? 0), (int)($dInfo['chiPhiNeoXePo'] ?? 0))
+            + (int)($dInfo['cpduongcam'] ?? 0)
+            + (int)($dInfo['chiHoNangContPo'] ?? 0)
+            + (int)($dInfo['chiHoHaContPo'] ?? 0);
+        $drvCpKhac = (int)($drvCpKhacMap[(string)$idPo] ?? 0);
+        $item['_cpKhac'] = $tmsCpKhac > 0 ? $tmsCpKhac : $drvCpKhac;
+
+        // Vé cầu đường
+        $item['_veCauDuong'] = (int)($dInfo['veCauDuongPo'] ?? 0);
+        $item['_expenseNote'] = $drvExpNoteMap[(string)$idPo] ?? '';
+
         if (($item['xuatNhapPo'] ?? '') !== 'X') {
             $contClean = strtoupper(trim($item['soContPo'] ?? ''));
+            $nhapDebit = $item['donGiaDebitPo'] ?: $item['donGia1ThucTraChoxePo'];
             if ($contClean !== '') {
                 if (!isset($nhapByCont[$contClean])) $nhapByCont[$contClean] = [];
                 $nhapByCont[$contClean][] = [
                     'idPo'          => $idPo,
                     'date'          => get_shipment_date_iso($item),
-                    'donGiaDebitPo' => $item['donGiaDebitPo']
+                    'donGiaDebitPo' => $nhapDebit
                 ];
             }
         }
@@ -646,10 +756,14 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false) {
     foreach ($merged as $idPo => &$item) {
         $isXuat = ($item['xuatNhapPo'] ?? '') === 'X';
         if (!$isXuat) {
-            // Hàng Nhập: lấy thẳng giá cước Debit ở TMS Vietsun, nếu chưa có thì để trống (null)
-            $item['_tyLeKetHop'] = '';
-            if (!empty($item['donGiaDebitPo']) && $item['donGiaDebitPo'] > 0) {
-                $item['_debitRate'] = (int)$item['donGiaDebitPo'];
+            // Hàng Nhập: lấy thẳng giá cước Debit ở TMS Vietsun (hoặc đơn giá thực trả xe nếu cột Debit trống), nếu chưa có thì để trống (null)
+            $item['_tyLeKetHop'] = trim($item['hinhThucKHopPo'] ?? '');
+            $nhapRate = !empty($item['donGiaDebitPo']) && $item['donGiaDebitPo'] > 0
+                ? (int)$item['donGiaDebitPo']
+                : (!empty($item['donGia1ThucTraChoxePo']) && $item['donGia1ThucTraChoxePo'] > 0 ? (int)$item['donGia1ThucTraChoxePo'] : 0);
+
+            if ($nhapRate > 0) {
+                $item['_debitRate'] = $nhapRate;
                 $item['_debitType'] = 'NHAP';
                 $item['_debitNote'] = 'Debit TMS';
             } else {
@@ -658,16 +772,22 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false) {
                 $item['_debitNote'] = '';
             }
         } else {
-            // Hàng Xuất: kiểm tra TỶ LỆ KẾT HỢP (hinhThucKHopPo hoặc ghiChuPo dạng 80%, R)
+            // Hàng Xuất: kiểm tra TỶ LỆ KẾT HỢP (hinhThucKHopPo hoặc ghiChuPo dạng 80%, 0.8, R)
             $kh = trim($item['hinhThucKHopPo'] ?? '');
             $gc = trim($item['ghiChuPo'] ?? '');
-            if ($kh === '' && preg_match('/^(\d+(?:\.\d+)?\s*%|R)$/i', $gc)) {
-                $kh = strtoupper(str_replace(' ', '', $gc));
+            if ($kh === '' && preg_match('/(\d+(?:\.\d+)?\s*%|\bR\b)/i', $gc, $mGc)) {
+                $kh = strtoupper(str_replace(' ', '', $mGc[1]));
             }
             $item['_tyLeKetHop'] = $kh;
 
+            $pct = 0;
             if ($kh !== '' && preg_match('/^(\d+(?:\.\d+)?)\s*%$/', $kh, $mPct)) {
                 $pct = (float)$mPct[1];
+            } elseif ($kh !== '' && preg_match('/^0\.(\d+)$/', $kh)) {
+                $pct = (float)$kh * 100.0;
+            }
+
+            if ($pct > 0) {
                 $contClean = strtoupper(trim($item['soContPo'] ?? ''));
                 $xuatDate  = get_shipment_date_iso($item);
                 $matchedNhap = null;
@@ -699,6 +819,14 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false) {
                     $item['_debitRate'] = (int)round($matchedNhap['donGiaDebitPo'] * ($pct / 100.0));
                     $item['_debitType'] = 'KH_PCT';
                     $item['_debitNote'] = "{$pct}% cont Nhập";
+                } elseif (!empty($item['donGia1ThucTraChoxePo']) && $item['donGia1ThucTraChoxePo'] > 0) {
+                    $item['_debitRate'] = (int)$item['donGia1ThucTraChoxePo'];
+                    $item['_debitType'] = 'KH_PCT';
+                    $item['_debitNote'] = "{$pct}% Debit TMS";
+                } elseif (!empty($item['donGiaDebitPo']) && $item['donGiaDebitPo'] > 0) {
+                    $item['_debitRate'] = (int)round($item['donGiaDebitPo'] * ($pct / 100.0));
+                    $item['_debitType'] = 'KH_PCT';
+                    $item['_debitNote'] = "{$pct}% Debit TMS";
                 } else {
                     $item['_debitRate'] = null;
                     $item['_debitType'] = 'EMPTY';
@@ -706,8 +834,11 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false) {
                 }
             } elseif (strtoupper($kh) === 'R') {
                 // Nếu TỶ LỆ KẾT HỢP: R -> lấy full (100%) giá Debit mà TMS Vietsun có
-                if (!empty($item['donGiaDebitPo']) && $item['donGiaDebitPo'] > 0) {
-                    $item['_debitRate'] = (int)$item['donGiaDebitPo'];
+                $rRate = !empty($item['donGiaDebitPo']) && $item['donGiaDebitPo'] > 0
+                    ? (int)$item['donGiaDebitPo']
+                    : (!empty($item['donGia1ThucTraChoxePo']) && $item['donGia1ThucTraChoxePo'] > 0 ? (int)$item['donGia1ThucTraChoxePo'] : 0);
+                if ($rRate > 0) {
+                    $item['_debitRate'] = $rRate;
                     $item['_debitType'] = 'KH_R';
                     $item['_debitNote'] = 'R (100% Debit TMS)';
                 } else {

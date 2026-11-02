@@ -526,11 +526,12 @@
               <th>Số Xe</th>
               <th>Kho / Khách</th>
               <th>Số Cont</th>
+              <th style="text-align:right;">Chi hộ bốc xếp</th>
               <th style="text-align:right;">Cước Debit</th>
             </tr>
           </thead>
           <tbody id="vendorTripsBody">
-            <tr><td colspan="6" style="text-align:center;padding:24px;">Đang tải...</td></tr>
+            <tr><td colspan="7" style="text-align:center;padding:24px;">Đang tải...</td></tr>
           </tbody>
         </table>
       </div>
@@ -1331,7 +1332,15 @@
         const rate = Number(t._debitRate || 0);
         return sum + (rate > 0 ? rate : 0);
       }, 0);
-      const expTotal = (revData && revData.summary && revData.summary.totalExpenses) ? revData.summary.totalExpenses : 0;
+
+      // Cộng tổng chi phí phát sinh (Chi hộ bốc xếp + Chi phí khác + Vé cầu đường) của các chuyến trong kỳ
+      const tripExpTotal = filtered.reduce((sum, t) => {
+        const bx = Number(t._chiHoBocXep || 0);
+        const khac = Number(t._cpKhac || 0);
+        const ve = Number(t._veCauDuong || 0);
+        return sum + (bx > 0 ? bx : 0) + (khac > 0 ? khac : 0) + (ve > 0 ? ve : 0);
+      }, 0);
+      const expTotal = tripExpTotal > 0 ? tripExpTotal : ((revData && revData.summary && revData.summary.totalExpenses) ? revData.summary.totalExpenses : 0);
 
       document.getElementById('valTotalTrips').textContent = filtered.length;
       document.getElementById('valRevenue').textContent = totalDebitRevenue > 0 ? totalDebitRevenue.toLocaleString('vi-VN') + ' đ' : '0 đ';
@@ -1340,19 +1349,26 @@
 
       const tbody = document.getElementById('vendorTripsBody');
       if (!filtered.length) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted);">Không có chuyến xe nào trong kỳ đối soát này.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">Không có chuyến xe nào trong kỳ đối soát này.</td></tr>';
         return;
       }
 
       tbody.innerHTML = filtered.map(t => {
         const isXuat = t.xuatNhapPo === 'X';
-        const khBadge = (isXuat && t._tyLeKetHop)
-          ? `<div style="font-size:10px;background:#ffedd5;color:#9a3412;padding:1px 5px;border-radius:4px;font-weight:800;display:inline-block;margin-top:2px;">KH: ${t._tyLeKetHop}</div>`
+        const khBadge = t._tyLeKetHop
+          ? `<div style="font-size:10px;background:#ffedd5;color:#9a3412;padding:1px 5px;border-radius:4px;font-weight:800;display:inline-block;margin-top:2px;">${isXuat ? 'KH: ' : ''}${t._tyLeKetHop}</div>`
           : '';
         const typeBadge = isXuat
           ? `<span style="color:#ea580c;font-weight:800;">XUẤT</span><br>${khBadge}`
-          : '<span style="color:#2563eb;font-weight:800;">NHẬP</span>';
+          : `<span style="color:#2563eb;font-weight:800;">NHẬP</span>${khBadge ? '<br>' + khBadge : ''}`;
         const tripDate = formatVNDate(getTripDateISO(t)).slice(0, 5);
+
+        const bocXepNum = Number(t._chiHoBocXep || 0);
+        const cpKhacNum = Number(t._cpKhac || 0);
+        const bocXepHtml = bocXepNum > 0
+          ? `<div style="font-weight:800;color:#b45309;white-space:nowrap;">${bocXepNum.toLocaleString('vi-VN')} đ</div>` +
+            (cpKhacNum > 0 ? `<div style="font-size:10px;color:#64748b;">+Khác: ${cpKhacNum.toLocaleString('vi-VN')} đ</div>` : '')
+          : (cpKhacNum > 0 ? `<div style="font-size:10.5px;color:#b45309;font-weight:700;">Khác: ${cpKhacNum.toLocaleString('vi-VN')} đ</div>` : '');
 
         const rateNum = Number(t._debitRate || 0);
         const rateHtml = rateNum > 0
@@ -1367,6 +1383,7 @@
             <td><b style="color:#1e40af;">${t.soXePo || '--'}</b></td>
             <td>${t.khoNhanHangPo || t.tenKhachPo || '--'}</td>
             <td><b>${t.soContPo || '--'}</b></td>
+            <td style="text-align:right;">${bocXepHtml}</td>
             <td style="text-align:right;">${rateHtml}</td>
           </tr>
         `;
@@ -1527,33 +1544,226 @@
       }
     }
 
+    function csvCell(val) {
+      if (val === null || val === undefined) return '';
+      const s = String(val);
+      if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    }
+
+    function formatShortDateVN(isoStr) {
+      if (!isoStr || isoStr === '2021-11-11' || isoStr === '1970-01-01') return '';
+      const p = isoStr.split('-');
+      if (p.length === 3) {
+        const yy = p[0].slice(-2);
+        const m = parseInt(p[1], 10);
+        const d = parseInt(p[2], 10);
+        return `${d}/${m}/${yy}`;
+      }
+      return isoStr;
+    }
+
+    function docSoTienBangChu(soTien) {
+      const n = Math.round(Number(soTien) || 0);
+      if (n <= 0) return 'Không đồng';
+      const chuSo = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
+      function docBlock3(num, full) {
+        const tram = Math.floor(num / 100);
+        const chuc = Math.floor((num % 100) / 10);
+        const donvi = num % 10;
+        let kq = '';
+        if (full || tram > 0) {
+          kq += ' ' + chuSo[tram] + ' trăm';
+          if (chuc === 0 && donvi > 0) kq += ' lẻ';
+        }
+        if (chuc > 1) {
+          kq += ' ' + chuSo[chuc] + ' mươi';
+          if (donvi === 1) kq += ' mốt';
+          else if (donvi === 5) kq += ' lăm';
+          else if (donvi > 0) kq += ' ' + chuSo[donvi];
+        } else if (chuc === 1) {
+          kq += ' mười';
+          if (donvi === 1) kq += ' một';
+          else if (donvi === 5) kq += ' lăm';
+          else if (donvi > 0) kq += ' ' + chuSo[donvi];
+        } else if (chuc === 0 && donvi > 0) {
+          kq += ' ' + chuSo[donvi];
+        }
+        return kq;
+      }
+      const donViNhom = ['', ' ngàn', ' triệu', ' tỷ', ' ngàn tỷ'];
+      let temp = n;
+      const blocks = [];
+      while (temp > 0) {
+        blocks.push(temp % 1000);
+        temp = Math.floor(temp / 1000);
+      }
+      let str = '';
+      for (let i = blocks.length - 1; i >= 0; i--) {
+        if (blocks[i] > 0) {
+          str += docBlock3(blocks[i], i < blocks.length - 1) + donViNhom[i];
+        }
+      }
+      str = str.trim();
+      return str.charAt(0).toUpperCase() + str.slice(1) + ' đồng';
+    }
+
     function exportExcel() {
-      if (!allVendorTrips.length) {
+      const fromDate = document.getElementById('reportFromDate').value;
+      const toDate = document.getElementById('reportToDate').value;
+      const plateFilter = document.getElementById('debitPlateFilter').value;
+
+      let exportTrips = allVendorTrips.filter(t => {
+        const d = getTripDateISO(t);
+        if (fromDate && toDate && d && (d < fromDate || d > toDate)) return false;
+        if (plateFilter !== 'ALL' && cleanPlate(t.soXePo) !== plateFilter) return false;
+        return true;
+      });
+      if (!exportTrips.length) {
+        exportTrips = [...allVendorTrips];
+      }
+      if (!exportTrips.length) {
         alert('Không có dữ liệu chuyến để xuất!');
         return;
       }
-      const headers = ['ID', 'Ngay', 'Loai', 'TyLeKetHop', 'SoXe', 'KhachHang', 'Kho', 'DiaChi', 'SoCont', 'SoSeal', 'LoaiCont', 'CuocDebit', 'GhiChuCuoc'];
-      const rows = allVendorTrips.map(t => [
-        t.idPo,
-        getTripDateISO(t),
-        t.xuatNhapPo === 'X' ? 'XUAT' : 'NHAP',
-        t._tyLeKetHop || '',
-        t.soXePo || '',
-        `"${(t.tenKhachPo || '').replace(/"/g, '""')}"`,
-        `"${(t.khoNhanHangPo || '').replace(/"/g, '""')}"`,
-        `"${(t.diaChiNhanPo || '').replace(/"/g, '""')}"`,
-        t.soContPo || '',
-        t.soSealPo || '',
-        Number(t.cont40Po) > 0 ? '40' : '20',
-        t._debitRate && Number(t._debitRate) > 0 ? Number(t._debitRate) : '',
-        `"${(t._debitNote || '').replace(/"/g, '""')}"`
-      ]);
-      const csv = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+
+      // Sắp xếp theo Ngày thực hiện tăng dần
+      exportTrips.sort((a, b) => {
+        const da = getTripDateISO(a) || '9999-99-99';
+        const db = getTripDateISO(b) || '9999-99-99';
+        if (da !== db) return da.localeCompare(db);
+        return Number(a.idPo || 0) - Number(b.idPo || 0);
+      });
+
+      const vInfo = JSON.parse(localStorage.getItem('vs_vendor_info') || '{}');
+      const vendorName = (vInfo.name || vInfo.code || 'TÊN VENDOR').toUpperCase();
+      const refDate = toDate || getLocalTodayISO(0);
+      const refParts = refDate.split('-');
+      const mmStr = refParts.length === 3 ? refParts[1] : String(new Date().getMonth() + 1).padStart(2, '0');
+      const yyyyStr = refParts.length === 3 ? refParts[0] : String(new Date().getFullYear());
+
+      const lines = [];
+      lines.push(`${csvCell(vendorName)},,,,,Kính gửi,,: CÔNG TY CỔ PHẦN NHẬT VIỆT,,,,,,,,,,`);
+      lines.push(`Địa chỉ:,,,,,Địa chỉ,,": 13-15 Đường B4, Phường An Khánh, Tp.HCM",,,,,,,,,,`);
+      lines.push(`MST,,,,,MST,,: 0303582935,,,,,,,,,,`);
+      lines.push(`BẢNG KÊ THANH TOÁN CƯỚC VẬN CHUYỂN THÁNG ${mmStr}/${yyyyStr} ,,,,,,,,,,,,,,,,,`);
+      lines.push(`(Kèm theo Hóa Đơn số……….………ngày……..tháng……..năm ${yyyyStr}),,,,,,,,,,,,,,,,,`);
+      lines.push(`STT,NGÀY THỰC HIỆN,KHO ĐÓNG-TRẢ,ĐỊA CHỈ,SỐ CONT,SỐ SEAL,SIZE,,X/N,SỐ XE,Kết hợp,BỐC XẾP,CƯỚC VC Chưa VAT,VAT 8%,Cước VC,C.PHÍ PHÁT SINH KHÁC,Vé Cầu Đường,GHI CHÚ`);
+      lines.push(`,,,,,,20,40,,,,,,,,,,`);
+
+      let sum20 = 0;
+      let sum40 = 0;
+      let sumBocXep = 0;
+      let sumChuaVat = 0;
+      let sumVat = 0;
+      let sumCuocVc = 0;
+      let sumCpKhac = 0;
+      let sumVeCauDuong = 0;
+
+      exportTrips.forEach((t, idx) => {
+        const stt = idx + 1;
+        const ngay = formatShortDateVN(getTripDateISO(t));
+        const kho = (t.khoNhanHangPo || t.tenKhachPo || '').trim();
+        const diaChi = [t.diaChiNhanPo, t.tinhNhanPo].filter(Boolean).join(' ').trim();
+        const soCont = (t.soContPo || '').trim();
+        const soSeal = (t.soSealPo || '').trim();
+        const is40 = Number(t.cont40Po) > 0;
+        const c20 = is40 ? '' : 1;
+        const c40 = is40 ? 1 : '';
+        if (is40) sum40 += 1; else sum20 += 1;
+
+        const xn = t.xuatNhapPo === 'X' ? 'X' : 'N';
+        const soXe = (t.soXePo || '').trim();
+
+        let ketHop = (t._tyLeKetHop || t.hinhThucKHopPo || '').trim();
+        const mPct = ketHop.match(/^(\d+(?:\.\d+)?)\s*%$/);
+        if (mPct) {
+          ketHop = String(+(parseFloat(mPct[1]) / 100).toFixed(2));
+        }
+
+        const bocXep = Number(t._chiHoBocXep || 0);
+        if (bocXep > 0) sumBocXep += bocXep;
+
+        const debitRate = Number(t._debitRate || 0);
+        const cuocChuaVat = debitRate > 0 ? Math.round(debitRate / 1.08) : 0;
+        const vat8 = cuocChuaVat > 0 ? +(cuocChuaVat * 0.08).toFixed(2) : 0;
+        const cuocVc = cuocChuaVat > 0 ? +(cuocChuaVat + vat8).toFixed(2) : 0;
+        if (cuocChuaVat > 0) {
+          sumChuaVat += cuocChuaVat;
+          sumVat += vat8;
+          sumCuocVc += cuocVc;
+        }
+
+        const cpKhac = Number(t._cpKhac || 0);
+        if (cpKhac > 0) sumCpKhac += cpKhac;
+
+        const veCauDuong = Number(t._veCauDuong || 0);
+        if (veCauDuong > 0) sumVeCauDuong += veCauDuong;
+
+        const ghiChu = [
+          (t.ghiChuPo && t.ghiChuPo !== '.') ? t.ghiChuPo : '',
+          t._expenseNote || ''
+        ].filter(Boolean).join('; ');
+
+        const row = [
+          stt,
+          csvCell(ngay),
+          csvCell(kho),
+          csvCell(diaChi),
+          csvCell(soCont),
+          csvCell(soSeal),
+          c20,
+          c40,
+          xn,
+          csvCell(soXe),
+          csvCell(ketHop),
+          bocXep > 0 ? bocXep : '',
+          cuocChuaVat > 0 ? cuocChuaVat : '',
+          vat8 > 0 ? vat8 : '',
+          cuocVc > 0 ? cuocVc : '',
+          cpKhac > 0 ? cpKhac : '',
+          veCauDuong > 0 ? veCauDuong : '',
+          csvCell(ghiChu)
+        ];
+        lines.push(row.join(','));
+      });
+
+      const totalPayment = +(sumCuocVc + sumBocXep + sumCpKhac + sumVeCauDuong).toFixed(2);
+      const bangChu = docSoTienBangChu(Math.round(totalPayment));
+
+      lines.push([
+        'TỔNG CỘNG', '', '', '', '', '',
+        sum20 > 0 ? sum20 : '',
+        sum40 > 0 ? sum40 : '',
+        '', '', '',
+        sumBocXep > 0 ? sumBocXep : '',
+        sumChuaVat > 0 ? sumChuaVat : '',
+        sumVat > 0 ? +sumVat.toFixed(2) : '',
+        sumCuocVc > 0 ? +sumCuocVc.toFixed(2) : '',
+        sumCpKhac > 0 ? sumCpKhac : '',
+        sumVeCauDuong > 0 ? sumVeCauDuong : '',
+        ''
+      ].join(','));
+
+      lines.push(`TỔNG TIỀN THANH TOÁN,,,,,,,,,,,,${totalPayment > 0 ? totalPayment : 0},,,,,`);
+      lines.push(`Số tiền Thanh toán:,,,${totalPayment > 0 ? totalPayment : 0},VNĐ (Đã Bao gồm VAT),,,,,,,,,,,,,`);
+      lines.push(`Số tiền bằng chữ:,,,${csvCell(bangChu)},,,,,,,,,,,,,,`);
+      lines.push(`,,,,,,,,,,,,,,,,,`);
+      lines.push(`XÁC NHẬN CỦA NHẬT VIỆT,,,,,,${csvCell(vendorName)},,,,,,,,,,,`);
+      lines.push(`,,,,,,,,,,,,,,,,,`);
+      lines.push(`,,,,,,,,,,,,,,,,,`);
+      lines.push(`,,,,,,,,,,,,,,,,,`);
+      lines.push(`,,,,,,,,,,,,,,,,,`);
+      lines.push(`,,                                                           Nguyễn Ngọc Hoàng,,,,,,,,                    ,,,,,,,`);
+
+      const csv = '\uFEFF' + lines.join('\r\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Doi_Soat_Vendor_${getLocalTodayISO(0)}.csv`;
+      a.download = `Bang_Ke_Cuoc_${vendorName.replace(/\s+/g, '_')}_T${mmStr}_${yyyyStr}.csv`;
       a.click();
     }
   </script>
