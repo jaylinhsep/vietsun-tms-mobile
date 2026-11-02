@@ -1012,25 +1012,32 @@
                 ${phoneClean ? `<a href="tel:${phoneClean}" style="background:#dcfce7;color:#15803d;padding:4px 9px;border-radius:7px;font-weight:800;font-size:11.5px;text-decoration:none;">📞 Gọi</a>` : ''}
               </div>` : ''}
 
-              <!-- Ô NHẬP SỐ XE THAO TÁC NHANH (CHỈ GỢI Ý XE THUỘC VENDOR) -->
+              <!-- Ô NHẬP SỐ XE THAO TÁC NHANH (TỰ ĐỘNG LƯU + NÚT SHARE ZALO) -->
               <div class="quick-truck-box">
                 <div class="quick-truck-row">
                   <span class="quick-truck-label">🚛 Số xe:</span>
                   <div class="quick-truck-inp-wrap">
                     <input
                       type="text"
-                      class="quick-truck-inp"
+                      class="quick-truck-inp ${cleanPlate(t.soXePo) ? 'saved-ok' : ''}"
                       id="inpXe_${t.idPo}"
                       value="${t.soXePo || ''}"
                       placeholder="Chạm chọn hoặc gõ số xe..."
                       autocomplete="off"
                       onfocus="showVendorFleetSuggestions('${t.idPo}', '${t.codePo || ''}', this.value)"
                       oninput="showVendorFleetSuggestions('${t.idPo}', '${t.codePo || ''}', this.value)"
+                      onchange="saveQuickTruck('${t.idPo}', '${t.codePo || ''}')"
                       onkeydown="if(event.key==='Enter'){ event.preventDefault(); saveQuickTruck('${t.idPo}', '${t.codePo || ''}'); }"
                     />
                     <div class="ac-dropdown" id="acXe_${t.idPo}"></div>
                   </div>
-                  <button type="button" class="btn-save-truck" onclick="saveQuickTruck('${t.idPo}', '${t.codePo || ''}')">Lưu</button>
+                  <button
+                    type="button"
+                    class="btn-save-truck"
+                    id="btnZalo_${t.idPo}"
+                    style="background:#0068ff;display:${cleanPlate(t.soXePo) ? 'inline-flex' : 'none'};align-items:center;gap:4px;"
+                    onclick="shareTripToZalo('${t.idPo}')"
+                  >💬 Share Zalo</button>
                 </div>
                 <div id="drvHint_${t.idPo}" style="font-size:11.5px;color:#475569;margin-top:4px;font-weight:600;">
                   ${t._driverName ? `👨‍✈️ Tài xế: ${t._driverName} ${t._driverPhone ? '• 📞 ' + t._driverPhone : ''}` : ''}
@@ -1089,25 +1096,32 @@
               ${phoneClean ? `<a href="tel:${phoneClean}" style="background:#dcfce7;color:#15803d;padding:4px 9px;border-radius:7px;font-weight:800;font-size:11.5px;text-decoration:none;">📞 Gọi</a>` : ''}
             </div>` : ''}
 
-            <!-- Ô NHẬP SỐ XE ĐỂ CHỦ VENDOR ĐIỀU XE HÀNG XUẤT (CHỈ GỢI Ý XE THUỘC VENDOR) -->
+            <!-- Ô NHẬP SỐ XE ĐỂ CHỦ VENDOR ĐIỀU XE HÀNG XUẤT (TỰ ĐỘNG LƯU + NÚT SHARE ZALO) -->
             <div class="quick-truck-box">
               <div class="quick-truck-row">
                 <span class="quick-truck-label" style="color:#9a3412;">🚛 Điều xe:</span>
                 <div class="quick-truck-inp-wrap">
                   <input
                     type="text"
-                    class="quick-truck-inp"
+                    class="quick-truck-inp ${cleanPlate(t.soXePo) ? 'saved-ok' : ''}"
                     id="inpXe_${t.idPo}"
                     value="${t.soXePo || ''}"
                     placeholder="Chạm chọn hoặc gõ số xe..."
                     autocomplete="off"
                     onfocus="showVendorFleetSuggestions('${t.idPo}', '${t.codePo || ''}', this.value)"
                     oninput="showVendorFleetSuggestions('${t.idPo}', '${t.codePo || ''}', this.value)"
+                    onchange="saveQuickTruck('${t.idPo}', '${t.codePo || ''}')"
                     onkeydown="if(event.key==='Enter'){ event.preventDefault(); saveQuickTruck('${t.idPo}', '${t.codePo || ''}'); }"
                   />
                   <div class="ac-dropdown" id="acXe_${t.idPo}"></div>
                 </div>
-                <button type="button" class="btn-save-truck" style="background:#ea580c;" onclick="saveQuickTruck('${t.idPo}', '${t.codePo || ''}')">Lưu</button>
+                <button
+                  type="button"
+                  class="btn-save-truck"
+                  id="btnZalo_${t.idPo}"
+                  style="background:#0068ff;display:${cleanPlate(t.soXePo) ? 'inline-flex' : 'none'};align-items:center;gap:4px;"
+                  onclick="shareTripToZalo('${t.idPo}')"
+                >💬 Share Zalo</button>
               </div>
               <div id="drvHint_${t.idPo}" style="font-size:11.5px;color:#475569;margin-top:4px;font-weight:600;">
                 ${t._driverName ? `👨‍✈️ Tài xế: ${t._driverName} ${t._driverPhone ? '• 📞 ' + t._driverPhone : ''}` : ''}
@@ -1148,7 +1162,7 @@
         const dName = d.full_name || d.driver_name || '';
         const dPhone = d.phone || '';
         return `
-          <div class="ac-item" onclick="selectFleetTruck('${idPo}', '${codePo}', '${p}', '${dName.replace(/'/g, "\\'")}', '${dPhone}')">
+          <div class="ac-item" onmousedown="selectFleetTruck('${idPo}', '${codePo}', '${p}', '${dName.replace(/'/g, "\\'")}', '${dPhone}')">
             <span class="ac-plate">🚛 ${p}</span>
             <span class="ac-drv">${dName}${dPhone ? ' • ' + dPhone : ''}</span>
           </div>
@@ -1172,6 +1186,7 @@
     async function saveQuickTruck(idPo, codePo) {
       const inp = document.getElementById(`inpXe_${idPo}`);
       const drop = document.getElementById(`acXe_${idPo}`);
+      const btnZalo = document.getElementById(`btnZalo_${idPo}`);
       if (drop) drop.classList.remove('open');
       if (!inp) return;
 
@@ -1193,7 +1208,12 @@
         const data = await res.json();
         inp.classList.remove('saving-wait');
         if (data.ok) {
-          inp.classList.add('saved-ok');
+          if (rawPlate) {
+            inp.classList.add('saved-ok');
+            if (btnZalo) btnZalo.style.display = 'inline-flex';
+          } else {
+            if (btnZalo) btnZalo.style.display = 'none';
+          }
           // Cập nhật vào bộ nhớ local
           const found = allVendorTrips.find(x => String(x.idPo) === String(idPo));
           if (found) {
@@ -1206,13 +1226,59 @@
               if (hint) hint.textContent = `👨‍✈️ Tài xế: ${found._driverName} ${found._driverPhone ? '• 📞 ' + found._driverPhone : ''}`;
             }
           }
-          showToast(`✅ Đã gán xe ${rawPlate} cho lô #${idPo} lên TMS!`);
+          showToast(rawPlate ? `✅ Đã tự động lưu xe ${rawPlate} lên TMS!` : `✅ Đã xóa số xe trên TMS!`);
         } else {
           alert('Lỗi: ' + (data.error || 'Không thể lưu số xe'));
         }
       } catch (err) {
         inp.classList.remove('saving-wait');
         alert('Lỗi kết nối máy chủ khi lưu số xe!');
+      }
+    }
+
+    // Copy & Share qua ứng dụng Zalo theo đúng cấu trúc Hàng Nhập / Hàng Xuất
+    async function shareTripToZalo(idPo) {
+      const t = allVendorTrips.find(x => String(x.idPo) === String(idPo));
+      if (!t) return;
+
+      const inp = document.getElementById(`inpXe_${idPo}`);
+      const soXe = cleanPlate((inp ? inp.value : '') || t.soXePo || '');
+      const drv = myFleetList.find(d => cleanPlate(d.assigned_plate) === soXe);
+      const drvName = (drv ? (drv.full_name || drv.driver_name) : t._driverName) || '--';
+      const drvPhone = (drv ? drv.phone : t._driverPhone) || '';
+      const taiXeInfo = drvPhone ? `${drvName} - ${drvPhone}` : drvName;
+
+      const ngay = formatVNDate(getTripDateISO(t));
+      const tenKho = t.khoNhanHangPo || t.tenKhachPo || '--';
+      const soCont = t.soContPo || '--';
+      const isXuat = t.xuatNhapPo === 'X';
+
+      // Hàng Nhập: Ngày trả| Tên Kho | Số Cont | Số Xe | Tài xế |
+      // Hàng Xuất: Ngày đóng hàng| Tên Kho | Số Xe | Tài xế |
+      const textToCopy = isXuat
+        ? `${ngay} | ${tenKho} | ${soXe} | ${taiXeInfo} |`
+        : `${ngay} | ${tenKho} | ${soCont} | ${soXe} | ${taiXeInfo} |`;
+
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(textToCopy);
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = textToCopy;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
+      } catch (_) {}
+
+      showToast(`📋 Đã copy: ${textToCopy}`);
+
+      // Trên điện thoại hỗ trợ Web Share API -> bung bảng chọn mở ứng dụng Zalo ngay
+      if (navigator.share && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        try {
+          await navigator.share({ text: textToCopy });
+        } catch (_) {}
       }
     }
 
