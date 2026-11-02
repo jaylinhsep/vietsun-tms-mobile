@@ -193,7 +193,7 @@
   </main>
 
   <script>
-    const API_BASE = '/api';
+    const API_BASE = '/api/index.php?route=';
 
     window.addEventListener('DOMContentLoaded', () => {
       const token = localStorage.getItem('vs_vendor_token');
@@ -267,7 +267,7 @@
         const liveData = await resLive.json();
 
         // 2. Kéo báo cáo doanh thu & công nợ
-        const resRev = await fetch(`${API_BASE}/vendor/revenue-report?fromDate=${fromDate}&toDate=${toDate}`, {
+        const resRev = await fetch(`${API_BASE}/vendor/revenue-report&fromDate=${fromDate}&toDate=${toDate}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const revData = await resRev.json();

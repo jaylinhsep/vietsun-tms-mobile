@@ -2736,6 +2736,7 @@ if (isset($_GET['api'])) {
     async function fetchSingleCycleFromApi(cycleDateParam) {
       const urlsToTry = [
         `?api=return_json&ngay=${encodeURIComponent(cycleDateParam)}`,
+        `/api/index.php?route=return_json&ngay=${encodeURIComponent(cycleDateParam)}`,
         `/api/return_json?ngay=${encodeURIComponent(cycleDateParam)}`,
         `${REMOTE_BASE}/return_json.php?ngay=${encodeURIComponent(cycleDateParam)}`
       ];
@@ -2841,6 +2842,7 @@ if (isset($_GET['api'])) {
 
       const urlsToTry = [
         "?api=index_crud",
+        "/api/index.php?route=index-crud",
         "/api/index-crud",
         `${REMOTE_BASE}/index-crud.php`
       ];

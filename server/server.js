@@ -15,6 +15,62 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Normalize /api/index.php?route=... to /api/...
+app.use((req, res, next) => {
+  if ((req.path === '/api/index.php' || req.path === '/api/') && req.query.route) {
+    const cleanRoute = String(req.query.route).replace(/^\/+/, '');
+    const restParams = new URLSearchParams(req.query);
+    restParams.delete('route');
+    const qs = restParams.toString();
+    req.url = '/api/' + cleanRoute + (qs ? '?' + qs : '');
+  }
+  next();
+});
+
+// Handle main web app proxy queries (?api=return_json, ?api=index_crud, ?api=login)
+app.all('/', async (req, res, next) => {
+  const apiAction = req.query.api;
+  if (!apiAction) return next();
+
+  try {
+    if (apiAction === 'return_json') {
+      const ngay = req.query.ngay || new Date().toISOString().slice(0, 10);
+      const data = await fetchVietsunCycle(ngay);
+      return res.json(data);
+    }
+    if (apiAction === 'index_crud') {
+      const result = await pushUpdateToVietsun(req.body || {});
+      return res.send(result);
+    }
+    if (apiAction === 'login') {
+      const { username } = req.body || {};
+      return res.json({ ok: true, userString: username || 'trucking14' });
+    }
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+  next();
+});
+
+app.get('/api/return_json', async (req, res) => {
+  try {
+    const ngay = req.query.ngay || new Date().toISOString().slice(0, 10);
+    const data = await fetchVietsunCycle(ngay);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+app.post('/api/index-crud', async (req, res) => {
+  try {
+    const result = await pushUpdateToVietsun(req.body || {});
+    res.send(result);
+  } catch (err) {
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // Serve static frontend files (PWA, driver, vendor)
 const rootDir = path.join(__dirname, '..');
 app.use(express.static(rootDir));
