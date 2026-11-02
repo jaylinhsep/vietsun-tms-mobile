@@ -959,7 +959,13 @@
         const isXuat = t.xuatNhapPo === 'X';
         const is40 = Number(t.cont40Po) > 0;
         const sizeBadge = is40 ? '<span class="badge badge-40">40"</span>' : '<span class="badge badge-20">20"</span>';
-        const tripDate = formatVNDate(getTripDateISO(t));
+        const tripDateIso = getTripDateISO(t);
+        const tripDate = formatVNDate(tripDateIso);
+        const isLocked = Boolean(t._isLocked) || (tripDateIso && tripDateIso < getLocalTodayISO(0));
+        const isPending = Boolean(t._pendingApproval);
+        const lockOrPendingBadge = isLocked
+          ? '<span class="badge" style="background:#fee2e2;color:#b91c1c;">🔒 Đã khóa sổ</span>'
+          : (isPending ? `<span class="badge" id="pendBadge_${t.idPo}" style="background:#fef3c7;color:#b45309;">⏳ Chờ duyệt TMS</span>` : `<span class="badge" id="pendBadge_${t.idPo}" style="background:#fef3c7;color:#b45309;display:none;">⏳ Chờ duyệt TMS</span>`);
         const phoneClean = (t.lienHeNhanPo || '').replace(/[^0-9]/g, '');
         const warehouseTitle = t.khoNhanHangPo || t.tenKhachPo || '--';
         const addrText = `${t.diaChiNhanPo || ''}${t.tinhNhanPo ? ' (' + t.tinhNhanPo + ')' : ''}`;
@@ -971,10 +977,11 @@
           return `
             <div class="po-card nhap-card" id="card_${t.idPo}">
               <div class="card-top">
-                <div style="display:flex;gap:5px;align-items:center;">
+                <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
                   <span class="badge badge-nhap">📥 NHẬP</span>
                   ${sizeBadge}
                   <span style="font-size:11.5px;font-weight:700;color:#64748b;">#${t.idPo}</span>
+                  ${lockOrPendingBadge}
                 </div>
                 <span class="badge badge-date">📅 ${tripDate}</span>
               </div>
@@ -1011,7 +1018,7 @@
                 ${phoneClean ? `<a href="tel:${phoneClean}" style="background:#dcfce7;color:#15803d;padding:4px 9px;border-radius:7px;font-weight:800;font-size:11.5px;text-decoration:none;">📞 Gọi</a>` : ''}
               </div>` : ''}
 
-              <!-- Ô NHẬP SỐ XE THAO TÁC NHANH (TỰ ĐỘNG LƯU + NÚT SHARE ZALO) -->
+              <!-- Ô NHẬP SỐ XE THAO TÁC NHANH (TỰ ĐỘNG LƯU CHỜ DUYỆT + NÚT SHARE ZALO) -->
               <div class="quick-truck-box">
                 <div class="quick-truck-row">
                   <span class="quick-truck-label">🚛 Số xe:</span>
@@ -1021,12 +1028,14 @@
                       class="quick-truck-inp ${cleanPlate(t.soXePo) ? 'saved-ok' : ''}"
                       id="inpXe_${t.idPo}"
                       value="${t.soXePo || ''}"
-                      placeholder="Chạm chọn hoặc gõ số xe..."
+                      placeholder="${isLocked ? 'Đã khóa sổ ngày cũ' : 'Chạm chọn hoặc gõ số xe...'}"
                       autocomplete="off"
+                      ${isLocked ? 'disabled style="background:#e2e8f0;color:#64748b;cursor:not-allowed;"' : `
                       onfocus="showVendorFleetSuggestions('${t.idPo}', '${t.codePo || ''}', this.value)"
                       oninput="showVendorFleetSuggestions('${t.idPo}', '${t.codePo || ''}', this.value)"
                       onchange="saveQuickTruck('${t.idPo}', '${t.codePo || ''}')"
                       onkeydown="if(event.key==='Enter'){ event.preventDefault(); saveQuickTruck('${t.idPo}', '${t.codePo || ''}'); }"
+                      `}
                     />
                     <div class="ac-dropdown" id="acXe_${t.idPo}"></div>
                   </div>
@@ -1041,6 +1050,7 @@
                 <div id="drvHint_${t.idPo}" style="font-size:11.5px;color:#475569;margin-top:4px;font-weight:600;">
                   ${t._driverName ? `👨‍✈️ Tài xế: ${t._driverName} ${t._driverPhone ? '• 📞 ' + t._driverPhone : ''}` : ''}
                 </div>
+                ${isLocked ? `<div style="font-size:10.5px;color:#b91c1c;margin-top:3px;font-weight:700;">🔒 Đã kết thúc ngày chạy - Khóa chỉnh sửa</div>` : ''}
               </div>
             </div>
           `;
@@ -1052,10 +1062,11 @@
         return `
           <div class="po-card xuat-card" id="card_${t.idPo}">
             <div class="card-top">
-              <div style="display:flex;gap:5px;align-items:center;">
+              <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
                 <span class="badge badge-xuat">📤 XUẤT</span>
                 ${sizeBadge}
                 <span style="font-size:11.5px;font-weight:700;color:#64748b;">#${t.idPo}</span>
+                ${lockOrPendingBadge}
               </div>
               <span class="badge badge-date">📅 ${tripDate}</span>
             </div>
@@ -1095,7 +1106,7 @@
               ${phoneClean ? `<a href="tel:${phoneClean}" style="background:#dcfce7;color:#15803d;padding:4px 9px;border-radius:7px;font-weight:800;font-size:11.5px;text-decoration:none;">📞 Gọi</a>` : ''}
             </div>` : ''}
 
-            <!-- Ô NHẬP SỐ XE ĐỂ CHỦ VENDOR ĐIỀU XE HÀNG XUẤT (TỰ ĐỘNG LƯU + NÚT SHARE ZALO) -->
+            <!-- Ô NHẬP SỐ XE ĐỂ CHỦ VENDOR ĐIỀU XE HÀNG XUẤT (TỰ ĐỘNG LƯU CHỜ DUYỆT + NÚT SHARE ZALO) -->
             <div class="quick-truck-box">
               <div class="quick-truck-row">
                 <span class="quick-truck-label" style="color:#9a3412;">🚛 Điều xe:</span>
@@ -1105,12 +1116,14 @@
                     class="quick-truck-inp ${cleanPlate(t.soXePo) ? 'saved-ok' : ''}"
                     id="inpXe_${t.idPo}"
                     value="${t.soXePo || ''}"
-                    placeholder="Chạm chọn hoặc gõ số xe..."
+                    placeholder="${isLocked ? 'Đã khóa sổ ngày cũ' : 'Chạm chọn hoặc gõ số xe...'}"
                     autocomplete="off"
+                    ${isLocked ? 'disabled style="background:#e2e8f0;color:#64748b;cursor:not-allowed;"' : `
                     onfocus="showVendorFleetSuggestions('${t.idPo}', '${t.codePo || ''}', this.value)"
                     oninput="showVendorFleetSuggestions('${t.idPo}', '${t.codePo || ''}', this.value)"
                     onchange="saveQuickTruck('${t.idPo}', '${t.codePo || ''}')"
                     onkeydown="if(event.key==='Enter'){ event.preventDefault(); saveQuickTruck('${t.idPo}', '${t.codePo || ''}'); }"
+                    `}
                   />
                   <div class="ac-dropdown" id="acXe_${t.idPo}"></div>
                 </div>
@@ -1125,9 +1138,10 @@
               <div id="drvHint_${t.idPo}" style="font-size:11.5px;color:#475569;margin-top:4px;font-weight:600;">
                 ${t._driverName ? `👨‍✈️ Tài xế: ${t._driverName} ${t._driverPhone ? '• 📞 ' + t._driverPhone : ''}` : ''}
               </div>
-              <div style="font-size:10.5px;color:#9a3412;margin-top:3px;font-style:italic;">
-                * Số Cont & Seal do tài xế tự nhập trên App Tài Xế (/driver)
-              </div>
+              ${isLocked
+                ? `<div style="font-size:10.5px;color:#b91c1c;margin-top:3px;font-weight:700;">🔒 Đã kết thúc ngày chạy - Khóa chỉnh sửa</div>`
+                : `<div style="font-size:10.5px;color:#9a3412;margin-top:3px;font-style:italic;">* Số Cont & Seal do tài xế tự nhập trên App Tài Xế (/driver)</div>`
+              }
             </div>
           </div>
         `;
@@ -1213,10 +1227,13 @@
           } else {
             if (btnZalo) btnZalo.style.display = 'none';
           }
+          const pendBadge = document.getElementById(`pendBadge_${idPo}`);
+          if (pendBadge) pendBadge.style.display = 'inline-block';
           // Cập nhật vào bộ nhớ local
           const found = allVendorTrips.find(x => String(x.idPo) === String(idPo));
           if (found) {
             found.soXePo = rawPlate;
+            found._pendingApproval = { status: 'PENDING' };
             const drv = myFleetList.find(d => cleanPlate(d.assigned_plate) === rawPlate);
             if (drv) {
               found._driverName = drv.full_name || drv.driver_name || '';
@@ -1225,7 +1242,7 @@
               if (hint) hint.textContent = `👨‍✈️ Tài xế: ${found._driverName} ${found._driverPhone ? '• 📞 ' + found._driverPhone : ''}`;
             }
           }
-          showToast(rawPlate ? `✅ Đã tự động lưu xe ${rawPlate} lên TMS!` : `✅ Đã xóa số xe trên TMS!`);
+          showToast(rawPlate ? `⏳ Đã lưu xe ${rawPlate} (Chờ Điều vận duyệt đẩy lên TMS)!` : `⏳ Đã gửi yêu cầu xóa số xe chờ duyệt!`);
         } else {
           alert('Lỗi: ' + (data.error || 'Không thể lưu số xe'));
         }

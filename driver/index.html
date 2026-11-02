@@ -362,7 +362,7 @@
       </div>
       <div class="btn-row" style="margin-top:18px;">
         <button class="btn" style="background:#e2e8f0;color:#334155;" onclick="closeModal('updateTripModal')">Đóng</button>
-        <button class="btn btn-update" onclick="saveTripUpdate()">ĐẨY VỀ TMS VIETSUN</button>
+        <button class="btn btn-update" onclick="saveTripUpdate()">⏳ GỬI ĐIỀU VẬN DUYỆT</button>
       </div>
     </div>
   </div>
@@ -659,13 +659,19 @@
         const typeBadge = isXuat ? '<span class="badge badge-xuat">📤 XUẤT</span>' : '<span class="badge badge-nhap">📥 NHẬP</span>';
         const sizeBadge = is40 ? '<span class="badge badge-40">40"</span>' : '<span class="badge badge-20">20"</span>';
         const phoneClean = (t.lienHeNhanPo || '').replace(/[^0-9]/g, '');
-        const tripDate = formatVNDate(getTripDateISO(t));
+        const tripDateIso = getTripDateISO(t);
+        const tripDate = formatVNDate(tripDateIso);
+        const isLocked = Boolean(t._isLocked) || (tripDateIso && tripDateIso < getLocalTodayISO(0));
+        const isPending = Boolean(t._pendingApproval);
+        const statusBadge = isLocked
+          ? '<span class="badge" style="background:#fee2e2;color:#b91c1c;">🔒 Đã khóa sổ</span>'
+          : (isPending ? '<span class="badge" style="background:#fef3c7;color:#b45309;">⏳ Chờ duyệt TMS</span>' : '');
 
         return `
           <div class="trip-card ${typeClass}">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <div style="display:flex;gap:5px;align-items:center;">
-                ${typeBadge} ${sizeBadge} <b style="font-size:12.5px;color:#64748b;">#${t.idPo}</b>
+              <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+                ${typeBadge} ${sizeBadge} <b style="font-size:12.5px;color:#64748b;">#${t.idPo}</b> ${statusBadge}
               </div>
               <span class="badge" style="background:#f1f5f9;color:#0f172a;">📅 ${tripDate}</span>
             </div>
@@ -698,8 +704,14 @@
 
             <div class="btn-row">
               ${phoneClean ? `<a href="tel:${phoneClean}" class="btn btn-call">📞 Gọi kho</a>` : ''}
-              ${isXuat ? `<button class="btn btn-update" onclick="openUpdateModal('${t.idPo}', '${t.codePo || ''}', '${t.soContPo || ''}', '${t.soSealPo || ''}', '${t.tinhXuatHangPo || t.cangDenPo || ''}')">✏️ Nhập Cont/Seal</button>` : ''}
-              <button class="btn btn-expense" onclick="openExpenseModal('${t.idPo}')">💰 Báo chi phí</button>
+              ${isLocked ? `
+                <div style="flex:2;background:#f1f5f9;color:#94a3b8;border:1px solid #cbd5e1;padding:10px;border-radius:10px;text-align:center;font-weight:700;font-size:12px;">
+                  🔒 Đã kết thúc ngày - Khóa chỉnh sửa
+                </div>
+              ` : `
+                ${isXuat ? `<button class="btn btn-update" onclick="openUpdateModal('${t.idPo}', '${t.codePo || ''}', '${t.soContPo || ''}', '${t.soSealPo || ''}', '${t.tinhXuatHangPo || t.cangDenPo || ''}')">✏️ Nhập Cont/Seal</button>` : ''}
+                <button class="btn btn-expense" onclick="openExpenseModal('${t.idPo}')">💰 Báo chi phí</button>
+              `}
             </div>
           </div>
         `;
@@ -747,7 +759,7 @@
         });
         const data = await res.json();
         if (data.ok) {
-          alert('✅ Đã cập nhật và đẩy ngược về Vietsun TMS thành công!');
+          alert('⏳ Đã gửi thông tin Cont/Seal chờ Điều vận kiểm duyệt trước khi đẩy lên TMS!');
           closeModal('updateTripModal');
           loadDriverData(true);
         } else {

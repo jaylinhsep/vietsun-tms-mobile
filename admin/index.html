@@ -136,25 +136,71 @@
 
   <main class="container">
     <div class="stats-row">
-      <div class="stat-card">
+      <div class="stat-card" style="border-left:4px solid var(--warning);cursor:pointer;" onclick="switchAdminTab('APPROVALS')">
+        <div class="stat-title">⏳ Chờ kiểm duyệt đẩy TMS</div>
+        <div class="stat-num" id="statPendingCount" style="color:var(--warning);">0</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Thông tin Vendor / Tài xế nhập chờ bạn duyệt</div>
+      </div>
+      <div class="stat-card" style="cursor:pointer;" onclick="switchAdminTab('VENDORS')">
         <div class="stat-title">Tổng số Nhà xe (Vendor)</div>
         <div class="stat-num" id="statVendorCount">0</div>
         <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">ID: viết liền không dấu | Pass mặc định: 123456</div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card" style="cursor:pointer;" onclick="switchAdminTab('DRIVERS')">
         <div class="stat-title">Tổng số Xe / Tài xế</div>
         <div class="stat-num" id="statDriverCount" style="color:var(--success);">0</div>
         <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">User: Số xe | Pass mặc định: 123456</div>
       </div>
     </div>
 
-    <div class="tabs">
-      <button class="tab-btn active" id="tabBtnVendors" onclick="switchAdminTab('VENDORS')">🏢 Quản lý Nhà xe / Vendor</button>
+    <div class="tabs" style="flex-wrap:wrap;">
+      <button class="tab-btn active" id="tabBtnApprovals" onclick="switchAdminTab('APPROVALS')">
+        ⏳ Duyệt thông tin đẩy TMS (<span id="tabPendingCount">0</span>)
+      </button>
+      <button class="tab-btn" id="tabBtnVendors" onclick="switchAdminTab('VENDORS')">🏢 Quản lý Nhà xe / Vendor</button>
       <button class="tab-btn" id="tabBtnDrivers" onclick="switchAdminTab('DRIVERS')">🚛 Quản lý Xe & Tài xế</button>
     </div>
 
+    <!-- TAB 0: APPROVAL QUEUE (KIỂM DUYỆT THÔNG TIN VENDOR & TÀI XẾ TRƯỚC KHI ĐẨY VỀ TMS) -->
+    <div id="sectionApprovals">
+      <div class="toolbar">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;flex:1;">
+          <select id="filterApprovalStatus" class="form-control" style="max-width:210px;font-weight:700;" onchange="renderApprovals()">
+            <option value="PENDING">⏳ Đang chờ duyệt</option>
+            <option value="APPROVED">✅ Đã duyệt đẩy TMS</option>
+            <option value="REJECTED">❌ Đã từ chối</option>
+            <option value="ALL">📋 Tất cả trạng thái</option>
+          </select>
+          <input type="text" id="searchApprovalInput" class="form-control" style="max-width:300px;" placeholder="🔍 Tìm mã PO, số xe, số cont, nhà xe..." oninput="renderApprovals()" />
+          <button class="btn" style="background:#f1f5f9;border:1px solid var(--border);" onclick="loadOverview()">🔄 Làm mới</button>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-success" onclick="approveAllPending()" id="btnApproveAll">✅ Duyệt tất cả chờ duyệt & Đẩy TMS</button>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Thời gian</th>
+              <th>Người gửi</th>
+              <th>Lô hàng / Ngày chạy</th>
+              <th>Kho / Khách hàng</th>
+              <th>Nội dung thay đổi (TMS cũ ➔ Mới)</th>
+              <th>Trạng thái</th>
+              <th>Thao tác duyệt</th>
+            </tr>
+          </thead>
+          <tbody id="approvalsTableBody">
+            <tr><td colspan="7" style="text-align:center;padding:30px;">Đang tải danh sách chờ duyệt...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- TAB 1: VENDORS -->
-    <div id="sectionVendors">
+    <div id="sectionVendors" style="display:none;">
       <div class="toolbar">
         <div style="display:flex;gap:10px;align-items:center;flex:1;max-width:420px;">
           <input type="text" id="searchVendorInput" class="form-control" placeholder="🔍 Tìm kiếm tên nhà xe hoặc mã ID..." oninput="renderVendors()" />
@@ -291,14 +337,29 @@
     const API_BASE = '/api/index.php?route=';
     let allVendors = [];
     let allDrivers = [];
+    let allApprovals = [];
+
+    const FIELD_LABELS = {
+      soXePo: 'Số xe',
+      donViVcPo: 'Nhà xe (ĐVVT)',
+      soContPo: 'Số Cont',
+      soSealPo: 'Số Seal',
+      tinhXuatHangPo: 'Cảng đến',
+      cangDenPo: 'Cảng đến',
+      portTimePo: 'Port Time'
+    };
 
     window.addEventListener('DOMContentLoaded', () => {
       loadOverview();
+      // Tự động kiểm tra yêu cầu mới mỗi 15 giây
+      setInterval(loadOverview, 15000);
     });
 
     function switchAdminTab(tab) {
+      document.getElementById('tabBtnApprovals').classList.toggle('active', tab === 'APPROVALS');
       document.getElementById('tabBtnVendors').classList.toggle('active', tab === 'VENDORS');
       document.getElementById('tabBtnDrivers').classList.toggle('active', tab === 'DRIVERS');
+      document.getElementById('sectionApprovals').style.display = tab === 'APPROVALS' ? 'block' : 'none';
       document.getElementById('sectionVendors').style.display = tab === 'VENDORS' ? 'block' : 'none';
       document.getElementById('sectionDrivers').style.display = tab === 'DRIVERS' ? 'block' : 'none';
     }
@@ -310,14 +371,154 @@
         if (data.ok) {
           allVendors = data.vendors || [];
           allDrivers = data.drivers || [];
+          allApprovals = data.pendingApprovals || [];
+          const pCount = Number(data.pendingCount || 0);
+          document.getElementById('statPendingCount').textContent = pCount;
+          document.getElementById('tabPendingCount').textContent = pCount;
           document.getElementById('statVendorCount').textContent = allVendors.length;
           document.getElementById('statDriverCount').textContent = allDrivers.length;
           populateVendorDropdowns();
+          renderApprovals();
           renderVendors();
           renderDrivers();
         }
       } catch (err) {
         console.error('Load overview error:', err);
+      }
+    }
+
+    function renderApprovals() {
+      const stFilter = document.getElementById('filterApprovalStatus').value;
+      const q = (document.getElementById('searchApprovalInput').value || '').toLowerCase();
+
+      const filtered = allApprovals.filter(r => {
+        if (stFilter !== 'ALL' && r.status !== stFilter) return false;
+        if (!q) return true;
+        const rawText = `${r.id_po} ${r.actor_name} ${r.vendor_name} ${r.khach_kho} ${r.changes_json}`.toLowerCase();
+        return rawText.includes(q);
+      });
+
+      const tbody = document.getElementById('approvalsTableBody');
+      if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text-muted);">Không có yêu cầu thay đổi nào trong mục này.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(r => {
+        const isXuat = r.xuat_nhap === 'X';
+        const typeBadge = isXuat
+          ? '<span style="background:#ffedd5;color:#c2410c;padding:2px 6px;border-radius:4px;font-weight:800;font-size:11px;">XUẤT</span>'
+          : '<span style="background:#dbeafe;color:#1d4ed8;padding:2px 6px;border-radius:4px;font-weight:800;font-size:11px;">NHẬP</span>';
+        const roleBadge = r.actor_role === 'VENDOR'
+          ? '<span style="background:#ede9fe;color:#6d28d9;padding:2px 6px;border-radius:4px;font-weight:800;font-size:11px;">🏢 VENDOR</span>'
+          : '<span style="background:#dcfce7;color:#15803d;padding:2px 6px;border-radius:4px;font-weight:800;font-size:11px;">🚛 TÀI XẾ</span>';
+
+        const changes = r.changes || {};
+        const diffHtml = Object.keys(changes).map(fKey => {
+          const lbl = FIELD_LABELS[fKey] || fKey;
+          const oldVal = changes[fKey].old || '(Trống)';
+          const newVal = changes[fKey].new || '(Xóa trống)';
+          return `<div style="margin:2px 0;"><b>${lbl}:</b> <span style="color:#64748b;text-decoration:line-through;">${oldVal}</span> ➔ <span style="background:#dcfce7;color:#166534;font-weight:800;padding:1px 6px;border-radius:4px;">${newVal}</span></div>`;
+        }).join('');
+
+        let statusBadge = '';
+        let actionHtml = '';
+        if (r.status === 'PENDING') {
+          statusBadge = '<span style="background:#fef3c7;color:#b45309;padding:4px 8px;border-radius:6px;font-weight:800;font-size:12px;">⏳ Chờ duyệt</span>';
+          actionHtml = `
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button class="btn btn-sm btn-success" onclick="approveSingle(${r.id})">✅ Duyệt & Đẩy TMS</button>
+              <button class="btn btn-sm" style="background:#fee2e2;color:#b91c1c;" onclick="rejectSingle(${r.id})">❌ Từ chối</button>
+            </div>
+          `;
+        } else if (r.status === 'APPROVED') {
+          statusBadge = '<span style="background:#dcfce7;color:#15803d;padding:4px 8px;border-radius:6px;font-weight:800;font-size:12px;">✅ Đã đẩy TMS</span>';
+          actionHtml = `<span style="font-size:11.5px;color:#64748b;">Duyệt lúc: ${r.reviewed_at || '--'}</span>`;
+        } else {
+          statusBadge = '<span style="background:#fee2e2;color:#b91c1c;padding:4px 8px;border-radius:6px;font-weight:800;font-size:12px;">❌ Đã từ chối</span>';
+          actionHtml = `<span style="font-size:11.5px;color:#64748b;">Từ chối: ${r.reviewed_at || '--'}</span>`;
+        }
+
+        return `
+          <tr>
+            <td style="font-size:12px;color:#475569;white-space:nowrap;">${r.created_at || '--'}</td>
+            <td>
+              ${roleBadge}
+              <div style="font-weight:800;margin-top:3px;color:#0f172a;">${r.actor_name}</div>
+              ${r.vendor_name && r.actor_role === 'DRIVER' ? `<div style="font-size:11.5px;color:#64748b;">Nhà xe: ${r.vendor_name}</div>` : ''}
+            </td>
+            <td style="white-space:nowrap;">
+              ${typeBadge} <b style="color:#1e40af;">#${r.id_po}</b>
+              <div style="font-size:12px;color:#475569;margin-top:2px;">📅 ${r.trip_date || '--'}</div>
+            </td>
+            <td style="max-width:240px;font-weight:600;">${r.khach_kho || '--'}</td>
+            <td>${diffHtml}</td>
+            <td>${statusBadge}</td>
+            <td>${actionHtml}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function approveSingle(id) {
+      try {
+        const res = await fetch(`${API_BASE}/admin/approve-update`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          loadOverview();
+        } else {
+          alert('Lỗi: ' + (data.error || 'Không thể duyệt'));
+        }
+      } catch (err) {
+        alert('Lỗi kết nối máy chủ!');
+      }
+    }
+
+    async function approveAllPending() {
+      const pendingItems = allApprovals.filter(r => r.status === 'PENDING');
+      if (!pendingItems.length) {
+        alert('Hiện không có yêu cầu nào đang chờ duyệt!');
+        return;
+      }
+      if (!confirm(`Bạn có chắc muốn DUYỆT & ĐẨY TẤT CẢ (${pendingItems.length}) yêu cầu đang chờ vào Vietsun TMS?`)) return;
+      const btn = document.getElementById('btnApproveAll');
+      btn.disabled = true;
+      btn.textContent = '⏳ Đang đẩy lên TMS...';
+      try {
+        const res = await fetch(`${API_BASE}/admin/approve-update`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ approveAll: true })
+        });
+        const data = await res.json();
+        alert(data.message || 'Đã duyệt tất cả!');
+        loadOverview();
+      } catch (err) {
+        alert('Lỗi kết nối máy chủ!');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '✅ Duyệt tất cả chờ duyệt & Đẩy TMS';
+      }
+    }
+
+    async function rejectSingle(id) {
+      if (!confirm('Từ chối yêu cầu thay đổi này (Giữ nguyên dữ liệu gốc trên TMS)?')) return;
+      try {
+        const res = await fetch(`${API_BASE}/admin/reject-update`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          loadOverview();
+        }
+      } catch (err) {
+        alert('Lỗi kết nối máy chủ!');
       }
     }
 

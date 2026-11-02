@@ -98,7 +98,7 @@ function to_clean_code($str) {
 // - Nhiều xe có thể dùng chung SĐT tài xế
 // - Lưu thêm CCCD, GPLX
 function ensure_schema($pdo) {
-    $flagFile = sys_get_temp_dir() . '/vietsun_schema_v2.flag';
+    $flagFile = sys_get_temp_dir() . '/vietsun_schema_v3.flag';
     if (file_exists($flagFile)) return;
 
     try { $pdo->exec("ALTER TABLE `drivers` DROP INDEX `phone`"); } catch (Exception $e) {}
@@ -107,6 +107,29 @@ function ensure_schema($pdo) {
     try { $pdo->exec("ALTER TABLE `drivers` ADD COLUMN `cccd` VARCHAR(100) NULL"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE `drivers` ADD COLUMN `gplx` VARCHAR(100) NULL"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE `drivers` ADD UNIQUE INDEX `idx_assigned_plate` (`assigned_plate`)"); } catch (Exception $e) {}
+
+    // Bảng lưu yêu cầu cập nhật từ Vendor & Tài xế chờ Điều vận duyệt trước khi đẩy lên TMS Vietsun
+    try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `tms_pending_approvals` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `id_po` VARCHAR(32) NOT NULL,
+                `code_po` VARCHAR(64) NOT NULL DEFAULT '',
+                `trip_date` VARCHAR(20) NOT NULL DEFAULT '',
+                `xuat_nhap` VARCHAR(10) NOT NULL DEFAULT '',
+                `khach_kho` VARCHAR(255) NOT NULL DEFAULT '',
+                `actor_role` VARCHAR(20) NOT NULL,
+                `actor_name` VARCHAR(120) NOT NULL,
+                `vendor_name` VARCHAR(120) NOT NULL DEFAULT '',
+                `changes_json` TEXT NOT NULL,
+                `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `reviewed_at` DATETIME NULL,
+                INDEX `idx_po_status` (`id_po`, `status`),
+                INDEX `idx_status_created` (`status`, `created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
+    } catch (Exception $e) {}
 
     // Xóa các dòng demo cũ bị lệch mã (HLP -> HOANGLONGPHAT)
     try {
@@ -699,12 +722,117 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false) {
                 $item['_debitNote'] = '';
             }
         }
+
+        // Khóa chỉnh sửa nếu ngày của chuyến đã qua (tripDate < hôm nay)
+        $tripDateIso = get_shipment_date_iso($item);
+        $item['_tripDateIso'] = $tripDateIso;
+        $item['_isLocked']    = ($tripDateIso !== '' && $tripDateIso < date('Y-m-d'));
+        $item['_pendingApproval'] = null;
     }
     unset($item);
+
+    // Ghép các thay đổi đang CHỜ DUYỆT (status = 'PENDING') từ bảng tms_pending_approvals
+    // để Vendor & Tài xế vẫn thấy thông tin họ vừa nhập kèm trạng thái "Chờ Điều vận duyệt"
+    try {
+        $pdo = get_db();
+        $stPend = $pdo->query("SELECT * FROM tms_pending_approvals WHERE status = 'PENDING' ORDER BY id ASC");
+        $pendRows = $stPend ? $stPend->fetchAll() : [];
+        foreach ($pendRows as $pr) {
+            $pid = $pr['id_po'];
+            if (!isset($merged[$pid])) continue;
+            $changes = json_decode($pr['changes_json'], true);
+            if (!is_array($changes)) continue;
+
+            if (!isset($merged[$pid]['_tmsOriginal'])) {
+                $merged[$pid]['_tmsOriginal'] = [];
+            }
+            foreach ($changes as $field => $diff) {
+                $newVal = $diff['new'] ?? '';
+                if (!array_key_exists($field, $merged[$pid]['_tmsOriginal'])) {
+                    $merged[$pid]['_tmsOriginal'][$field] = $merged[$pid][$field] ?? '';
+                }
+                $merged[$pid][$field] = $newVal;
+            }
+            $merged[$pid]['_pendingApproval'] = [
+                'id'         => (int)$pr['id'],
+                'actor_role' => $pr['actor_role'],
+                'actor_name' => $pr['actor_name'],
+                'created_at' => $pr['created_at'],
+                'changes'    => $changes
+            ];
+        }
+    } catch (Exception $e) {}
 
     // Sắp xếp mới nhất lên đầu
     krsort($merged, SORT_NUMERIC);
     return array_values($merged);
+}
+
+// Đưa thay đổi của Vendor hoặc Tài xế vào hàng đợi chờ Điều vận duyệt (Và chặn sửa nếu đã qua ngày)
+function queue_pending_tms_approval($pdo, $idPo, $codePo, $actorRole, $actorName, $vendorName, $requestedFields) {
+    $all = fetch_vietsun_shipments(null, false);
+    $foundTrip = null;
+    foreach ($all as $t) {
+        if ((string)($t['idPo'] ?? '') === (string)$idPo) {
+            $foundTrip = $t;
+            break;
+        }
+    }
+
+    $tripDate = $foundTrip ? get_shipment_date_iso($foundTrip) : '';
+    $todayIso = date('Y-m-d');
+    if ($tripDate !== '' && $tripDate < $todayIso) {
+        return [
+            'ok'     => false,
+            'locked' => true,
+            'error'  => "Chuyến hàng ngày $tripDate đã kết thúc ngày và bị khóa sổ! Bạn không thể tự ý chỉnh sửa."
+        ];
+    }
+
+    $codePoFinal = $codePo ?: ($foundTrip['codePo'] ?? '');
+    $xuatNhap    = $foundTrip['xuatNhapPo'] ?? '';
+    $khachKho    = ($foundTrip['khoNhanHangPo'] ?? '') ?: ($foundTrip['tenKhachPo'] ?? '');
+    $origMap     = $foundTrip['_tmsOriginal'] ?? [];
+
+    // Kiểm tra xem đã có bản ghi PENDING nào của cùng id_po + actor_role chưa
+    $stExist = $pdo->prepare("SELECT * FROM tms_pending_approvals WHERE id_po = ? AND actor_role = ? AND status = 'PENDING' ORDER BY id DESC LIMIT 1");
+    $stExist->execute([(string)$idPo, $actorRole]);
+    $existRow = $stExist->fetch();
+
+    $changes = $existRow ? (json_decode($existRow['changes_json'], true) ?: []) : [];
+    foreach ($requestedFields as $field => $newVal) {
+        $newVal = trim((string)$newVal);
+        $oldVal = isset($origMap[$field]) ? $origMap[$field] : (isset($changes[$field]['old']) ? $changes[$field]['old'] : ($foundTrip[$field] ?? ''));
+        $changes[$field] = [
+            'old' => (string)$oldVal,
+            'new' => $newVal
+        ];
+    }
+
+    $changesJson = json_encode($changes, JSON_UNESCAPED_UNICODE);
+    if ($existRow) {
+        $stUpd = $pdo->prepare("
+            UPDATE tms_pending_approvals
+            SET code_po = ?, trip_date = ?, xuat_nhap = ?, khach_kho = ?, actor_name = ?, vendor_name = ?, changes_json = ?, created_at = NOW()
+            WHERE id = ?
+        ");
+        $stUpd->execute([$codePoFinal, $tripDate, $xuatNhap, $khachKho, $actorName, $vendorName, $changesJson, $existRow['id']]);
+        $pendingId = (int)$existRow['id'];
+    } else {
+        $stIns = $pdo->prepare("
+            INSERT INTO tms_pending_approvals (id_po, code_po, trip_date, xuat_nhap, khach_kho, actor_role, actor_name, vendor_name, changes_json, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')
+        ");
+        $stIns->execute([(string)$idPo, $codePoFinal, $tripDate, $xuatNhap, $khachKho, $actorRole, $actorName, $vendorName, $changesJson]);
+        $pendingId = (int)$pdo->lastInsertId();
+    }
+
+    return [
+        'ok'        => true,
+        'pending'   => true,
+        'pendingId' => $pendingId,
+        'changes'   => $changes
+    ];
 }
 
 function push_vietsun_crud($params) {
@@ -913,7 +1041,7 @@ try {
         exit;
     }
 
-    // API Lấy toàn bộ danh sách Vendor & Tài xế cho Dashboard Quản trị
+    // API Lấy toàn bộ danh sách Vendor, Tài xế & Yêu cầu chờ duyệt cho Dashboard Quản trị
     if ($route === 'admin/overview') {
         $vendors = $pdo->query("
             SELECT v.*, v.phone AS contact_phone,
@@ -930,11 +1058,101 @@ try {
             ORDER BY v.vendor_name ASC, d.assigned_plate ASC
         ")->fetchAll();
 
+        $pending = $pdo->query("
+            SELECT * FROM tms_pending_approvals
+            ORDER BY FIELD(status, 'PENDING', 'APPROVED', 'REJECTED'), id DESC
+            LIMIT 250
+        ")->fetchAll();
+        foreach ($pending as &$pr) {
+            $pr['changes'] = json_decode($pr['changes_json'] ?? '{}', true) ?: [];
+        }
+        unset($pr);
+
+        $pendingCount = (int)$pdo->query("SELECT COUNT(*) FROM tms_pending_approvals WHERE status = 'PENDING'")->fetchColumn();
+
         echo json_encode([
-            'ok'      => true,
-            'vendors' => $vendors,
-            'drivers' => $drivers
+            'ok'               => true,
+            'vendors'          => $vendors,
+            'drivers'          => $drivers,
+            'pendingCount'     => $pendingCount,
+            'pendingApprovals' => $pending
         ]);
+        exit;
+    }
+
+    // API Lấy danh sách thay đổi chờ duyệt (Dùng cho nút thông báo nhanh hoặc poll)
+    if ($route === 'admin/pending-approvals') {
+        $pending = $pdo->query("
+            SELECT * FROM tms_pending_approvals
+            ORDER BY FIELD(status, 'PENDING', 'APPROVED', 'REJECTED'), id DESC
+            LIMIT 250
+        ")->fetchAll();
+        foreach ($pending as &$pr) {
+            $pr['changes'] = json_decode($pr['changes_json'] ?? '{}', true) ?: [];
+        }
+        unset($pr);
+        $pendingCount = (int)$pdo->query("SELECT COUNT(*) FROM tms_pending_approvals WHERE status = 'PENDING'")->fetchColumn();
+        echo json_encode([
+            'ok'               => true,
+            'pendingCount'     => $pendingCount,
+            'pendingApprovals' => $pending
+        ]);
+        exit;
+    }
+
+    // API Duyệt thông tin từ Vendor/Tài xế -> Đẩy chính thức về Vietsun TMS
+    if ($route === 'admin/approve-update') {
+        $id = isset($jsonBody['id']) ? (int)$jsonBody['id'] : 0;
+        $approveAll = !empty($jsonBody['approveAll']);
+
+        if ($approveAll) {
+            $rows = $pdo->query("SELECT * FROM tms_pending_approvals WHERE status = 'PENDING' ORDER BY id ASC")->fetchAll();
+        } else {
+            $st = $pdo->prepare("SELECT * FROM tms_pending_approvals WHERE id = ? AND status = 'PENDING' LIMIT 1");
+            $st->execute([$id]);
+            $row = $st->fetch();
+            $rows = $row ? [$row] : [];
+        }
+
+        if (!$rows) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Không tìm thấy yêu cầu chờ duyệt hợp lệ!']);
+            exit;
+        }
+
+        $approvedCount = 0;
+        $stMark = $pdo->prepare("UPDATE tms_pending_approvals SET status = 'APPROVED', reviewed_at = NOW() WHERE id = ?");
+        foreach ($rows as $r) {
+            $idPo = $r['id_po'];
+            $codePo = $r['code_po'];
+            $changes = json_decode($r['changes_json'] ?? '{}', true) ?: [];
+            foreach ($changes as $fieldName => $diff) {
+                $newVal = $diff['new'] ?? '';
+                update_tms_field($idPo, $codePo, $fieldName, $newVal);
+            }
+            $stMark->execute([$r['id']]);
+            $approvedCount++;
+        }
+
+        echo json_encode([
+            'ok'            => true,
+            'approvedCount' => $approvedCount,
+            'message'       => "Đã duyệt và đẩy $approvedCount yêu cầu vào Vietsun TMS thành công!"
+        ]);
+        exit;
+    }
+
+    // API Từ chối thay đổi từ Vendor/Tài xế (Giữ nguyên dữ liệu gốc trên TMS)
+    if ($route === 'admin/reject-update') {
+        $id = isset($jsonBody['id']) ? (int)$jsonBody['id'] : 0;
+        $rejectAll = !empty($jsonBody['rejectAll']);
+        if ($rejectAll) {
+            $pdo->exec("UPDATE tms_pending_approvals SET status = 'REJECTED', reviewed_at = NOW() WHERE status = 'PENDING'");
+        } elseif ($id > 0) {
+            $st = $pdo->prepare("UPDATE tms_pending_approvals SET status = 'REJECTED', reviewed_at = NOW() WHERE id = ?");
+            $st->execute([$id]);
+        }
+        echo json_encode(['ok' => true, 'message' => 'Đã từ chối yêu cầu thay đổi!']);
         exit;
     }
 
@@ -1093,7 +1311,7 @@ try {
         exit;
     }
 
-    // Tài xế cập nhật Cont/Seal/Cảng đến -> Đẩy về Vietsun TMS
+    // Tài xế cập nhật Cont/Seal/Cảng đến -> Đưa vào hàng đợi CHỜ ĐIỀU VẬN DUYỆT (Khóa nếu qua ngày)
     if ($route === 'driver/update-trip') {
         $idPo = $jsonBody['idPo'] ?? '';
         $codePo = $jsonBody['codePo'] ?? '';
@@ -1102,23 +1320,37 @@ try {
             echo json_encode(['ok' => false, 'error' => 'Thiếu mã chuyến idPo']);
             exit;
         }
+        $fieldsToQueue = [];
         if (isset($jsonBody['soCont'])) {
-            update_tms_field($idPo, $codePo, 'soContPo', $jsonBody['soCont']);
+            $fieldsToQueue['soContPo'] = strtoupper(trim($jsonBody['soCont']));
         }
         if (isset($jsonBody['soSeal'])) {
-            update_tms_field($idPo, $codePo, 'soSealPo', $jsonBody['soSeal']);
+            $fieldsToQueue['soSealPo'] = trim($jsonBody['soSeal']);
         }
         if (isset($jsonBody['portTime']) && trim($jsonBody['portTime']) !== '') {
-            update_tms_field($idPo, $codePo, 'portTimePo', $jsonBody['portTime']);
+            $fieldsToQueue['portTimePo'] = trim($jsonBody['portTime']);
         }
         if (isset($jsonBody['cangDen']) && trim($jsonBody['cangDen']) !== '') {
-            update_tms_field($idPo, $codePo, 'tinhXuatHangPo', $jsonBody['cangDen']);
+            $fieldsToQueue['tinhXuatHangPo'] = strtoupper(trim($jsonBody['cangDen']));
         }
-        echo json_encode(['ok' => true, 'message' => 'Đã cập nhật và đẩy ngược về Vietsun TMS!']);
+
+        $actorName = trim(($user['plate'] ?? '') . ' - ' . ($user['driverName'] ?? ''));
+        $vendorName = strtoupper(trim($user['vendorName'] ?? ''));
+        $qRes = queue_pending_tms_approval($pdo, $idPo, $codePo, 'DRIVER', $actorName, $vendorName, $fieldsToQueue);
+        if (!$qRes['ok']) {
+            http_response_code(403);
+            echo json_encode($qRes);
+            exit;
+        }
+        echo json_encode([
+            'ok'      => true,
+            'pending' => true,
+            'message' => 'Đã gửi thông tin chờ Điều vận kiểm duyệt trước khi đẩy lên TMS!'
+        ]);
         exit;
     }
 
-    // Chủ Vendor gán / đổi Số xe nhanh cho Hàng Nhập -> Đẩy thẳng về Vietsun TMS
+    // Chủ Vendor gán / đổi Số xe -> Đưa vào hàng đợi CHỜ ĐIỀU VẬN DUYỆT (Khóa nếu qua ngày)
     if ($route === 'vendor/assign-truck') {
         $idPo = $jsonBody['idPo'] ?? '';
         $codePo = $jsonBody['codePo'] ?? '';
@@ -1128,27 +1360,49 @@ try {
             echo json_encode(['ok' => false, 'error' => 'Thiếu mã lô hàng idPo']);
             exit;
         }
-        update_tms_field($idPo, $codePo, 'soXePo', $soXe);
-        if (!empty($user['vendorName'])) {
-            update_tms_field($idPo, $codePo, 'donViVcPo', strtoupper(trim($user['vendorName'])));
+        $vendorName = strtoupper(trim($user['vendorName'] ?? ''));
+        $fieldsToQueue = ['soXePo' => $soXe];
+        if ($vendorName !== '') {
+            $fieldsToQueue['donViVcPo'] = $vendorName;
+        }
+        $qRes = queue_pending_tms_approval($pdo, $idPo, $codePo, 'VENDOR', $vendorName, $vendorName, $fieldsToQueue);
+        if (!$qRes['ok']) {
+            http_response_code(403);
+            echo json_encode($qRes);
+            exit;
         }
         echo json_encode([
             'ok'      => true,
+            'pending' => true,
             'soXePo'  => $soXe,
-            'message' => "Đã gán xe $soXe lên Vietsun TMS!"
+            'message' => "Đã lưu xe $soXe (Đang chờ Điều vận duyệt đẩy lên TMS)!"
         ]);
         exit;
     }
 
-    // Tài xế báo chi phí phát sinh
+    // Tài xế báo chi phí phát sinh (Khóa nếu qua ngày)
     if ($route === 'driver/add-expense') {
         $idPo = $jsonBody['idPo'] ?? '';
         $expenseType = $jsonBody['expenseType'] ?? '';
         $amount = $jsonBody['amount'] ?? 0;
         $note = $jsonBody['note'] ?? '';
+
+        $all = fetch_vietsun_shipments(null, false);
+        foreach ($all as $t) {
+            if ((string)($t['idPo'] ?? '') === (string)$idPo) {
+                $td = get_shipment_date_iso($t);
+                if ($td !== '' && $td < date('Y-m-d')) {
+                    http_response_code(403);
+                    echo json_encode(['ok' => false, 'error' => "Chuyến hàng ngày $td đã kết thúc ngày và bị khóa sổ!"]);
+                    exit;
+                }
+                break;
+            }
+        }
+
         $stmt = $pdo->prepare('INSERT INTO trip_expenses (booking_id_po, driver_id, expense_type, amount, note) VALUES (?, ?, ?, ?, ?)');
         $stmt->execute([$idPo, $user['driverId'] ?? null, $expenseType, $amount, $note]);
-        echo json_encode(['ok' => true, 'message' => 'Đã lưu chi phí phát sinh!']);
+        echo json_encode(['ok' => true, 'message' => 'Đã lưu chi phí phát sinh chờ đối soát!']);
         exit;
     }
 
