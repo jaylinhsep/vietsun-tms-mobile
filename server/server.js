@@ -15,8 +15,22 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static frontend files (PWA)
-app.use(express.static(path.join(__dirname, '..')));
+// Serve static frontend files (PWA, driver, vendor)
+const rootDir = path.join(__dirname, '..');
+app.use(express.static(rootDir));
+
+// Explicit Routes for Web, Driver and Vendor portals
+app.get('/', (req, res) => {
+  res.sendFile(path.join(rootDir, 'index.html'));
+});
+
+app.get('/driver', (req, res) => {
+  res.sendFile(path.join(rootDir, 'driver', 'index.html'));
+});
+
+app.get('/vendor', (req, res) => {
+  res.sendFile(path.join(rootDir, 'vendor', 'index.html'));
+});
 
 // Helper: Generate JWT token
 function generateToken(payload) {
