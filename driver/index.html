@@ -39,7 +39,7 @@
       position: sticky; top: 0; z-index: 50;
       background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
       color: #fff;
-      padding: 12px 16px;
+      padding: 12px 14px;
       box-shadow: 0 4px 14px rgba(30, 58, 138, 0.2);
       display: flex; align-items: center; justify-content: space-between;
     }
@@ -48,27 +48,78 @@
       width: 40px; height: 40px; border-radius: 50%;
       background: #fff; color: var(--primary);
       display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      font-weight: 800; font-size: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
-    .driver-name { font-weight: 700; font-size: 15px; }
+    .driver-name { font-weight: 700; font-size: 14.5px; }
     .driver-plate {
       display: inline-block; background: #fbbf24; color: #000;
-      font-weight: 800; font-size: 12px; padding: 2px 6px;
+      font-weight: 800; font-size: 12px; padding: 2px 7px;
       border-radius: 6px; margin-top: 2px; letter-spacing: 0.5px;
     }
 
-    /* TABS */
+    /* DATE BAR */
+    .date-bar {
+      background: #fff;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .date-chips {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .date-chip {
+      padding: 6px 11px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 12.5px;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      color: #334155;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .date-chip.active {
+      background: #1e40af;
+      color: #fff;
+      border-color: #1e40af;
+    }
+    .date-picker-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .date-input {
+      flex: 1;
+      padding: 7px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-weight: 700;
+      font-size: 13.5px;
+      color: #0f172a;
+      background: #f8fafc;
+    }
+
+    /* TABS (ƯU TIÊN NHẬP TRƯỚC, XUẤT SAU) */
     .tabs-bar {
       display: flex; background: #fff; border-bottom: 1px solid var(--border);
       position: sticky; top: 64px; z-index: 40;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
     }
     .tab-btn {
-      flex: 1; padding: 12px 0; text-align: center;
-      font-weight: 700; font-size: 14px; color: var(--text-muted);
+      flex: 1; padding: 12px 4px; text-align: center;
+      font-weight: 800; font-size: 13.5px; color: var(--text-muted);
       border: none; background: none; cursor: pointer;
       border-bottom: 3px solid transparent; transition: all 0.2s;
     }
-    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-btn.active-nhap { color: #1d4ed8; border-bottom-color: #2563eb; background: #eff6ff; }
+    .tab-btn.active-xuat { color: #c2410c; border-bottom-color: #f97316; background: #fff7ed; }
+    .tab-btn.active-all  { color: #0f172a; border-bottom-color: #0f172a; background: #f8fafc; }
 
     /* CONTENT */
     .container { padding: 14px; max-width: 600px; margin: 0 auto; }
@@ -91,7 +142,7 @@
     .info-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
 
     /* ACTION BUTTONS */
-    .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
     .btn {
       flex: 1; padding: 10px 12px; border-radius: 10px; font-weight: 700;
       font-size: 13px; text-align: center; border: none; cursor: pointer;
@@ -142,7 +193,7 @@
     <form id="driverLoginForm" onsubmit="handleDriverLogin(event)">
       <div class="form-group">
         <label>Số xe / Biển số xe (User)</label>
-        <input type="text" id="loginPlate" class="form-control" placeholder="VD: 50E65375 hoặc 50H10106" required style="text-transform:uppercase;" autocomplete="username" />
+        <input type="text" id="loginPlate" class="form-control" placeholder="VD: 50E44057 hoặc 50H10106" required style="text-transform:uppercase;" autocomplete="username" />
       </div>
       <div class="form-group" style="margin-top:14px;">
         <label>Mật khẩu (Mặc định: 123456)</label>
@@ -168,10 +219,26 @@
     </div>
   </header>
 
+  <!-- BỘ LỌC NGÀY -->
+  <div class="date-bar">
+    <div class="date-chips">
+      <button class="date-chip active" id="chipToday" onclick="setDateMode('TODAY')">📅 Hôm nay</button>
+      <button class="date-chip" id="chipYesterday" onclick="setDateMode('YESTERDAY')">⏪ Hôm qua</button>
+      <button class="date-chip" id="chipTomorrow" onclick="setDateMode('TOMORROW')">⏩ Ngày mai</button>
+      <button class="date-chip" id="chipAll" onclick="setDateMode('ALL')">📋 Tất cả ngày</button>
+    </div>
+    <div class="date-picker-row">
+      <span style="font-size:12.5px;font-weight:700;color:#475569;">Ngày chạy:</span>
+      <input type="date" id="driverDateInput" class="date-input" onchange="onCustomDateChange(this.value)" />
+      <button onclick="loadDriverData(true)" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:7px 11px;border-radius:8px;font-weight:700;font-size:12.5px;cursor:pointer;">🔄 Làm mới</button>
+    </div>
+  </div>
+
+  <!-- TABS: ƯU TIÊN TAB NHẬP TRƯỚC, TAB XUẤT SAU -->
   <div class="tabs-bar">
-    <button class="tab-btn active" id="tabAll" onclick="switchTab('ALL')">Tất cả chuyến (<span id="cntAll">0</span>)</button>
-    <button class="tab-btn" id="tabN" onclick="switchTab('N')">📥 Hàng Nhập (<span id="cntN">0</span>)</button>
-    <button class="tab-btn" id="tabX" onclick="switchTab('X')">📤 Hàng Xuất (<span id="cntX">0</span>)</button>
+    <button class="tab-btn active-nhap" id="tabN" onclick="switchTab('N')">📥 HÀNG NHẬP (<span id="cntN">0</span>)</button>
+    <button class="tab-btn" id="tabX" onclick="switchTab('X')">📤 HÀNG XUẤT (<span id="cntX">0</span>)</button>
+    <button class="tab-btn" id="tabAll" onclick="switchTab('ALL')">Tất cả (<span id="cntAll">0</span>)</button>
   </div>
 
   <main class="container" id="tripsContainer">
@@ -200,7 +267,7 @@
       </div>
       <div class="form-group">
         <label>Giờ vào cảng / Port Time</label>
-        <input type="text" id="modalPortTime" class="form-control" placeholder="VD: 26/10/2026 14:30" />
+        <input type="text" id="modalPortTime" class="form-control" placeholder="VD: 02/11/2026 14:30" />
       </div>
       <div class="btn-row" style="margin-top:18px;">
         <button class="btn" style="background:#e2e8f0;color:#334155;" onclick="closeModal('updateTripModal')">Đóng</button>
@@ -261,17 +328,74 @@
 
   <script>
     let currentTrips = [];
-    let currentFilter = 'ALL';
+    // Mặc định ưu tiên hiện tab HÀNG NHẬP ('N') và ngày HÔM NAY
+    let currentFilter = 'N';
+    let currentDateMode = 'TODAY';
+    let selectedDateISO = getLocalTodayISO();
     const API_BASE = '/api/index.php?route=';
 
-    // 1. Kiểm tra phiên đăng nhập tài xế
+    function getLocalTodayISO(offsetDays = 0) {
+      const d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function formatVNDate(isoStr) {
+      if (!isoStr || isoStr === '2021-11-11' || isoStr === '1970-01-01') return 'Chưa gắn ngày';
+      const p = isoStr.split('-');
+      if (p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+      return isoStr;
+    }
+
+    function getTripDateISO(t) {
+      const n = (t.ngayTraHang || '').trim();
+      if (n && n !== '2021-11-11' && n !== '1970-01-01') return n;
+      const th = (t.timeThucHien || '').trim();
+      if (th && th !== '2021-11-11' && th !== '1970-01-01') return th;
+      return '';
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('driverDateInput').value = selectedDateISO;
       const token = localStorage.getItem('vs_driver_token');
       if (token) {
         document.getElementById('driverLoginView').style.display = 'none';
+        const savedInfo = JSON.parse(localStorage.getItem('vs_driver_info') || 'null');
+        if (savedInfo) renderDriverHeader(savedInfo);
         loadDriverData();
       }
     });
+
+    function setDateMode(mode) {
+      currentDateMode = mode;
+      document.getElementById('chipToday').classList.toggle('active', mode === 'TODAY');
+      document.getElementById('chipYesterday').classList.toggle('active', mode === 'YESTERDAY');
+      document.getElementById('chipTomorrow').classList.toggle('active', mode === 'TOMORROW');
+      document.getElementById('chipAll').classList.toggle('active', mode === 'ALL');
+
+      if (mode === 'TODAY') {
+        selectedDateISO = getLocalTodayISO(0);
+        document.getElementById('driverDateInput').value = selectedDateISO;
+      } else if (mode === 'YESTERDAY') {
+        selectedDateISO = getLocalTodayISO(-1);
+        document.getElementById('driverDateInput').value = selectedDateISO;
+      } else if (mode === 'TOMORROW') {
+        selectedDateISO = getLocalTodayISO(1);
+        document.getElementById('driverDateInput').value = selectedDateISO;
+      }
+      renderTrips();
+    }
+
+    function onCustomDateChange(val) {
+      if (!val) return;
+      selectedDateISO = val;
+      currentDateMode = 'CUSTOM';
+      document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('active'));
+      loadDriverData(false);
+    }
 
     async function handleDriverLogin(e) {
       e.preventDefault();
@@ -295,6 +419,7 @@
         localStorage.setItem('vs_driver_token', data.token);
         localStorage.setItem('vs_driver_info', JSON.stringify(data.driver));
         document.getElementById('driverLoginView').style.display = 'none';
+        renderDriverHeader(data.driver);
         loadDriverData();
       } catch (err) {
         errBox.textContent = 'Lỗi kết nối máy chủ!';
@@ -342,15 +467,16 @@
       }
     }
 
-    // 2. Tải danh sách chuyến xe
-    async function loadDriverData() {
+    async function loadDriverData(forceRefresh = false) {
       const token = localStorage.getItem('vs_driver_token');
       try {
-        const res = await fetch(`${API_BASE}/driver/my-trips`, {
+        const url = `${API_BASE}/driver/my-trips&date=${encodeURIComponent(selectedDateISO)}${forceRefresh ? '&refresh=1' : ''}`;
+        const res = await fetch(url, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.status === 401 || res.status === 403) {
-          handleLogout();
+          localStorage.removeItem('vs_driver_token');
+          location.reload();
           return;
         }
         const data = await res.json();
@@ -367,40 +493,56 @@
     function renderDriverHeader(info) {
       if (!info) return;
       document.getElementById('displayDriverName').textContent = info.name || 'Tài xế';
-      document.getElementById('displayDriverPlate').textContent = info.plate || '--';
+      document.getElementById('displayDriverPlate').textContent = `${info.plate || '--'} • ${info.vendor || ''}`;
       document.getElementById('avatarLetter').textContent = (info.name || 'TX').slice(0, 2).toUpperCase();
     }
 
     function switchTab(type) {
       currentFilter = type;
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      if (type === 'ALL') document.getElementById('tabAll').classList.add('active');
-      if (type === 'N') document.getElementById('tabN').classList.add('active');
-      if (type === 'X') document.getElementById('tabX').classList.add('active');
+      const tabN = document.getElementById('tabN');
+      const tabX = document.getElementById('tabX');
+      const tabAll = document.getElementById('tabAll');
+      tabN.className = 'tab-btn' + (type === 'N' ? ' active-nhap' : '');
+      tabX.className = 'tab-btn' + (type === 'X' ? ' active-xuat' : '');
+      tabAll.className = 'tab-btn' + (type === 'ALL' ? ' active-all' : '');
       renderTrips();
     }
 
     function renderTrips() {
-      const cntAll = currentTrips.length;
-      const cntN = currentTrips.filter(t => t.xuatNhapPo === 'N').length;
-      const cntX = currentTrips.filter(t => t.xuatNhapPo === 'X').length;
+      // 1. Lọc theo ngày trước
+      const dateFiltered = currentTrips.filter(t => {
+        if (currentDateMode === 'ALL') return true;
+        const d = getTripDateISO(t);
+        return d === selectedDateISO;
+      });
 
-      document.getElementById('cntAll').textContent = cntAll;
+      const cntAll = dateFiltered.length;
+      const cntN = dateFiltered.filter(t => t.xuatNhapPo === 'N').length;
+      const cntX = dateFiltered.filter(t => t.xuatNhapPo === 'X').length;
+
       document.getElementById('cntN').textContent = cntN;
       document.getElementById('cntX').textContent = cntX;
+      document.getElementById('cntAll').textContent = cntAll;
 
-      const filtered = currentTrips.filter(t => {
+      // 2. Lọc theo tab Nhập / Xuất
+      const filtered = dateFiltered.filter(t => {
         if (currentFilter === 'ALL') return true;
         return t.xuatNhapPo === currentFilter;
       });
 
       const container = document.getElementById('tripsContainer');
       if (filtered.length === 0) {
+        const tabName = currentFilter === 'N' ? 'Hàng Nhập' : (currentFilter === 'X' ? 'Hàng Xuất' : 'chuyến nào');
+        const dateLabel = currentDateMode === 'ALL' ? 'tất cả các ngày' : `ngày ${formatVNDate(selectedDateISO)}`;
+        const otherTypeCount = currentFilter === 'N' ? cntX : (currentFilter === 'X' ? cntN : 0);
+        const totalAnyDate = currentTrips.length;
+
         container.innerHTML = `
-          <div style="text-align:center;padding:50px 0;color:var(--text-muted);">
-            <div style="font-size:42px;margin-bottom:8px;">✅</div>
-            <div style="font-weight:700;font-size:16px;color:#334155;">Hôm nay bạn chưa có chuyến nào</div>
-            <div style="font-size:13px;margin-top:4px;">Khi điều phối gán biển số xe của bạn, chuyến sẽ tự hiện ở đây.</div>
+          <div style="text-align:center;padding:42px 16px;color:var(--text-muted);background:#fff;border-radius:14px;border:1px dashed var(--border);">
+            <div style="font-size:40px;margin-bottom:8px;">📭</div>
+            <div style="font-weight:800;font-size:15.5px;color:#334155;">Chưa có ${tabName} trong ${dateLabel}</div>
+            ${otherTypeCount > 0 ? `<div style="margin-top:8px;"><button onclick="switchTab('${currentFilter === 'N' ? 'X' : 'N'}')" class="btn btn-update" style="padding:8px 14px;font-size:13px;">👉 Xem ${otherTypeCount} chuyến ${currentFilter === 'N' ? 'Hàng Xuất' : 'Hàng Nhập'} hôm nay</button></div>` : ''}
+            ${totalAnyDate > 0 && currentDateMode !== 'ALL' ? `<div style="margin-top:10px;"><button onclick="setDateMode('ALL');switchTab('ALL');" style="background:#f1f5f9;color:#1e40af;border:1px solid #cbd5e1;padding:7px 14px;border-radius:8px;font-weight:700;font-size:12.5px;cursor:pointer;">📋 Xem toàn bộ ${totalAnyDate} chuyến các ngày khác</button></div>` : ''}
           </div>
         `;
         return;
@@ -411,22 +553,26 @@
         const typeClass = isXuat ? 'xuat-card' : 'nhap-card';
         const typeBadge = isXuat ? '<span class="badge badge-xuat">📤 HÀNG XUẤT</span>' : '<span class="badge badge-nhap">📥 HÀNG NHẬP</span>';
         const phoneClean = (t.lienHeNhanPo || '').replace(/[^0-9]/g, '');
+        const tripDate = formatVNDate(getTripDateISO(t));
 
         return `
           <div class="trip-card ${typeClass}">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
               <div>${typeBadge} <b style="font-size:13px;color:#1e3a8a;margin-left:4px;">#${t.idPo}</b></div>
-              <span class="badge" style="background:#f1f5f9;color:#334155;">Cont ${Number(t.cont40Po) > 0 ? "40'" : "20'"}</span>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <span class="badge" style="background:#e0f2fe;color:#0369a1;">📅 ${tripDate}</span>
+                <span class="badge" style="background:#f1f5f9;color:#334155;">Cont ${Number(t.cont40Po) > 0 ? "40'" : "20'"}</span>
+              </div>
             </div>
 
             <div class="info-row">
               <span class="info-icon">🏢</span>
-              <div><b>Khách hàng:</b> ${t.tenKhachPo || '--'}</div>
+              <div><b>Khách hàng:</b> ${t.tenKhachPo || '--'} ${t.chuHangPo ? `<span style="color:#64748b;">(${t.chuHangPo})</span>` : ''}</div>
             </div>
 
             <div class="info-row">
               <span class="info-icon">📍</span>
-              <div><b>Kho / Địa chỉ:</b> ${t.khoNhanHangPo || ''} - ${t.diaChiNhanPo || ''}</div>
+              <div><b>Kho / Địa chỉ:</b> ${t.khoNhanHangPo || ''} - ${t.diaChiNhanPo || ''} ${t.tinhNhanPo ? `(${t.tinhNhanPo})` : ''}</div>
             </div>
 
             ${t.lienHeNhanPo ? `
@@ -436,10 +582,15 @@
             </div>` : ''}
 
             <div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12.5px;">
-              <div><b>Số Cont:</b> <span style="color:#2563eb;font-weight:700;">${t.soContPo || '(Chưa có)'}</span></div>
-              <div><b>Số Seal:</b> <span style="color:#2563eb;font-weight:700;">${t.soSealPo || '(Chưa có)'}</span></div>
-              ${isXuat ? `<div><b>Cảng đến:</b> <span style="color:#d97706;font-weight:700;">${t.cangDenPo || t.tinhXuatHangPo || '--'}</span></div>` : ''}
-              <div><b>Ngày:</b> ${t.ngayTraHang || '--'}</div>
+              <div><b>Số Cont:</b> <span style="color:#2563eb;font-weight:800;">${t.soContPo || '(Chưa có)'}</span></div>
+              <div><b>Số Seal:</b> <span style="color:#2563eb;font-weight:800;">${t.soSealPo || '(Chưa có)'}</span></div>
+              ${isXuat ? `
+                <div><b>Lấy rỗng:</b> ${t.noiLayContPo || '--'}</div>
+                <div><b>Hạ cảng / Đến:</b> <span style="color:#d97706;font-weight:700;">${t.cangDiPo || ''} → ${t.cangDenPo || t.tinhXuatHangPo || '--'}</span></div>
+              ` : `
+                <div><b>Cảng nhận:</b> ${t.cangDiPo || '--'}</div>
+                <div><b>Hạ rỗng:</b> <span style="color:#047857;font-weight:700;">${t.noiLayContPo || '--'}</span></div>
+              `}
             </div>
 
             <div class="btn-row">
@@ -452,7 +603,6 @@
       }).join('');
     }
 
-    // Modal controls
     function openUpdateModal(idPo, soCont, soSeal, cangDen) {
       document.getElementById('modalPoId').value = idPo;
       document.getElementById('modalSoCont').value = soCont;
@@ -473,7 +623,6 @@
       document.getElementById(modalId).classList.remove('open');
     }
 
-    // Cập nhật Cont/Seal đẩy ngược về Vietsun TMS
     async function saveTripUpdate() {
       const token = localStorage.getItem('vs_driver_token');
       const idPo = document.getElementById('modalPoId').value;
@@ -495,7 +644,7 @@
         if (data.ok) {
           alert('✅ Đã cập nhật và đẩy ngược về Vietsun TMS thành công!');
           closeModal('updateTripModal');
-          loadDriverData();
+          loadDriverData(true);
         } else {
           alert('Lỗi: ' + (data.error || 'Không thể lưu!'));
         }
@@ -504,7 +653,6 @@
       }
     }
 
-    // Báo chi phí phát sinh
     async function saveExpense() {
       const token = localStorage.getItem('vs_driver_token');
       const idPo = document.getElementById('expPoId').value;

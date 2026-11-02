@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vendor Portal - Quản Lý Đội Xe & Đối Chiếu Công Nợ</title>
+  <title>Vendor Portal - Kế Hoạch Điều Xe & Đối Chiếu Công Nợ</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -25,61 +25,76 @@
       margin: 0; padding: 0;
       font-family: 'Inter', -apple-system, sans-serif;
       background: var(--bg); color: var(--text);
-      font-size: 14px;
+      font-size: 13.5px;
     }
 
     .vendor-nav {
-      background: var(--primary); color: #fff;
+      background: linear-gradient(135deg, #0f172a 0%, #1e40af 100%);
+      color: #fff;
       padding: 12px 24px; display: flex;
       justify-content: space-between; align-items: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.12);
       flex-wrap: wrap; gap: 10px;
     }
     .nav-brand { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-    .nav-user { display: flex; align-items: center; gap: 10px; font-size: 13.5px; flex-wrap: wrap; }
+    .nav-user { display: flex; align-items: center; gap: 10px; font-size: 13px; flex-wrap: wrap; }
 
-    .main-layout { max-width: 1400px; margin: 20px auto; padding: 0 16px; }
+    .main-layout { max-width: 1440px; margin: 18px auto; padding: 0 16px; }
 
-    /* TABS */
+    /* MAIN TABS */
     .vendor-tabs {
-      display: flex; gap: 10px; margin-bottom: 18px; border-bottom: 2px solid var(--border); padding-bottom: 10px;
+      display: flex; gap: 10px; margin-bottom: 16px; border-bottom: 2px solid var(--border); padding-bottom: 10px;
+      flex-wrap: wrap;
     }
     .vtab-btn {
-      padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 14px;
+      padding: 10px 18px; border-radius: 10px; font-weight: 800; font-size: 13.5px;
       border: 1px solid var(--border); background: #fff; color: var(--text-muted);
-      cursor: pointer; transition: all 0.2s;
+      cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
     }
     .vtab-btn.active {
       background: var(--primary); color: #fff; border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
     }
 
     /* SUMMARY STATS */
     .stats-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px; margin-bottom: 22px;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px; margin-bottom: 16px;
     }
     .stat-card {
-      background: var(--card); padding: 18px; border-radius: 12px;
+      background: var(--card); padding: 15px 18px; border-radius: 12px;
       border: 1px solid var(--border); box-shadow: 0 2px 6px rgba(0,0,0,0.03);
     }
-    .stat-label { font-size: 12.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
-    .stat-value { font-size: 24px; font-weight: 800; margin-top: 6px; }
+    .stat-label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .stat-value { font-size: 23px; font-weight: 800; margin-top: 4px; }
 
-    /* CONTROLS BAR */
+    /* FILTER / CONTROLS BAR */
     .controls-bar {
-      background: var(--card); padding: 16px; border-radius: 12px;
-      border: 1px solid var(--border); margin-bottom: 18px;
-      display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center;
+      background: var(--card); padding: 14px 16px; border-radius: 12px;
+      border: 1px solid var(--border); margin-bottom: 16px;
+      display: flex; flex-direction: column; gap: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
     }
+    .filter-row {
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+    }
+    .chip-group { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .chip-btn {
+      padding: 7px 13px; border-radius: 8px; font-weight: 700; font-size: 12.5px;
+      border: 1px solid var(--border); background: #f8fafc; color: #334155;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .chip-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .chip-btn.active-nhap { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .chip-btn.active-xuat { background: #ea580c; color: #fff; border-color: #ea580c; }
+
     .btn {
-      padding: 9px 16px; border-radius: 8px; font-weight: 700;
-      font-size: 13.5px; border: none; cursor: pointer;
+      padding: 8px 14px; border-radius: 8px; font-weight: 700;
+      font-size: 13px; border: none; cursor: pointer;
       display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
     }
     .btn-primary { background: var(--primary); color: #fff; }
     .btn-success { background: var(--success); color: #fff; }
-    .btn-warning { background: var(--warning); color: #fff; }
-    .btn-danger { background: var(--danger); color: #fff; }
 
     /* TABLE */
     .table-container {
@@ -89,11 +104,18 @@
     }
     table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
     th {
-      background: #f1f5f9; padding: 12px 14px; font-weight: 700;
+      background: #f1f5f9; padding: 11px 13px; font-weight: 700;
       color: #334155; border-bottom: 1px solid var(--border); white-space: nowrap;
     }
-    td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    td { padding: 11px 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     tr:hover { background: #f8fafc; }
+    tr.row-nhap { border-left: 4px solid #2563eb; }
+    tr.row-xuat { border-left: 4px solid #ea580c; background: #fffaf5; }
+
+    .badge-plate {
+      background: #dbeafe; color: #1e40af; font-weight: 800;
+      padding: 4px 8px; border-radius: 6px; font-size: 12.5px; display: inline-block;
+    }
 
     /* LOGIN & MODALS */
     .login-overlay, .modal-overlay {
@@ -109,8 +131,8 @@
     .form-group { margin-bottom: 14px; }
     .form-group label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; }
     .form-control {
-      width: 100%; padding: 10px 12px; border-radius: 8px;
-      border: 1px solid var(--border); font-size: 14px;
+      width: 100%; padding: 8px 11px; border-radius: 8px;
+      border: 1px solid var(--border); font-size: 13.5px;
     }
   </style>
 </head>
@@ -122,7 +144,7 @@
       <div style="text-align:center;margin-bottom:20px;">
         <div style="font-size:42px;margin-bottom:6px;">🏢</div>
         <h2 style="margin:0;font-size:20px;font-weight:800;color:var(--primary);">CỔNG QUẢN LÝ VENDOR</h2>
-        <p style="margin:4px 0 0;color:var(--text-muted);font-size:13px;">Theo dõi đội xe & Đối chiếu công nợ</p>
+        <p style="margin:4px 0 0;color:var(--text-muted);font-size:13px;">Kế hoạch điều xe & Đối chiếu công nợ</p>
       </div>
       <form onsubmit="handleVendorLogin(event)">
         <div class="form-group">
@@ -157,17 +179,106 @@
   </nav>
 
   <main class="main-layout">
-    <!-- TABS -->
+    <!-- 3 MAIN TABS: ƯU TIÊN TAB KẾ HOẠCH HÔM NAY ĐẦU TIÊN -->
     <div class="vendor-tabs">
-      <button class="vtab-btn active" id="vtabTripsBtn" onclick="switchVendorTab('TRIPS')">📊 Chuyến xe & Đối soát công nợ</button>
-      <button class="vtab-btn" id="vtabFleetBtn" onclick="switchVendorTab('FLEET')">🚛 Đội xe của tôi (<span id="myFleetCount">0</span> xe)</button>
+      <button class="vtab-btn active" id="vtabPlanBtn" onclick="switchVendorTab('PLAN')">
+        📅 Kế hoạch điều xe (<span id="planTabCount">0</span>)
+      </button>
+      <button class="vtab-btn" id="vtabDebitBtn" onclick="switchVendorTab('DEBIT')">
+        💰 Chuyến xe & Đối soát công nợ
+      </button>
+      <button class="vtab-btn" id="vtabFleetBtn" onclick="switchVendorTab('FLEET')">
+        🚛 Đội xe của tôi (<span id="myFleetCount">0</span> xe)
+      </button>
     </div>
 
-    <!-- TAB 1: CHUYẾN XE & CÔNG NỢ -->
-    <div id="vendorTabTrips">
+    <!-- ================================================================== -->
+    <!-- TAB 1 (MẶC ĐỊNH): KẾ HOẠCH HÔM NAY, HÔM QUA, LỌC NHẬP/XUẤT & SỐ XE -->
+    <!-- ================================================================== -->
+    <div id="vendorTabPlan">
+      <div class="controls-bar">
+        <!-- Dòng 1: Chọn Ngày (Hôm nay, Hôm qua, Ngày mai, Chọn ngày) -->
+        <div class="filter-row">
+          <div class="chip-group">
+            <span style="font-weight:800;color:#334155;margin-right:4px;">📅 Ngày kế hoạch:</span>
+            <button class="chip-btn active" id="vDateToday" onclick="setPlanDateMode('TODAY')">Hôm nay</button>
+            <button class="chip-btn" id="vDateYesterday" onclick="setPlanDateMode('YESTERDAY')">⏪ Hôm qua</button>
+            <button class="chip-btn" id="vDateTomorrow" onclick="setPlanDateMode('TOMORROW')">⏩ Ngày mai</button>
+            <button class="chip-btn" id="vDateAll" onclick="setPlanDateMode('ALL')">📋 Tất cả ngày</button>
+            <input type="date" id="planCustomDate" class="form-control" style="width:150px;font-weight:700;" onchange="onPlanCustomDate(this.value)" />
+          </div>
+          <button class="btn btn-primary" onclick="loadVendorTrips(true)">🔄 Tải lại từ TMS</button>
+        </div>
+
+        <!-- Dòng 2: Lọc Nhập / Xuất + Lọc theo Số xe + Tìm kiếm -->
+        <div class="filter-row" style="padding-top:10px;border-top:1px dashed var(--border);">
+          <div class="chip-group">
+            <span style="font-weight:800;color:#334155;margin-right:4px;">📦 Loại hàng:</span>
+            <button class="chip-btn active" id="vTypeAll" onclick="setPlanType('ALL')">Tất cả (<span id="cntPlanAll">0</span>)</button>
+            <button class="chip-btn" id="vTypeN" onclick="setPlanType('N')">📥 Hàng Nhập (<span id="cntPlanN">0</span>)</button>
+            <button class="chip-btn" id="vTypeX" onclick="setPlanType('X')">📤 Hàng Xuất (<span id="cntPlanX">0</span>)</button>
+          </div>
+
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:1;justify-content:flex-end;">
+            <select id="planPlateFilter" class="form-control" style="width:230px;font-weight:700;" onchange="renderPlanTable()">
+              <option value="ALL">🚛 Tất cả Số xe trong đội</option>
+            </select>
+            <input type="text" id="planSearchInput" class="form-control" style="width:240px;" placeholder="🔍 Tìm số xe, số cont, khách hàng..." oninput="renderPlanTable()" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Thống kê nhanh theo bộ lọc kế hoạch -->
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-label">Tổng chuyến đội xe chạy</div>
+          <div class="stat-label">Chuyến trong ngày đang xem</div>
+          <div class="stat-value" id="statPlanTotal" style="color:var(--primary);">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">📥 Chuyến Hàng Nhập</div>
+          <div class="stat-value" id="statPlanNhap" style="color:#2563eb;">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">📤 Chuyến Hàng Xuất</div>
+          <div class="stat-value" id="statPlanXuat" style="color:#ea580c;">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">🚛 Số xe tham gia chạy</div>
+          <div class="stat-value" id="statPlanTrucks" style="color:var(--success);">0 xe</div>
+        </div>
+      </div>
+
+      <!-- Bảng Kế hoạch điều xe -->
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Ngày chạy</th>
+              <th>Loại</th>
+              <th>Số Xe & Tài Xế</th>
+              <th>Khách Hàng / Chủ Hàng</th>
+              <th>Kho Nhận / Giao & Địa Chỉ</th>
+              <th>Số Cont / Seal</th>
+              <th>Cont</th>
+              <th>Cảng / Lấy Hạ Rỗng</th>
+              <th>Liên Hệ Kho</th>
+            </tr>
+          </thead>
+          <tbody id="planTableBody">
+            <tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text-muted);">Đang tải kế hoạch điều xe từ Vietsun TMS...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- TAB 2: BẢNG CHUYẾN XE & ĐỐI SOÁT CÔNG NỢ                           -->
+    <!-- ================================================================== -->
+    <div id="vendorTabDebit" style="display:none;">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Tổng chuyến kỳ đối soát</div>
           <div class="stat-value" id="valTotalTrips" style="color:var(--primary);">0</div>
         </div>
         <div class="stat-card">
@@ -185,15 +296,20 @@
       </div>
 
       <div class="controls-bar">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-          <label style="font-weight:700;">Kỳ đối soát:</label>
-          <input type="date" id="reportFromDate" class="form-control" style="width:150px;" />
-          <span>đến</span>
-          <input type="date" id="reportToDate" class="form-control" style="width:150px;" />
-          <button class="btn btn-primary" onclick="loadVendorData()">🔍 Lọc dữ liệu</button>
-        </div>
-        <div>
-          <button class="btn btn-success" onclick="exportExcel()">📊 Xuất Bảng Đối Soát Excel</button>
+        <div class="filter-row">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <label style="font-weight:700;">Kỳ đối soát:</label>
+            <input type="date" id="reportFromDate" class="form-control" style="width:150px;" />
+            <span>đến</span>
+            <input type="date" id="reportToDate" class="form-control" style="width:150px;" />
+            <select id="debitPlateFilter" class="form-control" style="width:200px;font-weight:600;" onchange="renderDebitTable()">
+              <option value="ALL">🚛 Tất cả Số xe</option>
+            </select>
+            <button class="btn btn-primary" onclick="loadDebitReport()">🔍 Lọc đối soát</button>
+          </div>
+          <div>
+            <button class="btn btn-success" onclick="exportExcel()">📊 Xuất Bảng Đối Soát Excel</button>
+          </div>
         </div>
       </div>
 
@@ -202,6 +318,7 @@
           <thead>
             <tr>
               <th>ID</th>
+              <th>Ngày</th>
               <th>Loại</th>
               <th>Số Xe</th>
               <th>Khách Hàng</th>
@@ -210,31 +327,35 @@
               <th>Loại Cont</th>
               <th>Cước Vietsun (Debit)</th>
               <th>Cước Điều Chỉnh</th>
-              <th>Phát Sinh</th>
               <th>Thao Tác</th>
             </tr>
           </thead>
           <tbody id="vendorTripsBody">
-            <tr><td colspan="11" style="text-align:center;padding:30px;color:var(--text-muted);">Đang tải dữ liệu chuyến xe...</td></tr>
+            <tr><td colspan="11" style="text-align:center;padding:30px;color:var(--text-muted);">Đang tải dữ liệu đối soát...</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- TAB 2: QUẢN LÝ ĐỘI XE CỦA NHÀ XE -->
+    <!-- ================================================================== -->
+    <!-- TAB 3: QUẢN LÝ ĐỘI XE CỦA TÔI                                      -->
+    <!-- ================================================================== -->
     <div id="vendorTabFleet" style="display:none;">
       <div class="controls-bar">
-        <div>
-          <h3 style="margin:0;font-size:16px;">🚛 Danh sách Xe & Tài xế thuộc nhà xe</h3>
-          <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">Tài xế đăng nhập tại <b>/driver</b> bằng Biển số xe (User) và Mật khẩu bên dưới</div>
+        <div class="filter-row">
+          <div>
+            <h3 style="margin:0;font-size:16px;">🚛 Danh sách Xe & Tài xế thuộc nhà xe</h3>
+            <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">Tài xế đăng nhập tại <b>/driver</b> bằng Biển số xe (User) và Mật khẩu bên dưới</div>
+          </div>
+          <button class="btn btn-primary" onclick="openDriverModal()">➕ Thêm xe mới vào đội</button>
         </div>
-        <button class="btn btn-primary" onclick="openDriverModal()">➕ Thêm xe mới vào đội</button>
       </div>
 
       <div class="table-container">
         <table>
           <thead>
             <tr>
+              <th>STT</th>
               <th>Số Xe (User đăng nhập)</th>
               <th>Mật khẩu</th>
               <th>Họ tên Tài xế</th>
@@ -245,7 +366,7 @@
             </tr>
           </thead>
           <tbody id="myFleetBody">
-            <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">Đang tải danh sách đội xe...</td></tr>
+            <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">Đang tải danh sách đội xe...</td></tr>
           </tbody>
         </table>
       </div>
@@ -311,15 +432,51 @@
 
   <script>
     const API_BASE = '/api/index.php?route=';
+    let allVendorTrips = [];
     let myFleetList = [];
 
+    // State cho Tab 1: Kế hoạch điều xe
+    let planDateMode = 'TODAY';
+    let planSelectedDate = getLocalTodayISO(0);
+    let planTypeFilter = 'ALL'; // 'ALL' | 'N' | 'X'
+
+    function getLocalTodayISO(offsetDays = 0) {
+      const d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function formatVNDate(isoStr) {
+      if (!isoStr || isoStr === '2021-11-11' || isoStr === '1970-01-01') return 'Chưa gắn ngày';
+      const p = isoStr.split('-');
+      if (p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+      return isoStr;
+    }
+
+    function getTripDateISO(t) {
+      const n = (t.ngayTraHang || '').trim();
+      if (n && n !== '2021-11-11' && n !== '1970-01-01') return n;
+      const th = (t.timeThucHien || '').trim();
+      if (th && th !== '2021-11-11' && th !== '1970-01-01') return th;
+      return '';
+    }
+
+    function cleanPlate(str) {
+      return (str || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('planCustomDate').value = planSelectedDate;
       const token = localStorage.getItem('vs_vendor_token');
       if (token) {
         document.getElementById('vendorLoginView').style.display = 'none';
         initDates();
-        loadVendorData();
         loadMyFleet();
+        loadVendorTrips();
+        loadDebitReport();
       }
     });
 
@@ -334,10 +491,52 @@
     }
 
     function switchVendorTab(tab) {
-      document.getElementById('vtabTripsBtn').classList.toggle('active', tab === 'TRIPS');
+      document.getElementById('vtabPlanBtn').classList.toggle('active', tab === 'PLAN');
+      document.getElementById('vtabDebitBtn').classList.toggle('active', tab === 'DEBIT');
       document.getElementById('vtabFleetBtn').classList.toggle('active', tab === 'FLEET');
-      document.getElementById('vendorTabTrips').style.display = tab === 'TRIPS' ? 'block' : 'none';
+
+      document.getElementById('vendorTabPlan').style.display = tab === 'PLAN' ? 'block' : 'none';
+      document.getElementById('vendorTabDebit').style.display = tab === 'DEBIT' ? 'block' : 'none';
       document.getElementById('vendorTabFleet').style.display = tab === 'FLEET' ? 'block' : 'none';
+    }
+
+    function setPlanDateMode(mode) {
+      planDateMode = mode;
+      document.getElementById('vDateToday').classList.toggle('active', mode === 'TODAY');
+      document.getElementById('vDateYesterday').classList.toggle('active', mode === 'YESTERDAY');
+      document.getElementById('vDateTomorrow').classList.toggle('active', mode === 'TOMORROW');
+      document.getElementById('vDateAll').classList.toggle('active', mode === 'ALL');
+
+      if (mode === 'TODAY') {
+        planSelectedDate = getLocalTodayISO(0);
+        document.getElementById('planCustomDate').value = planSelectedDate;
+      } else if (mode === 'YESTERDAY') {
+        planSelectedDate = getLocalTodayISO(-1);
+        document.getElementById('planCustomDate').value = planSelectedDate;
+      } else if (mode === 'TOMORROW') {
+        planSelectedDate = getLocalTodayISO(1);
+        document.getElementById('planCustomDate').value = planSelectedDate;
+      }
+      renderPlanTable();
+    }
+
+    function onPlanCustomDate(val) {
+      if (!val) return;
+      planSelectedDate = val;
+      planDateMode = 'CUSTOM';
+      document.getElementById('vDateToday').classList.remove('active');
+      document.getElementById('vDateYesterday').classList.remove('active');
+      document.getElementById('vDateTomorrow').classList.remove('active');
+      document.getElementById('vDateAll').classList.remove('active');
+      loadVendorTrips(false);
+    }
+
+    function setPlanType(type) {
+      planTypeFilter = type;
+      document.getElementById('vTypeAll').className = 'chip-btn' + (type === 'ALL' ? ' active' : '');
+      document.getElementById('vTypeN').className = 'chip-btn' + (type === 'N' ? ' active-nhap' : '');
+      document.getElementById('vTypeX').className = 'chip-btn' + (type === 'X' ? ' active-xuat' : '');
+      renderPlanTable();
     }
 
     async function handleVendorLogin(e) {
@@ -363,8 +562,9 @@
         localStorage.setItem('vs_vendor_info', JSON.stringify(data.vendor));
         document.getElementById('vendorLoginView').style.display = 'none';
         initDates();
-        loadVendorData();
         loadMyFleet();
+        loadVendorTrips();
+        loadDebitReport();
       } catch (err) {
         errBox.textContent = 'Lỗi kết nối máy chủ!';
         errBox.style.display = 'block';
@@ -379,37 +579,237 @@
       }
     }
 
-    async function loadVendorData() {
+    async function loadVendorTrips(forceRefresh = false) {
       const token = localStorage.getItem('vs_vendor_token');
       const vInfo = JSON.parse(localStorage.getItem('vs_vendor_info') || '{}');
       document.getElementById('navVendorName').textContent = `${vInfo.name || 'Vendor'} (ID: ${vInfo.code || ''})`;
 
+      try {
+        const url = `${API_BASE}/vendor/trips&date=${encodeURIComponent(planSelectedDate)}${forceRefresh ? '&refresh=1' : ''}`;
+        const resLive = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (resLive.status === 401) {
+          localStorage.removeItem('vs_vendor_token');
+          location.reload();
+          return;
+        }
+        const liveData = await resLive.json();
+        if (liveData.ok) {
+          allVendorTrips = liveData.trips || [];
+          populatePlateFilters();
+          renderPlanTable();
+          renderDebitTable();
+        }
+      } catch (err) {
+        console.error('Error loading vendor trips:', err);
+      }
+    }
+
+    function populatePlateFilters() {
+      const plateMap = new Map();
+      myFleetList.forEach(d => {
+        const p = cleanPlate(d.assigned_plate);
+        if (p) plateMap.set(p, `${p} - ${d.full_name || d.driver_name || ''}`);
+      });
+      allVendorTrips.forEach(t => {
+        const p = cleanPlate(t.soXePo);
+        if (p && !plateMap.has(p)) {
+          plateMap.set(p, `${p}${t._driverName ? ' - ' + t._driverName : ''}`);
+        }
+      });
+
+      const sortedPlates = Array.from(plateMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+
+      const planSel = document.getElementById('planPlateFilter');
+      const curPlanVal = planSel.value;
+      planSel.innerHTML = `<option value="ALL">🚛 Tất cả Số xe (${sortedPlates.length} xe)</option>` +
+        sortedPlates.map(([p, label]) => `<option value="${p}">${label}</option>`).join('');
+      if (plateMap.has(curPlanVal)) planSel.value = curPlanVal;
+
+      const debitSel = document.getElementById('debitPlateFilter');
+      const curDebitVal = debitSel.value;
+      debitSel.innerHTML = `<option value="ALL">🚛 Tất cả Số xe</option>` +
+        sortedPlates.map(([p, label]) => `<option value="${p}">${label}</option>`).join('');
+      if (plateMap.has(curDebitVal)) debitSel.value = curDebitVal;
+    }
+
+    function renderPlanTable() {
+      const plateFilter = document.getElementById('planPlateFilter').value;
+      const q = (document.getElementById('planSearchInput').value || '').toLowerCase().trim();
+
+      // 1. Lọc theo ngày & số xe & từ khóa trước để tính số lượng Nhập / Xuất
+      const baseFiltered = allVendorTrips.filter(t => {
+        if (planDateMode !== 'ALL') {
+          const d = getTripDateISO(t);
+          if (d !== planSelectedDate) return false;
+        }
+        if (plateFilter !== 'ALL') {
+          if (cleanPlate(t.soXePo) !== plateFilter) return false;
+        }
+        if (q) {
+          const hay = `${t.idPo || ''} ${t.soXePo || ''} ${t.tenKhachPo || ''} ${t.khoNhanHangPo || ''} ${t.diaChiNhanPo || ''} ${t.soContPo || ''} ${t.soSealPo || ''} ${t._driverName || ''}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+
+      const cntAll = baseFiltered.length;
+      const cntN = baseFiltered.filter(t => t.xuatNhapPo === 'N').length;
+      const cntX = baseFiltered.filter(t => t.xuatNhapPo === 'X').length;
+
+      document.getElementById('cntPlanAll').textContent = cntAll;
+      document.getElementById('cntPlanN').textContent = cntN;
+      document.getElementById('cntPlanX').textContent = cntX;
+      document.getElementById('planTabCount').textContent = cntAll;
+
+      // 2. Lọc theo loại hàng Nhập / Xuất
+      const finalTrips = baseFiltered.filter(t => {
+        if (planTypeFilter === 'ALL') return true;
+        return t.xuatNhapPo === planTypeFilter;
+      });
+
+      // Ưu tiên sắp xếp Hàng Nhập ('N') lên trước, sau đó đến Hàng Xuất ('X')
+      finalTrips.sort((a, b) => {
+        if (a.xuatNhapPo !== b.xuatNhapPo) {
+          return a.xuatNhapPo === 'N' ? -1 : 1;
+        }
+        return Number(b.idPo || 0) - Number(a.idPo || 0);
+      });
+
+      const activePlates = new Set(finalTrips.map(t => cleanPlate(t.soXePo)).filter(Boolean));
+      document.getElementById('statPlanTotal').textContent = finalTrips.length;
+      document.getElementById('statPlanNhap').textContent = cntN;
+      document.getElementById('statPlanXuat').textContent = cntX;
+      document.getElementById('statPlanTrucks').textContent = `${activePlates.size} xe`;
+
+      const tbody = document.getElementById('planTableBody');
+      if (finalTrips.length === 0) {
+        const dateDesc = planDateMode === 'ALL' ? 'tất cả các ngày' : `ngày ${formatVNDate(planSelectedDate)}`;
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="10" style="text-align:center;padding:36px;color:var(--text-muted);">
+              <div style="font-size:32px;margin-bottom:6px;">📭</div>
+              <div style="font-weight:700;color:#334155;font-size:14.5px;">Không có chuyến xe nào trong ${dateDesc} theo bộ lọc hiện tại.</div>
+              ${allVendorTrips.length > 0 && planDateMode !== 'ALL' ? `
+                <div style="margin-top:10px;">
+                  <button class="btn btn-primary" onclick="setPlanDateMode('YESTERDAY')" style="margin-right:6px;">⏪ Xem Hôm qua</button>
+                  <button class="btn" style="background:#e2e8f0;color:#0f172a;" onclick="setPlanDateMode('ALL')">📋 Xem tất cả ${allVendorTrips.length} chuyến của đội xe</button>
+                </div>
+              ` : ''}
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = finalTrips.map(t => {
+        const isXuat = t.xuatNhapPo === 'X';
+        const rowClass = isXuat ? 'row-xuat' : 'row-nhap';
+        const typeBadge = isXuat
+          ? '<span style="background:#ffedd5;color:#c2410c;padding:3px 8px;border-radius:6px;font-weight:800;font-size:11.5px;">📤 XUẤT</span>'
+          : '<span style="background:#dbeafe;color:#1d4ed8;padding:3px 8px;border-radius:6px;font-weight:800;font-size:11.5px;">📥 NHẬP</span>';
+        const tripDate = formatVNDate(getTripDateISO(t));
+
+        return `
+          <tr class="${rowClass}">
+            <td><b>#${t.idPo}</b></td>
+            <td><span style="font-weight:700;color:#0369a1;">${tripDate}</span></td>
+            <td>${typeBadge}</td>
+            <td>
+              <span class="badge-plate">${t.soXePo || '(Chưa gán xe)'}</span>
+              ${t._driverName ? `<div style="font-size:11.5px;color:#475569;margin-top:3px;font-weight:600;">👨‍✈️ ${t._driverName} ${t._driverPhone ? `(${t._driverPhone})` : ''}</div>` : ''}
+            </td>
+            <td>
+              <div style="font-weight:700;">${t.tenKhachPo || '--'}</div>
+              ${t.chuHangPo ? `<div style="font-size:11.5px;color:var(--text-muted);">Chủ hàng: ${t.chuHangPo}</div>` : ''}
+            </td>
+            <td>
+              <div style="font-weight:700;">${t.khoNhanHangPo || '--'}</div>
+              <div style="font-size:12px;color:var(--text-muted);">${t.diaChiNhanPo || ''} ${t.tinhNhanPo ? `(${t.tinhNhanPo})` : ''}</div>
+            </td>
+            <td>
+              <div style="font-weight:800;color:#1e40af;">${t.soContPo || '--'}</div>
+              <div style="font-size:12px;color:#475569;">Seal: ${t.soSealPo || '--'}</div>
+            </td>
+            <td><b>${Number(t.cont40Po) > 0 ? "40'" : "20'"}</b></td>
+            <td>
+              ${isXuat
+                ? `<div>Lấy: <b>${t.noiLayContPo || '--'}</b></div><div style="font-size:11.5px;color:#c2410c;">Hạ: ${t.cangDiPo || ''} → ${t.cangDenPo || t.tinhXuatHangPo || ''}</div>`
+                : `<div>Cảng: <b>${t.cangDiPo || '--'}</b></div><div style="font-size:11.5px;color:#047857;">Trả rỗng: ${t.noiLayContPo || '--'}</div>`
+              }
+            </td>
+            <td>${t.lienHeNhanPo || '--'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function loadDebitReport() {
+      const token = localStorage.getItem('vs_vendor_token');
       const fromDate = document.getElementById('reportFromDate').value;
       const toDate = document.getElementById('reportToDate').value;
 
       try {
-        const resLive = await fetch(`${API_BASE}/vendor/trips`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const liveData = await resLive.json();
-
         const resRev = await fetch(`${API_BASE}/vendor/revenue-report&fromDate=${fromDate}&toDate=${toDate}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const revData = await resRev.json();
-
-        if (liveData.ok) {
-          renderTable(liveData.trips || []);
-        }
-        if (revData.ok && revData.summary) {
-          document.getElementById('valTotalTrips').textContent = liveData.trips ? liveData.trips.length : 0;
-          document.getElementById('valRevenue').textContent = (revData.summary.totalRevenue || 0).toLocaleString('vi-VN') + ' đ';
-          document.getElementById('valExpenses').textContent = (revData.summary.totalExpenses || 0).toLocaleString('vi-VN') + ' đ';
-          document.getElementById('valNetTotal').textContent = (revData.summary.netTotal || 0).toLocaleString('vi-VN') + ' đ';
-        }
+        renderDebitTable(revData);
       } catch (err) {
-        console.error('Error loading vendor data:', err);
+        console.error('Error loading debit report:', err);
       }
+    }
+
+    function renderDebitTable(revData = null) {
+      const fromDate = document.getElementById('reportFromDate').value;
+      const toDate = document.getElementById('reportToDate').value;
+      const plateFilter = document.getElementById('debitPlateFilter').value;
+
+      const filtered = allVendorTrips.filter(t => {
+        const d = getTripDateISO(t);
+        if (fromDate && toDate && d && (d < fromDate || d > toDate)) return false;
+        if (plateFilter !== 'ALL' && cleanPlate(t.soXePo) !== plateFilter) return false;
+        return true;
+      });
+
+      const defaultRevenue = filtered.length * 2500000;
+      const expTotal = (revData && revData.summary && revData.summary.totalExpenses) ? revData.summary.totalExpenses : 0;
+
+      document.getElementById('valTotalTrips').textContent = filtered.length;
+      document.getElementById('valRevenue').textContent = defaultRevenue.toLocaleString('vi-VN') + ' đ';
+      document.getElementById('valExpenses').textContent = expTotal.toLocaleString('vi-VN') + ' đ';
+      document.getElementById('valNetTotal').textContent = (defaultRevenue + expTotal).toLocaleString('vi-VN') + ' đ';
+
+      const tbody = document.getElementById('vendorTripsBody');
+      if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--text-muted);">Không có chuyến xe nào trong kỳ đối soát này.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(t => {
+        const isXuat = t.xuatNhapPo === 'X';
+        const typeBadge = isXuat ? '<span style="color:#ea580c;font-weight:700;">📤 XUẤT</span>' : '<span style="color:#2563eb;font-weight:700;">📥 NHẬP</span>';
+        const tripDate = formatVNDate(getTripDateISO(t));
+
+        return `
+          <tr>
+            <td><b>#${t.idPo}</b></td>
+            <td>${tripDate}</td>
+            <td>${typeBadge}</td>
+            <td><span class="badge-plate">${t.soXePo || '(Chưa có xe)'}</span></td>
+            <td>${t.tenKhachPo || '--'}</td>
+            <td>${t.khoNhanHangPo || ''}</td>
+            <td>${t.soContPo || '--'} / ${t.soSealPo || '--'}</td>
+            <td>${Number(t.cont40Po) > 0 ? "40'" : "20'"}</td>
+            <td><b>${(2500000).toLocaleString('vi-VN')} đ</b></td>
+            <td><span style="color:var(--success);font-weight:700;">--</span></td>
+            <td>
+              <button onclick="adjustRatePrompt('${t.idPo}')" style="background:#f1f5f9;border:1px solid var(--border);padding:4px 8px;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;">✏️ Chỉnh cước</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     async function loadMyFleet() {
@@ -422,6 +822,7 @@
         if (data.ok) {
           myFleetList = data.drivers || [];
           document.getElementById('myFleetCount').textContent = myFleetList.length;
+          populatePlateFilters();
           renderMyFleet();
         }
       } catch (err) {
@@ -432,14 +833,15 @@
     function renderMyFleet() {
       const tbody = document.getElementById('myFleetBody');
       if (!myFleetList.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">Chưa có xe nào trong đội. Nhấn "Thêm xe mới" để tạo.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">Chưa có xe nào trong đội. Nhấn "Thêm xe mới" để tạo.</td></tr>';
         return;
       }
-      tbody.innerHTML = myFleetList.map(d => `
+      tbody.innerHTML = myFleetList.map((d, idx) => `
         <tr>
-          <td><span style="background:#dbeafe;color:#1e40af;font-weight:800;padding:4px 8px;border-radius:6px;">${d.assigned_plate}</span></td>
+          <td>${idx + 1}</td>
+          <td><span class="badge-plate">${d.assigned_plate}</span></td>
           <td><code>${d.pin_code || '123456'}</code></td>
-          <td><b>${d.full_name || '--'}</b></td>
+          <td><b>${d.full_name || d.driver_name || '--'}</b></td>
           <td>${d.phone || '--'}</td>
           <td>${d.cccd || '--'}</td>
           <td>${d.gplx || '--'}</td>
@@ -455,7 +857,7 @@
       document.getElementById('editDriverId').value = driver ? driver.id : '';
       document.getElementById('editDriverPlate').value = driver ? driver.assigned_plate : '';
       document.getElementById('editDriverPin').value = driver ? (driver.pin_code || '123456') : '123456';
-      document.getElementById('editDriverName').value = driver ? (driver.full_name || '') : '';
+      document.getElementById('editDriverName').value = driver ? (driver.full_name || driver.driver_name || '') : '';
       document.getElementById('editDriverPhone').value = driver ? (driver.phone || '') : '';
       document.getElementById('editDriverCccd').value = driver ? (driver.cccd || '') : '';
       document.getElementById('editDriverGplx').value = driver ? (driver.gplx || '') : '';
@@ -487,7 +889,7 @@
       if (data.ok) {
         closeModal('driverEditModal');
         loadMyFleet();
-        loadVendorData();
+        loadVendorTrips(true);
       } else {
         alert('Lỗi: ' + (data.error || 'Không thể lưu'));
       }
@@ -538,37 +940,6 @@
       }
     }
 
-    function renderTable(trips) {
-      const tbody = document.getElementById('vendorTripsBody');
-      if (!trips || trips.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--text-muted);">Không có booking nào của đội xe trong khoảng thời gian này.</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = trips.map(t => {
-        const isXuat = t.xuatNhapPo === 'X';
-        const typeBadge = isXuat ? '<span style="color:#ea580c;font-weight:700;">📤 XUẤT</span>' : '<span style="color:#2563eb;font-weight:700;">📥 NHẬP</span>';
-
-        return `
-          <tr>
-            <td><b>#${t.idPo}</b></td>
-            <td>${typeBadge}</td>
-            <td><b style="color:#1e3a8a;">${t.soXePo || '(Chưa có xe)'}</b></td>
-            <td>${t.tenKhachPo || '--'}</td>
-            <td>${t.khoNhanHangPo || ''}</td>
-            <td>${t.soContPo || '--'} / ${t.soSealPo || '--'}</td>
-            <td>${Number(t.cont40Po) > 0 ? "40'" : "20'"}</td>
-            <td><b>${(2500000).toLocaleString('vi-VN')} đ</b></td>
-            <td><span style="color:var(--success);font-weight:700;">--</span></td>
-            <td><span style="color:var(--warning);font-weight:700;">--</span></td>
-            <td>
-              <button onclick="adjustRatePrompt('${t.idPo}')" style="background:#f1f5f9;border:1px solid var(--border);padding:4px 8px;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;">✏️ Chỉnh cước</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
-
     async function adjustRatePrompt(idPo) {
       const newRate = prompt('Nhập giá cước mới cần điều chỉnh (VNĐ):', '2500000');
       if (!newRate) return;
@@ -587,7 +958,7 @@
         const data = await res.json();
         if (data.ok) {
           alert('✅ Đã cập nhật giá cước đối soát thành công!');
-          loadVendorData();
+          loadDebitReport();
         } else {
           alert('Lỗi: ' + (data.error || 'Không thể lưu!'));
         }
@@ -597,7 +968,30 @@
     }
 
     function exportExcel() {
-      alert('Đang kết xuất bảng đối chiếu công nợ chuẩn form Vietsun TMS...');
+      if (!allVendorTrips.length) {
+        alert('Không có dữ liệu chuyến để xuất!');
+        return;
+      }
+      const headers = ['ID', 'Ngay', 'Loai', 'SoXe', 'KhachHang', 'Kho', 'DiaChi', 'SoCont', 'SoSeal', 'LoaiCont'];
+      const rows = allVendorTrips.map(t => [
+        t.idPo,
+        getTripDateISO(t),
+        t.xuatNhapPo === 'X' ? 'XUAT' : 'NHAP',
+        t.soXePo || '',
+        `"${(t.tenKhachPo || '').replace(/"/g, '""')}"`,
+        `"${(t.khoNhanHangPo || '').replace(/"/g, '""')}"`,
+        `"${(t.diaChiNhanPo || '').replace(/"/g, '""')}"`,
+        t.soContPo || '',
+        t.soSealPo || '',
+        Number(t.cont40Po) > 0 ? '40' : '20'
+      ]);
+      const csv = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Doi_Soat_Vendor_${getLocalTodayISO(0)}.csv`;
+      a.click();
     }
   </script>
 </body>

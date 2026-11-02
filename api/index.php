@@ -5,6 +5,7 @@
  * quản lý Vendor, Tài xế/Số xe, Báo cáo doanh thu & Chi phí phát sinh.
  */
 error_reporting(0);
+date_default_timezone_set('Asia/Ho_Chi_Minh');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -309,7 +310,7 @@ function vietsun_login() {
     $ch = curl_init("$REMOTE_BASE/0login.php");
     $postData = http_build_query([
         'username' => 'trucking14',
-        'password' => '14',
+        'password' => '1',
         'login'    => 'ĐĂNG NHẬP'
     ]);
     curl_setopt_array($ch, [
@@ -328,10 +329,41 @@ function vietsun_login() {
     curl_close($ch);
 }
 
-function fetch_vietsun_shipments() {
+// Tính chu kỳ kế toán Vietsun TMS (26 tháng M-1 -> 25 tháng M => YYYY-MM-01)
+function get_billing_cycle_param($isoDate) {
+    if (!$isoDate || !preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $isoDate, $m)) {
+        $isoDate = date('Y-m-d');
+        preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $isoDate, $m);
+    }
+    $y = (int)$m[1];
+    $mo = (int)$m[2];
+    $d = (int)$m[3];
+    if ($d >= 26) {
+        $mo += 1;
+        if ($mo > 12) {
+            $mo = 1;
+            $y += 1;
+        }
+    }
+    return sprintf('%04d-%02d-01', $y, $mo);
+}
+
+function normalize_shipment_item($item) {
+    if (!is_array($item)) return $item;
+    $decodeFields = ['tenKhachPo', 'khoNhanHangPo', 'diaChiNhanPo', 'tinhNhanPo', 'lienHeNhanPo', 'tenHangHoaPo', 'noiLayContPo', 'cangDiPo', 'cangDenPo', 'tinhXuatHangPo'];
+    foreach ($decodeFields as $f) {
+        if (isset($item[$f]) && is_string($item[$f])) {
+            $item[$f] = html_entity_decode($item[$f], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
+    }
+    return $item;
+}
+
+function fetch_single_cycle($cycleDate, $forceRefresh = false) {
     global $REMOTE_BASE, $COOKIE_FILE;
-    $cacheFile = sys_get_temp_dir() . '/vietsun_hub_cache.json';
-    if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 90)) {
+    $safeCycle = preg_replace('/[^0-9\-]/', '', $cycleDate);
+    $cacheFile = sys_get_temp_dir() . '/vietsun_cycle_' . $safeCycle . '.json';
+    if (!$forceRefresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 60)) {
         $cached = json_decode(file_get_contents($cacheFile), true);
         if (is_array($cached) && count($cached) > 0) return $cached;
     }
@@ -339,8 +371,7 @@ function fetch_vietsun_shipments() {
     if (!file_exists($COOKIE_FILE)) {
         vietsun_login();
     }
-    $ngay = date('Y-m-d');
-    $url = "$REMOTE_BASE/return_json.php?ngay=" . urlencode($ngay);
+    $url = "$REMOTE_BASE/return_json.php?ngay=" . urlencode($safeCycle);
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -380,6 +411,32 @@ function fetch_vietsun_shipments() {
         return $data;
     }
     return [];
+}
+
+function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false) {
+    $baseTs = $targetDate ? strtotime($targetDate) : time();
+    if (!$baseTs) $baseTs = time();
+
+    $cycles = array_unique([
+        get_billing_cycle_param(date('Y-m-d', $baseTs - 10 * 86400)),
+        get_billing_cycle_param(date('Y-m-d', $baseTs)),
+        get_billing_cycle_param(date('Y-m-d', $baseTs + 15 * 86400))
+    ]);
+
+    $merged = [];
+    foreach ($cycles as $c) {
+        $arr = fetch_single_cycle($c, $forceRefresh);
+        if (is_array($arr)) {
+            foreach ($arr as $item) {
+                if (isset($item['idPo'])) {
+                    $merged[$item['idPo']] = normalize_shipment_item($item);
+                }
+            }
+        }
+    }
+    // Sắp xếp mới nhất lên đầu
+    krsort($merged, SORT_NUMERIC);
+    return array_values($merged);
 }
 
 function push_vietsun_crud($params) {
@@ -508,7 +565,13 @@ try {
     // 3. PROXY CHO TRANG ĐIỀU HÀNH CHÍNH & DASHBOARD QUẢN TRỊ (/admin)
     // ========================================================================
     if ($route === 'return_json') {
-        echo json_encode(fetch_vietsun_shipments());
+        $ngay = $_GET['ngay'] ?? ($_GET['date'] ?? null);
+        $force = !empty($_GET['refresh']);
+        if ($ngay && preg_match('/^\d{4}-\d{2}-01$/', $ngay)) {
+            echo json_encode(fetch_single_cycle($ngay, $force));
+        } else {
+            echo json_encode(fetch_vietsun_shipments($ngay, $force));
+        }
         exit;
     }
     if ($route === 'index-crud' || $route === 'index_crud') {
@@ -519,20 +582,22 @@ try {
     // API Đồng bộ Google Sheet ngay lập tức
     if ($route === 'admin/sync-sheet') {
         $res = sync_from_google_sheet($pdo);
-        echo json_encode(['ok' => true, 'message' => 'Đã đồng bộ từ Google Sheet thành công!', 'stats' => $res]);
+        echo json_encode(['ok' => true, 'message' => 'Đã đồng bộ từ Google Sheet thành công!', 'stats' => $res, 'synced' => $res]);
         exit;
     }
 
     // API Lấy toàn bộ danh sách Vendor & Tài xế cho Dashboard Quản trị
     if ($route === 'admin/overview') {
         $vendors = $pdo->query("
-            SELECT v.*, (SELECT COUNT(*) FROM drivers d WHERE d.vendor_id = v.id) AS driver_count
+            SELECT v.*, v.phone AS contact_phone,
+                   (SELECT COUNT(*) FROM drivers d WHERE d.vendor_id = v.id) AS driver_count,
+                   (SELECT COUNT(*) FROM drivers d WHERE d.vendor_id = v.id) AS truck_count
             FROM vendors v
             ORDER BY v.vendor_name ASC
         ")->fetchAll();
 
         $drivers = $pdo->query("
-            SELECT d.*, v.vendor_name, v.vendor_code
+            SELECT d.*, d.driver_name AS full_name, v.vendor_name, v.vendor_code
             FROM drivers d
             JOIN vendors v ON d.vendor_id = v.id
             ORDER BY v.vendor_name ASC, d.assigned_plate ASC
@@ -551,8 +616,8 @@ try {
         $id = isset($jsonBody['id']) ? (int)$jsonBody['id'] : 0;
         $vName = strtoupper(trim($jsonBody['vendor_name'] ?? ''));
         $vCode = to_clean_code($jsonBody['vendor_code'] ?: $vName);
-        $phone = trim($jsonBody['phone'] ?? '');
-        $pass  = trim($jsonBody['password_hash'] ?? '123456');
+        $phone = trim($jsonBody['phone'] ?? ($jsonBody['contact_phone'] ?? ''));
+        $pass  = trim($jsonBody['password_hash'] ?? ($jsonBody['password'] ?? '123456'));
         if (!$vName || !$vCode) {
             http_response_code(400);
             echo json_encode(['ok' => false, 'error' => 'Vui lòng nhập Tên Vendor']);
@@ -585,7 +650,7 @@ try {
         $id = isset($jsonBody['id']) ? (int)$jsonBody['id'] : 0;
         $vendorId = (int)($jsonBody['vendor_id'] ?? 0);
         $plate = to_clean_code($jsonBody['assigned_plate'] ?? '');
-        $dName = strtoupper(trim($jsonBody['driver_name'] ?? ''));
+        $dName = strtoupper(trim($jsonBody['driver_name'] ?? ($jsonBody['full_name'] ?? '')));
         $phone = trim($jsonBody['phone'] ?? '');
         $pin   = trim($jsonBody['pin_code'] ?? '123456');
         $cccd  = trim($jsonBody['cccd'] ?? '');
@@ -669,7 +734,7 @@ try {
 
     // Lấy danh sách đội xe của riêng Vendor đang đăng nhập
     if ($route === 'vendor/my-drivers') {
-        $st = $pdo->prepare("SELECT * FROM drivers WHERE vendor_id = ? ORDER BY assigned_plate ASC");
+        $st = $pdo->prepare("SELECT d.*, d.driver_name AS full_name FROM drivers d WHERE d.vendor_id = ? ORDER BY d.assigned_plate ASC");
         $st->execute([$user['vendorId']]);
         echo json_encode(['ok' => true, 'drivers' => $st->fetchAll()]);
         exit;
@@ -678,16 +743,19 @@ try {
     // Lấy danh sách chuyến của Tài xế
     if ($route === 'driver/my-trips') {
         $plate = to_clean_code($user['plate'] ?? '');
-        $all = fetch_vietsun_shipments();
+        $targetDate = $_GET['date'] ?? null;
+        $forceRefresh = !empty($_GET['refresh']);
+        $all = fetch_vietsun_shipments($targetDate, $forceRefresh);
         $myTrips = [];
         foreach ($all as $item) {
             $itemPlate = to_clean_code($item['soXePo'] ?? '');
-            if ($itemPlate !== '' && strpos($itemPlate, $plate) !== false) {
+            if ($itemPlate !== '' && ($itemPlate === $plate || strpos($itemPlate, $plate) !== false)) {
                 $myTrips[] = $item;
             }
         }
         echo json_encode([
             'ok'         => true,
+            'today'      => date('Y-m-d'),
             'trips'      => $myTrips,
             'driverInfo' => [
                 'name'   => $user['driverName'] ?? '',
@@ -737,20 +805,50 @@ try {
     // Vendor lấy danh sách chuyến của toàn đội xe
     if ($route === 'vendor/trips') {
         $vName = strtoupper(trim($user['vendorName'] ?? ''));
-        $vCode = to_clean_code($vName);
-        $all = fetch_vietsun_shipments();
+        $vCode = to_clean_code($user['vendorCode'] ?? $vName);
+        $targetDate = $_GET['date'] ?? null;
+        $forceRefresh = !empty($_GET['refresh']);
+
+        // Lấy danh sách biển số xe thuộc Vendor này để đối chiếu cả по số xe lẫn tên ĐVVT
+        $stDrv = $pdo->prepare("SELECT assigned_plate, driver_name, phone FROM drivers WHERE vendor_id = ?");
+        $stDrv->execute([$user['vendorId']]);
+        $drvRows = $stDrv->fetchAll();
+        $fleetMap = [];
+        foreach ($drvRows as $dr) {
+            $p = to_clean_code($dr['assigned_plate']);
+            if ($p) {
+                $fleetMap[$p] = [
+                    'plate' => $p,
+                    'name'  => $dr['driver_name'] ?? '',
+                    'phone' => $dr['phone'] ?? ''
+                ];
+            }
+        }
+
+        $all = fetch_vietsun_shipments($targetDate, $forceRefresh);
         $vendorTrips = [];
         foreach ($all as $item) {
             $itemVendor = strtoupper(trim($item['donViVcPo'] ?? ''));
             $itemVCode = to_clean_code($itemVendor);
-            if ($itemVCode !== '' && ($itemVCode === $vCode || strpos($itemVCode, $vCode) !== false)) {
+            $itemPlate = to_clean_code($item['soXePo'] ?? '');
+
+            $matchVendor = ($itemVCode !== '' && ($itemVCode === $vCode || strpos($itemVCode, $vCode) !== false));
+            $matchPlate  = ($itemPlate !== '' && isset($fleetMap[$itemPlate]));
+
+            if ($matchVendor || $matchPlate) {
+                if ($itemPlate !== '' && isset($fleetMap[$itemPlate])) {
+                    $item['_driverName']  = $fleetMap[$itemPlate]['name'];
+                    $item['_driverPhone'] = $fleetMap[$itemPlate]['phone'];
+                }
                 $vendorTrips[] = $item;
             }
         }
         echo json_encode([
-            'ok'    => true,
-            'total' => count($vendorTrips),
-            'trips' => $vendorTrips
+            'ok'          => true,
+            'today'       => date('Y-m-d'),
+            'total'       => count($vendorTrips),
+            'fleetPlates' => array_values($fleetMap),
+            'trips'       => $vendorTrips
         ]);
         exit;
     }
