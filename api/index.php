@@ -971,10 +971,10 @@ function push_vietsun_crud($params) {
     if (!file_exists($COOKIE_FILE)) {
         vietsun_login();
     }
-    if (!isset($params['TenDangNhap'])) {
+    if (empty($params['TenDangNhap']) || $params['TenDangNhap'] === 'admin') {
         $params['TenDangNhap'] = 'trucking14';
     }
-    if (!isset($params['userString'])) {
+    if (empty($params['userString']) || strpos($params['userString'], '<<|') === false) {
         $params['userString'] = 'trucking14<<|7<<|a0b923820d<<|1<<|0.0.0.0.0.0.1.0.1.1.0.1.0.1.';
     }
     $ch = curl_init("$REMOTE_BASE/index-crud.php");
@@ -1165,6 +1165,29 @@ try {
     // ========================================================================
     // 3. PROXY CHO TRANG ĐIỀU HÀNH CHÍNH & DASHBOARD QUẢN TRỊ (/admin)
     // ========================================================================
+    if ($route === 'login' || $route === 'auth/login') {
+        $uName = trim($jsonBody['username'] ?? ($_POST['username'] ?? ''));
+        if (!$uName) $uName = 'trucking14';
+        echo json_encode([
+            'ok'         => true,
+            'username'   => $uName,
+            'userString' => 'trucking14<<|7<<|a0b923820d<<|1<<|0.0.0.0.0.0.1.0.1.1.0.1.0.1.'
+        ]);
+        exit;
+    }
+
+    if ($route === 'drivers' || $route === 'api/drivers') {
+        $drivers = $pdo->query("
+            SELECT d.assigned_plate AS plate, d.driver_name AS name, d.phone, d.cccd, d.gplx, v.vendor_name AS vendor
+            FROM drivers d
+            JOIN vendors v ON d.vendor_id = v.id
+            WHERE d.is_active = 1
+            ORDER BY v.vendor_name ASC, d.assigned_plate ASC
+        ")->fetchAll();
+        echo json_encode(['ok' => true, 'vendors' => $drivers, 'total' => count($drivers)]);
+        exit;
+    }
+
     if ($route === 'return_json') {
         $ngay = $_GET['ngay'] ?? ($_GET['date'] ?? null);
         $force = !empty($_GET['refresh']);

@@ -2309,7 +2309,11 @@
       let vdUpdated = 0;
 
       try {
-        const urlsToTry = ["?api=drivers", "/api/drivers"];
+        const urlsToTry = [
+          "/api/index.php?route=drivers",
+          "/api/drivers",
+          "?api=drivers"
+        ];
         let data = null;
         for (const u of urlsToTry) {
           try {
@@ -2602,7 +2606,6 @@
 
     async function fetchSingleCycleFromApi(cycleDateParam) {
       const urlsToTry = [
-        `?api=return_json&ngay=${encodeURIComponent(cycleDateParam)}`,
         `/api/index.php?route=return_json&ngay=${encodeURIComponent(cycleDateParam)}`,
         `/api/return_json?ngay=${encodeURIComponent(cycleDateParam)}`,
         `${REMOTE_BASE}/return_json.php?ngay=${encodeURIComponent(cycleDateParam)}`
@@ -2615,6 +2618,7 @@
           if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
           const text = await resp.text();
           const cleaned = text.trim();
+          if (cleaned.startsWith("<")) throw new Error("Phản hồi HTML thay vì JSON");
           const data = JSON.parse(cleaned);
           if (Array.isArray(data)) return data;
         } catch (err) {
@@ -2707,8 +2711,8 @@
         formBody.append(k, v);
       }
 
+      // Luôn ưu tiên endpoint API Gateway trên máy chủ
       const urlsToTry = [
-        "?api=index_crud",
         "/api/index.php?route=index-crud",
         "/api/index-crud",
         `${REMOTE_BASE}/index-crud.php`
@@ -2723,7 +2727,11 @@
             body: formBody.toString()
           });
           if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-          return await resp.text();
+          const text = await resp.text();
+          if (text.includes("Lỗi đăng nhập") || (text.includes("<!DOCTYPE") && !url.includes("vietsunlogistics.com"))) {
+            throw new Error(text.includes("Lỗi đăng nhập") ? "Lỗi phiên đăng nhập TMS" : "Phản hồi không hợp lệ từ máy chủ");
+          }
+          return text;
         } catch (err) {
           lastErr = err;
         }
@@ -3565,22 +3573,36 @@
           });
           po.soContPo = rawVal;
         } else if (fieldName === "soXePo") {
-          // Also check if driver DB has a vendor for this plate and sync donViVcPo automatically
           const drv = getDriverForPlate(rawVal);
           const dvInp = document.getElementById(`pc_dv_${po.idPo}`);
           let autoVendor = (drv && drv.vendor) || "";
           if (!autoVendor && DEFAULT_XE_VIETSUN.includes(rawVal)) autoVendor = "VIETSUN";
 
-          const htmlResp = await postCrudUpdate({
+          // 1. Luôn lưu Số xe chắc chắn bằng lệnh b18 chuẩn
+          await postCrudUpdate({
             TenDangNhap: state.username,
             userString: state.userString,
             cv: 3,
             loai: 1,
             iddt: 1,
-            cot: `b18newtruck<<|4<<|50<<|${po.idPo}<<|soXePo<<|${po.codePo}`,
+            cot: `b18<<|4<<|50<<|${po.idPo}<<|soXePo<<|${po.codePo}`,
             thongtin: rawVal
           });
           po.soXePo = rawVal;
+
+          // 2. Gửi thêm b18newtruck để TMS nhận diện xe Vietsun
+          let htmlResp = "";
+          try {
+            htmlResp = await postCrudUpdate({
+              TenDangNhap: state.username,
+              userString: state.userString,
+              cv: 3,
+              loai: 1,
+              iddt: 1,
+              cot: `b18newtruck<<|4<<|50<<|${po.idPo}<<|soXePo<<|${po.codePo}`,
+              thongtin: rawVal
+            });
+          } catch (_) {}
 
           if (htmlResp && htmlResp.includes("reload_input_ajax")) {
             const parser = new DOMParser();
@@ -3608,8 +3630,20 @@
             });
           }
           saveRecentTruck(rawVal, po.donViVcPo || autoVendor);
+        } else if (fieldName === "donViVcPo") {
+          // Lưu Đơn vị vận tải bằng b18 chuẩn
+          await postCrudUpdate({
+            TenDangNhap: state.username,
+            userString: state.userString,
+            cv: 3,
+            loai: 1,
+            iddt: 1,
+            cot: `b18<<|4<<|30<<|${po.idPo}<<|donViVcPo<<|${po.codePo}`,
+            thongtin: rawVal
+          });
+          po.donViVcPo = rawVal;
         } else {
-          const maxLen = fieldName === "donViVcPo" ? 30 : 50;
+          const maxLen = 50;
           await postCrudUpdate({
             TenDangNhap: state.username,
             userString: state.userString,
@@ -3620,6 +3654,7 @@
             thongtin: rawVal
           });
           po[fieldName] = rawVal;
+        }
         }
 
         if (inputEl) {
@@ -4466,34 +4501,76 @@
           currentEditingPo.ngayTauChayPo = rawVal || "";
         } else if (fieldName === "soXePo") {
           rawVal = rawVal.toUpperCase();
-          const htmlResp = await postCrudUpdate({
+          // 1. Luôn lưu Số xe chắc chắn bằng lệnh b18 chuẩn
+          await postCrudUpdate({
             TenDangNhap: state.username,
             userString: state.userString,
             cv: 3,
             loai: 1,
             iddt: 1,
-            cot: `b18newtruck<<|4<<|50<<|${idPo}<<|soXePo<<|${codePo}`,
+            cot: `b18<<|4<<|50<<|${idPo}<<|soXePo<<|${codePo}`,
             thongtin: rawVal
           });
           currentEditingPo.soXePo = rawVal;
-          saveRecentTruck(rawVal, document.getElementById("inp_donViVcPo").value);
 
-          // Parse #reload_input_ajax response if server auto-resolved Vendor
+          // 2. Gửi thêm b18newtruck để TMS nhận diện xe Vietsun
+          let htmlResp = "";
+          try {
+            htmlResp = await postCrudUpdate({
+              TenDangNhap: state.username,
+              userString: state.userString,
+              cv: 3,
+              loai: 1,
+              iddt: 1,
+              cot: `b18newtruck<<|4<<|50<<|${idPo}<<|soXePo<<|${codePo}`,
+              thongtin: rawVal
+            });
+          } catch (_) {}
+
+          const curDvInp = document.getElementById("inp_donViVcPo");
+          saveRecentTruck(rawVal, curDvInp ? curDvInp.value : "");
+
+          // Tự động nhận diện Vendor nếu có
+          let autoDv = "";
           if (htmlResp && htmlResp.includes("reload_input_ajax")) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlResp, "text/html");
-            const kqXe = doc.getElementById(`kq_soXePo_${idPo}`);
             const kqDv = doc.getElementById(`kq_donViVcPo_${idPo}`);
-            if (kqXe && kqXe.textContent) {
-              currentEditingPo.soXePo = kqXe.textContent.trim();
-              document.getElementById("inp_soXePo").value = currentEditingPo.soXePo;
-            }
-            if (kqDv && kqDv.textContent) {
-              currentEditingPo.donViVcPo = kqDv.textContent.trim();
-              document.getElementById("inp_donViVcPo").value = currentEditingPo.donViVcPo;
-              document.getElementById("inp_donViVcPo").classList.add("saved");
+            if (kqDv && kqDv.textContent && kqDv.textContent.trim()) {
+              autoDv = kqDv.textContent.trim().toUpperCase();
             }
           }
+          if (!autoDv && rawVal) {
+            const drv = getDriverForPlate(rawVal);
+            if (drv && drv.vendor) autoDv = drv.vendor;
+            else if (DEFAULT_XE_VIETSUN.includes(rawVal)) autoDv = "VIETSUN";
+          }
+          if (autoDv && curDvInp && (!curDvInp.value || curDvInp.value === "VIETSUN" || curDvInp.value !== autoDv)) {
+            curDvInp.value = autoDv;
+            currentEditingPo.donViVcPo = autoDv;
+            curDvInp.classList.add("saved");
+            await postCrudUpdate({
+              TenDangNhap: state.username,
+              userString: state.userString,
+              cv: 3,
+              loai: 1,
+              iddt: 1,
+              cot: `b18<<|4<<|30<<|${idPo}<<|donViVcPo<<|${codePo}`,
+              thongtin: autoDv
+            });
+          }
+        } else if (fieldName === "donViVcPo") {
+          rawVal = rawVal.toUpperCase();
+          await postCrudUpdate({
+            TenDangNhap: state.username,
+            userString: state.userString,
+            cv: 3,
+            loai: 1,
+            iddt: 1,
+            cot: `b18<<|4<<|30<<|${idPo}<<|donViVcPo<<|${codePo}`,
+            thongtin: rawVal
+          });
+          currentEditingPo.donViVcPo = rawVal;
         } else {
           // Map field lengths exactly as gimax.js
           const lengthMap = {
@@ -5351,7 +5428,10 @@
       btn.textContent = "⏳ Đang xác thực với TMS...";
 
       try {
-        const urlsToTry = ["?api=login", "/api/login"];
+        const urlsToTry = [
+          "/api/index.php?route=login",
+          "/api/login"
+        ];
         let loginResult = null;
 
         for (const u of urlsToTry) {
@@ -5441,9 +5521,9 @@
       state.userString = document.getElementById("cfgUserString").value.trim();
       state.apiDate = document.getElementById("cfgApiDate").value || getTodayISO();
 
-      // Try logging in via ?api=login
+      // Try logging in via /api/index.php?route=login
       try {
-        const resp = await fetch("?api=login", {
+        const resp = await fetch("/api/index.php?route=login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username: state.username, password: state.password })
