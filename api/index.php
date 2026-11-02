@@ -420,8 +420,8 @@ try {
     // 1. ĐĂNG NHẬP TÀI XẾ (USER = SỐ XE HOẶC SĐT, PASS MẶC ĐỊNH = 123456)
     // ========================================================================
     if ($route === 'auth/driver-login') {
-        $rawUser = trim($jsonBody['username'] ?? ($jsonBody['phone'] ?? ''));
-        $pin = trim($jsonBody['pin'] ?? ($jsonBody['password'] ?? ''));
+        $rawUser = trim($jsonBody['plate'] ?? ($jsonBody['username'] ?? ($jsonBody['phone'] ?? '')));
+        $pin = trim($jsonBody['password'] ?? ($jsonBody['pin'] ?? ''));
         if (!$rawUser || !$pin) {
             http_response_code(400);
             echo json_encode(['ok' => false, 'error' => 'Vui lòng nhập Biển số xe và Mật khẩu']);
