@@ -3661,7 +3661,6 @@ if (isset(['api']) || isset(['route'])) {
           });
           po[fieldName] = rawVal;
         }
-        }
 
         if (inputEl) {
           inputEl.classList.remove("pc-saving");
