@@ -2,120 +2,371 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vendor Portal - Kế Hoạch Điều Xe & Đối Chiếu Công Nợ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1e3a8a" />
+  <title>Vendor Portal - Điều Xe & Đối Soát</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #1e40af;
-      --secondary: #0ea5e9;
+      --primary: #2563eb;
+      --primary-dark: #1e3a8a;
+      --secondary: #0284c7;
       --success: #16a34a;
       --warning: #d97706;
       --danger: #dc2626;
-      --bg: #f8fafc;
+      --bg: #f1f5f9;
       --card: #ffffff;
       --border: #e2e8f0;
       --text: #0f172a;
       --text-muted: #64748b;
+      --radius: 14px;
+      --safe-bottom: env(safe-area-inset-bottom, 12px);
     }
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
       margin: 0; padding: 0;
-      font-family: 'Inter', -apple-system, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg); color: var(--text);
-      font-size: 13.5px;
+      font-size: 13.5px; line-height: 1.42;
+      padding-bottom: calc(74px + var(--safe-bottom));
     }
 
-    .vendor-nav {
-      background: linear-gradient(135deg, #0f172a 0%, #1e40af 100%);
+    /* COMPACT MOBILE HEADER WITH DROPDOWN MENU */
+    .vendor-header {
+      position: sticky; top: 0; z-index: 80;
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
       color: #fff;
-      padding: 12px 24px; display: flex;
-      justify-content: space-between; align-items: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.12);
-      flex-wrap: wrap; gap: 10px;
+      padding: 10px 12px;
+      box-shadow: 0 3px 12px rgba(15, 23, 42, 0.22);
     }
-    .nav-brand { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-    .nav-user { display: flex; align-items: center; gap: 10px; font-size: 13px; flex-wrap: wrap; }
+    .header-inner {
+      max-width: 720px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .header-left {
+      display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;
+    }
+    .vendor-badge {
+      background: #fbbf24; color: #0f172a; font-weight: 800; font-size: 11px;
+      padding: 3px 7px; border-radius: 6px; white-space: nowrap; letter-spacing: 0.3px;
+    }
+    .header-menu-select {
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+      border: 1.5px solid rgba(255, 255, 255, 0.32);
+      border-radius: 9px;
+      padding: 6px 26px 6px 10px;
+      font-size: 13px;
+      font-weight: 800;
+      font-family: inherit;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      background-size: 13px;
+      flex: 1;
+      max-width: 240px;
+    }
+    .header-menu-select option {
+      background: #0f172a;
+      color: #ffffff;
+      font-weight: 700;
+    }
+    .header-actions {
+      display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    }
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 6px 9px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
 
-    .main-layout { max-width: 1440px; margin: 18px auto; padding: 0 16px; }
+    /* MAIN MOBILE CONTAINER */
+    .mobile-wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 10px 10px 20px;
+    }
 
-    /* MAIN TABS */
-    .vendor-tabs {
-      display: flex; gap: 10px; margin-bottom: 16px; border-bottom: 2px solid var(--border); padding-bottom: 10px;
+    /* STICKY FILTER BAR */
+    .filter-card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 9px 10px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .date-chips {
+      display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+    }
+    .date-chips::-webkit-scrollbar { display: none; }
+    .chip-btn {
+      padding: 6px 11px; border-radius: 8px; font-weight: 700; font-size: 12px;
+      border: 1px solid var(--border); background: #f8fafc; color: #334155;
+      white-space: nowrap; cursor: pointer; transition: all 0.15s;
+    }
+    .chip-btn.active {
+      background: var(--primary-dark); color: #fff; border-color: var(--primary-dark);
+    }
+    .filter-subrow {
+      display: grid;
+      grid-template-columns: 125px 1fr auto;
+      gap: 6px;
+      align-items: center;
+    }
+    .form-control {
+      width: 100%; padding: 7px 10px; border-radius: 8px;
+      border: 1.5px solid #cbd5e1; font-size: 13px; font-weight: 600;
+      color: var(--text); background: #fff; font-family: inherit; outline: none;
+    }
+    .form-control:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    /* TRIP CARDS (MOBILE OPTIMIZED) */
+    .po-card {
+      background: #fff;
+      border-radius: 13px;
+      border: 1px solid var(--border);
+      padding: 11px 12px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+      position: relative;
+    }
+    .po-card.nhap-card { border-left: 5px solid #2563eb; }
+    .po-card.xuat-card { border-left: 5px solid #f97316; background: #fffaf5; }
+
+    .card-top {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 6px; margin-bottom: 7px;
+    }
+    .badge {
+      display: inline-flex; align-items: center; padding: 2px 7px;
+      border-radius: 6px; font-weight: 800; font-size: 11px;
+    }
+    .badge-nhap { background: #dbeafe; color: #1d4ed8; }
+    .badge-xuat { background: #ffedd5; color: #c2410c; }
+    .badge-20 { background: #e0f2fe; color: #0369a1; }
+    .badge-40 { background: #fef3c7; color: #b45309; }
+    .badge-date { background: #f1f5f9; color: #0f172a; font-weight: 700; font-size: 11.5px; }
+
+    .info-line {
+      display: flex; align-items: flex-start; gap: 6px; margin: 5px 0; font-size: 13px;
+    }
+    .info-line .ic { flex-shrink: 0; font-size: 13.5px; margin-top: 1px; }
+
+    .cont-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 9px;
+      padding: 7px 10px;
+      margin: 7px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       flex-wrap: wrap;
+      gap: 6px;
     }
-    .vtab-btn {
-      padding: 10px 18px; border-radius: 10px; font-weight: 800; font-size: 13.5px;
-      border: 1px solid var(--border); background: #fff; color: var(--text-muted);
-      cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+    .cont-num { font-weight: 800; font-size: 14px; color: #1e40af; font-family: 'Inter', monospace; }
+    .seal-num { font-weight: 700; font-size: 12.5px; color: #334155; }
+
+    /* QUICK TRUCK ASSIGN INPUT + AUTOCOMPLETE FOR TAB NHẬP */
+    .quick-truck-box {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed #cbd5e1;
+      position: relative;
     }
-    .vtab-btn.active {
-      background: var(--primary); color: #fff; border-color: var(--primary);
-      box-shadow: 0 4px 12px rgba(30, 64, 175, 0.2);
+    .quick-truck-row {
+      display: flex; align-items: center; gap: 6px;
+    }
+    .quick-truck-label {
+      font-size: 11.5px; font-weight: 800; color: #1e3a8a; white-space: nowrap;
+    }
+    .quick-truck-inp-wrap {
+      position: relative; flex: 1;
+    }
+    .quick-truck-inp {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 9px;
+      border: 2px solid #93c5fd;
+      background: #eff6ff;
+      font-weight: 800;
+      font-size: 14px;
+      color: #1e3a8a;
+      text-transform: uppercase;
+      outline: none;
+      transition: all 0.15s;
+    }
+    .quick-truck-inp:focus {
+      background: #ffffff;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+    }
+    .quick-truck-inp.saved-ok {
+      border-color: #16a34a;
+      background: #f0fdf4;
+      color: #15803d;
+    }
+    .quick-truck-inp.saving-wait {
+      border-color: #f59e0b;
+      background: #fffbeb;
+    }
+    .btn-save-truck {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 9px;
+      padding: 8px 12px;
+      font-weight: 800;
+      font-size: 12.5px;
+      cursor: pointer;
+      white-space: nowrap;
     }
 
-    /* SUMMARY STATS */
+    /* AUTOCOMPLETE DROPDOWN FOR VENDOR'S FLEET */
+    .ac-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0; right: 0;
+      background: #ffffff;
+      border: 2px solid var(--primary);
+      border-radius: 11px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.25);
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 120;
+      display: none;
+    }
+    .ac-dropdown.open { display: block; }
+    .ac-item {
+      padding: 9px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:active, .ac-item:hover { background: #eff6ff; }
+    .ac-plate { font-weight: 800; color: #1e40af; font-size: 14px; }
+    .ac-drv { font-size: 11.5px; color: #475569; font-weight: 600; }
+
+    /* FLOATING 20' / 40' QUICK FILTER DOCK (BOTTOM RIGHT - CHẠY THEO) */
+    .floating-size-dock {
+      position: fixed;
+      right: 12px;
+      bottom: calc(68px + var(--safe-bottom));
+      z-index: 95;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .fab-size-btn {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(6px);
+      border: 1.5px solid #cbd5e1;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.16);
+      color: #1e293b;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2px;
+      transition: all 0.16s ease;
+      user-select: none;
+    }
+    .fab-size-lbl { font-size: 13px; font-weight: 800; line-height: 1.1; }
+    .fab-size-cnt {
+      font-size: 10px; font-weight: 700; color: #64748b;
+      background: #f1f5f9; padding: 0 5px; border-radius: 6px; margin-top: 2px;
+    }
+    .fab-size-btn.active-20 {
+      background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+      border-color: #1d4ed8; color: #ffffff;
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.42); transform: scale(1.06);
+    }
+    .fab-size-btn.active-40 {
+      background: linear-gradient(135deg, #d97706 0%, #ea580c 100%);
+      border-color: #c2410c; color: #ffffff;
+      box-shadow: 0 6px 18px rgba(234, 88, 12, 0.42); transform: scale(1.06);
+    }
+    .fab-size-btn.active-20 .fab-size-cnt,
+    .fab-size-btn.active-40 .fab-size-cnt {
+      background: rgba(255, 255, 255, 0.24); color: #ffffff;
+    }
+
+    /* BOTTOM NAVIGATION BAR (GIỐNG VS.HUUHOA.NET) */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding: 6px 8px calc(6px + var(--safe-bottom));
+      z-index: 90;
+      box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.06);
+    }
+    .nav-item {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 6px 4px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .nav-item .nav-icon { font-size: 16px; }
+    .nav-item.active-nhap { background: #eff6ff; color: #1d4ed8; font-weight: 800; }
+    .nav-item.active-xuat { background: #fff7ed; color: #c2410c; font-weight: 800; }
+    .nav-item.active-all  { background: #f1f5f9; color: #0f172a; font-weight: 800; }
+    .nav-item.active-wait { background: #fef3c7; color: #b45309; font-weight: 800; }
+
+    /* STATS & TABLES FOR DEBIT / FLEET VIEWS */
     .stats-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 14px; margin-bottom: 16px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;
     }
     .stat-card {
-      background: var(--card); padding: 15px 18px; border-radius: 12px;
-      border: 1px solid var(--border); box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      background: #fff; padding: 12px; border-radius: 12px; border: 1px solid var(--border);
     }
-    .stat-label { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
-    .stat-value { font-size: 23px; font-weight: 800; margin-top: 4px; }
+    .stat-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .stat-value { font-size: 18px; font-weight: 800; margin-top: 4px; }
 
-    /* FILTER / CONTROLS BAR */
-    .controls-bar {
-      background: var(--card); padding: 14px 16px; border-radius: 12px;
-      border: 1px solid var(--border); margin-bottom: 16px;
-      display: flex; flex-direction: column; gap: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
-    }
-    .filter-row {
-      display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
-    }
-    .chip-group { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-    .chip-btn {
-      padding: 7px 13px; border-radius: 8px; font-weight: 700; font-size: 12.5px;
-      border: 1px solid var(--border); background: #f8fafc; color: #334155;
-      cursor: pointer; transition: all 0.15s;
-    }
-    .chip-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-    .chip-btn.active-nhap { background: #2563eb; color: #fff; border-color: #2563eb; }
-    .chip-btn.active-xuat { background: #ea580c; color: #fff; border-color: #ea580c; }
-
-    .btn {
-      padding: 8px 14px; border-radius: 8px; font-weight: 700;
-      font-size: 13px; border: none; cursor: pointer;
-      display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
-    }
-    .btn-primary { background: var(--primary); color: #fff; }
-    .btn-success { background: var(--success); color: #fff; }
-
-    /* TABLE */
     .table-container {
-      background: var(--card); border-radius: 12px;
-      border: 1px solid var(--border); overflow-x: auto;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+      background: #fff; border-radius: 12px; border: 1px solid var(--border); overflow-x: auto;
     }
-    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
-    th {
-      background: #f1f5f9; padding: 11px 13px; font-weight: 700;
-      color: #334155; border-bottom: 1px solid var(--border); white-space: nowrap;
-    }
-    td { padding: 11px 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    tr:hover { background: #f8fafc; }
-    tr.row-nhap { border-left: 4px solid #2563eb; }
-    tr.row-xuat { border-left: 4px solid #ea580c; background: #fffaf5; }
-
-    .badge-plate {
-      background: #dbeafe; color: #1e40af; font-weight: 800;
-      padding: 4px 8px; border-radius: 6px; font-size: 12.5px; display: inline-block;
-    }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 12.5px; }
+    th { background: #f1f5f9; padding: 10px; font-weight: 700; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 
     /* LOGIN & MODALS */
     .login-overlay, .modal-overlay {
@@ -125,191 +376,144 @@
     .modal-overlay { display: none; }
     .modal-overlay.open { display: flex; }
     .login-box, .modal-box {
-      background: #fff; padding: 28px; border-radius: 16px;
-      width: 100%; max-width: 440px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      background: #fff; padding: 24px; border-radius: 16px;
+      width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
-    .form-group { margin-bottom: 14px; }
-    .form-group label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; }
-    .form-control {
-      width: 100%; padding: 8px 11px; border-radius: 8px;
-      border: 1px solid var(--border); font-size: 13.5px;
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-weight: 700; font-size: 12.5px; margin-bottom: 5px; }
+
+    /* TOAST */
+    .toast-msg {
+      position: fixed; top: 64px; left: 50%; transform: translateX(-50%);
+      background: #0f172a; color: #fff; padding: 9px 16px; border-radius: 99px;
+      font-size: 12.5px; font-weight: 700; z-index: 300; display: none;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.25); white-space: nowrap;
     }
   </style>
 </head>
 <body>
 
-  <!-- LOGIN OVERLAY -->
+  <div class="toast-msg" id="toastMsg">✅ Đã lưu!</div>
+
+  <!-- LOGIN OVERLAY (KHÔNG CÓ NÚT ADMIN) -->
   <div class="login-overlay" id="vendorLoginView">
     <div class="login-box">
-      <div style="text-align:center;margin-bottom:20px;">
-        <div style="font-size:42px;margin-bottom:6px;">🏢</div>
-        <h2 style="margin:0;font-size:20px;font-weight:800;color:var(--primary);">CỔNG QUẢN LÝ VENDOR</h2>
-        <p style="margin:4px 0 0;color:var(--text-muted);font-size:13px;">Kế hoạch điều xe & Đối chiếu công nợ</p>
+      <div style="text-align:center;margin-bottom:18px;">
+        <div style="font-size:40px;margin-bottom:4px;">🏢</div>
+        <h2 style="margin:0;font-size:19px;font-weight:800;color:var(--primary-dark);">CỔNG ĐIỀU XE VENDOR</h2>
+        <p style="margin:4px 0 0;color:var(--text-muted);font-size:12.5px;">Gán xe nhanh & Đối chiếu công nợ</p>
       </div>
       <form onsubmit="handleVendorLogin(event)">
         <div class="form-group">
           <label>ID Nhà xe (Viết liền không dấu)</label>
-          <input type="text" id="vCode" class="form-control" placeholder="VD: HOANGLONGPHAT, TRANCO, NHATSON..." required style="text-transform:uppercase;" autocomplete="username" />
-          <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">Gợi ý: HOANGLONGPHAT, ANTHANHPHAT, BAONAMPHAT, TRANCO, NHATSON, VIETSUN...</div>
+          <input type="text" id="vCode" class="form-control" placeholder="VD: HOANGLONGPHAT, TRANCO..." required style="text-transform:uppercase;padding:11px;" autocomplete="username" />
         </div>
         <div class="form-group">
           <label>Mật khẩu (Mặc định: 123456)</label>
-          <input type="password" id="vPass" class="form-control" placeholder="Nhập mật khẩu (mặc định 123456)" required autocomplete="current-password" />
+          <input type="password" id="vPass" class="form-control" placeholder="Nhập mật khẩu" required style="padding:11px;" autocomplete="current-password" />
         </div>
-        <div id="vLoginErr" style="color:var(--danger);font-size:13px;font-weight:600;margin:8px 0;display:none;"></div>
-        <button type="submit" class="btn btn-primary" style="width:100%;padding:12px;font-size:15px;margin-top:10px;justify-content:center;">ĐĂNG NHẬP VENDOR</button>
+        <div id="vLoginErr" style="color:var(--danger);font-size:12.5px;font-weight:700;margin:8px 0;display:none;"></div>
+        <button type="submit" style="width:100%;padding:12px;font-size:14.5px;font-weight:800;background:var(--primary);color:#fff;border:none;border-radius:10px;cursor:pointer;margin-top:6px;">ĐĂNG NHẬP VENDOR</button>
       </form>
-      <div style="margin-top:16px;padding-top:12px;border-top:1px dashed var(--border);text-align:center;">
-        <a href="/admin" style="font-size:13px;font-weight:700;color:var(--primary);text-decoration:none;">⚙️ Vào Dashboard Quản Trị Tổng (Admin) →</a>
-      </div>
     </div>
   </div>
 
-  <!-- MAIN VENDOR INTERFACE -->
-  <nav class="vendor-nav">
-    <div class="nav-brand">
-      <span>🚚</span> <span id="navVendorTitle">PORTAL NHÀ XE</span>
+  <!-- COMPACT HEADER WITH DROPDOWN MENU (KHÔNG CÓ NÚT ADMIN) -->
+  <header class="vendor-header">
+    <div class="header-inner">
+      <div class="header-left">
+        <span class="vendor-badge" id="navVendorCode">VENDOR</span>
+        <select class="header-menu-select" id="headerMenuSelect" onchange="switchVendorView(this.value)">
+          <option value="PLAN">📅 Kế hoạch điều xe</option>
+          <option value="DEBIT">💰 Chuyến xe & Đối soát</option>
+          <option value="FLEET">🚛 Đội xe của tôi</option>
+        </select>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="loadVendorTrips(true)" title="Làm mới dữ liệu TMS">🔄</button>
+        <button class="icon-btn" onclick="openVendorPassModal()" title="Đổi mật khẩu">🔑</button>
+        <button class="icon-btn" onclick="handleVendorLogout()" title="Đăng xuất">🚪</button>
+      </div>
     </div>
-    <div class="nav-user">
-      <span id="navVendorName" style="font-weight:700;background:rgba(255,255,255,0.15);padding:5px 10px;border-radius:6px;">--</span>
-      <button onclick="openVendorPassModal()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:600;">🔑 Đổi mật khẩu</button>
-      <a href="/admin" style="background:#f59e0b;color:#fff;padding:6px 12px;border-radius:6px;text-decoration:none;font-weight:700;font-size:12.5px;">⚙️ Quản lý tổng</a>
-      <button onclick="handleVendorLogout()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;">Đăng xuất</button>
-    </div>
-  </nav>
+  </header>
 
-  <main class="main-layout">
-    <!-- 3 MAIN TABS: ƯU TIÊN TAB KẾ HOẠCH HÔM NAY ĐẦU TIÊN -->
-    <div class="vendor-tabs">
-      <button class="vtab-btn active" id="vtabPlanBtn" onclick="switchVendorTab('PLAN')">
-        📅 Kế hoạch điều xe (<span id="planTabCount">0</span>)
-      </button>
-      <button class="vtab-btn" id="vtabDebitBtn" onclick="switchVendorTab('DEBIT')">
-        💰 Chuyến xe & Đối soát công nợ
-      </button>
-      <button class="vtab-btn" id="vtabFleetBtn" onclick="switchVendorTab('FLEET')">
-        🚛 Đội xe của tôi (<span id="myFleetCount">0</span> xe)
-      </button>
-    </div>
+  <main class="mobile-wrap">
 
     <!-- ================================================================== -->
-    <!-- TAB 1 (MẶC ĐỊNH): KẾ HOẠCH HÔM NAY, HÔM QUA, LỌC NHẬP/XUẤT & SỐ XE -->
+    <!-- VIEW 1 (MẶC ĐỊNH): KẾ HOẠCH ĐIỀU XE (MOBILE CARDS)                 -->
     <!-- ================================================================== -->
-    <div id="vendorTabPlan">
-      <div class="controls-bar">
-        <!-- Dòng 1: Chọn Ngày (Hôm nay, Hôm qua, Ngày mai, Chọn ngày) -->
-        <div class="filter-row">
-          <div class="chip-group">
-            <span style="font-weight:800;color:#334155;margin-right:4px;">📅 Ngày kế hoạch:</span>
-            <button class="chip-btn active" id="vDateToday" onclick="setPlanDateMode('TODAY')">Hôm nay</button>
-            <button class="chip-btn" id="vDateYesterday" onclick="setPlanDateMode('YESTERDAY')">⏪ Hôm qua</button>
-            <button class="chip-btn" id="vDateTomorrow" onclick="setPlanDateMode('TOMORROW')">⏩ Ngày mai</button>
-            <button class="chip-btn" id="vDateAll" onclick="setPlanDateMode('ALL')">📋 Tất cả ngày</button>
-            <input type="date" id="planCustomDate" class="form-control" style="width:150px;font-weight:700;" onchange="onPlanCustomDate(this.value)" />
-          </div>
-          <button class="btn btn-primary" onclick="loadVendorTrips(true)">🔄 Tải lại từ TMS</button>
+    <div id="vendorViewPlan">
+      <div class="filter-card">
+        <!-- Chọn Ngày nhanh -->
+        <div class="date-chips">
+          <button class="chip-btn active" id="vDateToday" onclick="setPlanDateMode('TODAY')">📅 Hôm nay</button>
+          <button class="chip-btn" id="vDateYesterday" onclick="setPlanDateMode('YESTERDAY')">⏪ Hôm qua</button>
+          <button class="chip-btn" id="vDateTomorrow" onclick="setPlanDateMode('TOMORROW')">⏩ Ngày mai</button>
+          <button class="chip-btn" id="vDateAll" onclick="setPlanDateMode('ALL')">📋 Tất cả ngày</button>
         </div>
 
-        <!-- Dòng 2: Lọc Nhập / Xuất + Lọc theo Số xe + Tìm kiếm -->
-        <div class="filter-row" style="padding-top:10px;border-top:1px dashed var(--border);">
-          <div class="chip-group">
-            <span style="font-weight:800;color:#334155;margin-right:4px;">📦 Loại hàng:</span>
-            <button class="chip-btn active" id="vTypeAll" onclick="setPlanType('ALL')">Tất cả (<span id="cntPlanAll">0</span>)</button>
-            <button class="chip-btn" id="vTypeN" onclick="setPlanType('N')">📥 Hàng Nhập (<span id="cntPlanN">0</span>)</button>
-            <button class="chip-btn" id="vTypeX" onclick="setPlanType('X')">📤 Hàng Xuất (<span id="cntPlanX">0</span>)</button>
-          </div>
+        <!-- Chọn Ngày lịch + Lọc theo Số xe + Tìm kiếm -->
+        <div class="filter-subrow">
+          <input type="date" id="planCustomDate" class="form-control" onchange="onPlanCustomDate(this.value)" />
+          <select id="planPlateFilter" class="form-control" onchange="renderPlanCards()">
+            <option value="ALL">🚛 Tất cả xe</option>
+          </select>
+          <button class="chip-btn" onclick="toggleSearchBox()" style="padding:7px 10px;">🔍</button>
+        </div>
 
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:1;justify-content:flex-end;">
-            <select id="planPlateFilter" class="form-control" style="width:230px;font-weight:700;" onchange="renderPlanTable()">
-              <option value="ALL">🚛 Tất cả Số xe trong đội</option>
-            </select>
-            <input type="text" id="planSearchInput" class="form-control" style="width:240px;" placeholder="🔍 Tìm số xe, số cont, khách hàng..." oninput="renderPlanTable()" />
-          </div>
+        <div id="searchBoxWrap" style="display:none;">
+          <input type="text" id="planSearchInput" class="form-control" placeholder="🔍 Gõ tên kho, số cont, biển số xe..." oninput="renderPlanCards()" />
         </div>
       </div>
 
-      <!-- Thống kê nhanh theo bộ lọc kế hoạch -->
+      <!-- Danh sách Thẻ (Cards) Kế hoạch -->
+      <div id="planCardsContainer">
+        <div style="text-align:center;padding:40px 16px;color:var(--text-muted);">
+          <div style="font-size:30px;margin-bottom:6px;">⏳</div>
+          <div>Đang tải kế hoạch điều xe...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- VIEW 2: CHUYẾN XE & ĐỐI SOÁT CÔNG NỢ                               -->
+    <!-- ================================================================== -->
+    <div id="vendorViewDebit" style="display:none;">
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-label">Chuyến trong ngày đang xem</div>
-          <div class="stat-value" id="statPlanTotal" style="color:var(--primary);">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">📥 Chuyến Hàng Nhập</div>
-          <div class="stat-value" id="statPlanNhap" style="color:#2563eb;">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">📤 Chuyến Hàng Xuất</div>
-          <div class="stat-value" id="statPlanXuat" style="color:#ea580c;">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">🚛 Số xe tham gia chạy</div>
-          <div class="stat-value" id="statPlanTrucks" style="color:var(--success);">0 xe</div>
-        </div>
-      </div>
-
-      <!-- Bảng Kế hoạch điều xe -->
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Ngày chạy</th>
-              <th>Loại</th>
-              <th>Số Xe & Tài Xế</th>
-              <th>Khách Hàng / Chủ Hàng</th>
-              <th>Kho Nhận / Giao & Địa Chỉ</th>
-              <th>Số Cont / Seal</th>
-              <th>Cont</th>
-              <th>Cảng / Lấy Hạ Rỗng</th>
-              <th>Liên Hệ Kho</th>
-            </tr>
-          </thead>
-          <tbody id="planTableBody">
-            <tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text-muted);">Đang tải kế hoạch điều xe từ Vietsun TMS...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ================================================================== -->
-    <!-- TAB 2: BẢNG CHUYẾN XE & ĐỐI SOÁT CÔNG NỢ                           -->
-    <!-- ================================================================== -->
-    <div id="vendorTabDebit" style="display:none;">
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-label">Tổng chuyến kỳ đối soát</div>
+          <div class="stat-label">Tổng chuyến kỳ này</div>
           <div class="stat-value" id="valTotalTrips" style="color:var(--primary);">0</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Tổng Doanh Thu Cước (Debit)</div>
+          <div class="stat-label">Doanh thu cước</div>
           <div class="stat-value" id="valRevenue" style="color:var(--success);">0 đ</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Chi phí phát sinh (Xe báo)</div>
+          <div class="stat-label">Chi phí phát sinh</div>
           <div class="stat-value" id="valExpenses" style="color:var(--warning);">0 đ</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Tổng Thanh Toán Vietsun</div>
+          <div class="stat-label">Tổng thanh toán</div>
           <div class="stat-value" id="valNetTotal" style="color:#7c3aed;">0 đ</div>
         </div>
       </div>
 
-      <div class="controls-bar">
-        <div class="filter-row">
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <label style="font-weight:700;">Kỳ đối soát:</label>
-            <input type="date" id="reportFromDate" class="form-control" style="width:150px;" />
-            <span>đến</span>
-            <input type="date" id="reportToDate" class="form-control" style="width:150px;" />
-            <select id="debitPlateFilter" class="form-control" style="width:200px;font-weight:600;" onchange="renderDebitTable()">
-              <option value="ALL">🚛 Tất cả Số xe</option>
-            </select>
-            <button class="btn btn-primary" onclick="loadDebitReport()">🔍 Lọc đối soát</button>
+      <div class="filter-card">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:3px;">Từ ngày</div>
+            <input type="date" id="reportFromDate" class="form-control" onchange="loadDebitReport()" />
           </div>
           <div>
-            <button class="btn btn-success" onclick="exportExcel()">📊 Xuất Bảng Đối Soát Excel</button>
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:3px;">Đến ngày</div>
+            <input type="date" id="reportToDate" class="form-control" onchange="loadDebitReport()" />
           </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <select id="debitPlateFilter" class="form-control" style="flex:1;" onchange="renderDebitTable()">
+            <option value="ALL">🚛 Tất cả Số xe</option>
+          </select>
+          <button onclick="exportExcel()" style="background:var(--success);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap;">📊 Xuất Excel</button>
         </div>
       </div>
 
@@ -317,66 +521,75 @@
         <table>
           <thead>
             <tr>
-              <th>ID</th>
               <th>Ngày</th>
               <th>Loại</th>
               <th>Số Xe</th>
-              <th>Khách Hàng</th>
-              <th>Kho Nhận / Giao</th>
-              <th>Số Cont / Seal</th>
-              <th>Loại Cont</th>
-              <th>Cước Vietsun (Debit)</th>
-              <th>Cước Điều Chỉnh</th>
-              <th>Thao Tác</th>
+              <th>Kho / Khách</th>
+              <th>Số Cont</th>
+              <th>Cước</th>
+              <th>Sửa</th>
             </tr>
           </thead>
           <tbody id="vendorTripsBody">
-            <tr><td colspan="11" style="text-align:center;padding:30px;color:var(--text-muted);">Đang tải dữ liệu đối soát...</td></tr>
+            <tr><td colspan="7" style="text-align:center;padding:24px;">Đang tải...</td></tr>
           </tbody>
         </table>
       </div>
     </div>
 
     <!-- ================================================================== -->
-    <!-- TAB 3: QUẢN LÝ ĐỘI XE CỦA TÔI                                      -->
+    <!-- VIEW 3: ĐỘI XE CỦA TÔI                                             -->
     <!-- ================================================================== -->
-    <div id="vendorTabFleet" style="display:none;">
-      <div class="controls-bar">
-        <div class="filter-row">
-          <div>
-            <h3 style="margin:0;font-size:16px;">🚛 Danh sách Xe & Tài xế thuộc nhà xe</h3>
-            <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">Tài xế đăng nhập tại <b>/driver</b> bằng Biển số xe (User) và Mật khẩu bên dưới</div>
-          </div>
-          <button class="btn btn-primary" onclick="openDriverModal()">➕ Thêm xe mới vào đội</button>
+    <div id="vendorViewFleet" style="display:none;">
+      <div class="filter-card" style="flex-direction:row;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-weight:800;font-size:14.5px;">🚛 Đội xe (<span id="myFleetCount">0</span> xe)</div>
+          <div style="font-size:11.5px;color:var(--text-muted);">Tài xế đăng nhập tại <b>/driver</b> bằng Số xe</div>
         </div>
+        <button onclick="openDriverModal()" style="background:var(--primary);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-weight:800;font-size:12.5px;cursor:pointer;">➕ Thêm xe</button>
       </div>
 
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>STT</th>
-              <th>Số Xe (User đăng nhập)</th>
-              <th>Mật khẩu</th>
-              <th>Họ tên Tài xế</th>
-              <th>Số điện thoại</th>
-              <th>CCCD</th>
-              <th>GPLX</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody id="myFleetBody">
-            <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">Đang tải danh sách đội xe...</td></tr>
-          </tbody>
-        </table>
-      </div>
+      <div id="myFleetListContainer"></div>
     </div>
+
   </main>
+
+  <!-- FLOATING 20" / 40" CONTAINER SIZE FILTER DOCK (BÊN GÓC PHẢI DƯỚI CHẠY THEO) -->
+  <div class="floating-size-dock" id="floatingSizeDock">
+    <button type="button" class="fab-size-btn" id="fabSize20" onclick="toggleContSize('20')" title="Lọc Cont 20 inch">
+      <span class="fab-size-lbl">20"</span>
+      <span class="fab-size-cnt" id="fabCount20">0</span>
+    </button>
+    <button type="button" class="fab-size-btn" id="fabSize40" onclick="toggleContSize('40')" title="Lọc Cont 40 inch">
+      <span class="fab-size-lbl">40"</span>
+      <span class="fab-size-cnt" id="fabCount40">0</span>
+    </button>
+  </div>
+
+  <!-- BOTTOM NAVIGATION (ƯU TIÊN TAB NHẬP ĐẦU TIÊN, SAU ĐÓ TAB XUẤT - GIỐNG VS.HUUHOA.NET) -->
+  <nav class="bottom-nav" id="planBottomNav">
+    <button class="nav-item active-nhap" id="bnavN" onclick="setPlanType('N')">
+      <span class="nav-icon">📥</span>
+      <span>Hàng Nhập (<span id="cntPlanN">0</span>)</span>
+    </button>
+    <button class="nav-item" id="bnavX" onclick="setPlanType('X')">
+      <span class="nav-icon">📤</span>
+      <span>Hàng Xuất (<span id="cntPlanX">0</span>)</span>
+    </button>
+    <button class="nav-item" id="bnavWait" onclick="setPlanType('WAIT')">
+      <span class="nav-icon">🚛</span>
+      <span>Chờ gán xe (<span id="cntPlanWait">0</span>)</span>
+    </button>
+    <button class="nav-item" id="bnavAll" onclick="setPlanType('ALL')">
+      <span class="nav-icon">📋</span>
+      <span>Tất cả (<span id="cntPlanAll">0</span>)</span>
+    </button>
+  </nav>
 
   <!-- MODAL: ĐỔI MẬT KHẨU VENDOR -->
   <div class="modal-overlay" id="vendorPassModal">
     <div class="modal-box">
-      <h3 style="margin:0 0 14px;color:var(--primary);">🔑 Đổi mật khẩu Nhà xe</h3>
+      <h3 style="margin:0 0 14px;color:var(--primary-dark);">🔑 Đổi mật khẩu Nhà xe</h3>
       <div class="form-group">
         <label>Mật khẩu hiện tại</label>
         <input type="password" id="vOldPass" class="form-control" placeholder="Nhập mật khẩu hiện tại" />
@@ -385,9 +598,9 @@
         <label>Mật khẩu mới</label>
         <input type="password" id="vNewPass" class="form-control" placeholder="Nhập mật khẩu mới (tối thiểu 4 ký tự)" />
       </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
-        <button class="btn" style="background:#e2e8f0;" onclick="closeModal('vendorPassModal')">Hủy</button>
-        <button class="btn btn-primary" onclick="submitVendorPassChange()">Lưu mật khẩu</button>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+        <button onclick="closeModal('vendorPassModal')" style="padding:8px 14px;border-radius:8px;border:none;background:#e2e8f0;font-weight:700;cursor:pointer;">Hủy</button>
+        <button onclick="submitVendorPassChange()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-weight:700;cursor:pointer;">Lưu mật khẩu</button>
       </div>
     </div>
   </div>
@@ -395,11 +608,11 @@
   <!-- MODAL: THÊM / SỬA XE TRONG ĐỘI -->
   <div class="modal-overlay" id="driverEditModal">
     <div class="modal-box">
-      <h3 style="margin:0 0 14px;color:var(--primary);" id="driverModalTitle">➕ Thêm / Sửa Xe & Tài xế</h3>
+      <h3 style="margin:0 0 14px;color:var(--primary-dark);">➕ Thêm / Sửa Xe & Tài xế</h3>
       <input type="hidden" id="editDriverId" />
       <div class="form-group">
-        <label>Biển số xe (Dùng làm User đăng nhập /driver)</label>
-        <input type="text" id="editDriverPlate" class="form-control" placeholder="VD: 50E65375" style="text-transform:uppercase;font-weight:700;" />
+        <label>Biển số xe (User đăng nhập /driver)</label>
+        <input type="text" id="editDriverPlate" class="form-control" placeholder="VD: 50E65375" style="text-transform:uppercase;font-weight:800;" />
       </div>
       <div class="form-group">
         <label>Mật khẩu đăng nhập xe (Mặc định: 123456)</label>
@@ -413,7 +626,7 @@
         <label>Số điện thoại</label>
         <input type="text" id="editDriverPhone" class="form-control" placeholder="VD: 0912345678" />
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         <div class="form-group">
           <label>CCCD</label>
           <input type="text" id="editDriverCccd" class="form-control" />
@@ -423,9 +636,9 @@
           <input type="text" id="editDriverGplx" class="form-control" />
         </div>
       </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
-        <button class="btn" style="background:#e2e8f0;" onclick="closeModal('driverEditModal')">Đóng</button>
-        <button class="btn btn-primary" onclick="saveMyDriver()">💾 Lưu thông tin xe</button>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">
+        <button onclick="closeModal('driverEditModal')" style="padding:8px 14px;border-radius:8px;border:none;background:#e2e8f0;font-weight:700;cursor:pointer;">Đóng</button>
+        <button onclick="saveMyDriver()" style="padding:8px 14px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-weight:700;cursor:pointer;">💾 Lưu xe</button>
       </div>
     </div>
   </div>
@@ -435,10 +648,19 @@
     let allVendorTrips = [];
     let myFleetList = [];
 
-    // State cho Tab 1: Kế hoạch điều xe
+    // Mặc định: Kế hoạch HÔM NAY + ưu tiên Tab HÀNG NHẬP ('N')
     let planDateMode = 'TODAY';
     let planSelectedDate = getLocalTodayISO(0);
-    let planTypeFilter = 'ALL'; // 'ALL' | 'N' | 'X'
+    let planTypeFilter = 'N'; // 'N' | 'X' | 'WAIT' | 'ALL'
+    let contSizeFilter = 'ALL'; // 'ALL' | '20' | '40'
+
+    function showToast(msg) {
+      const el = document.getElementById('toastMsg');
+      el.textContent = msg;
+      el.style.display = 'block';
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => { el.style.display = 'none'; }, 2400);
+    }
 
     function getLocalTodayISO(offsetDays = 0) {
       const d = new Date();
@@ -478,6 +700,12 @@
         loadVendorTrips();
         loadDebitReport();
       }
+      // Đóng dropdown gợi ý xe khi chạm ra ngoài
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.quick-truck-inp-wrap')) {
+          document.querySelectorAll('.ac-dropdown.open').forEach(el => el.classList.remove('open'));
+        }
+      });
     });
 
     function initDates() {
@@ -490,14 +718,30 @@
       document.getElementById('reportToDate').value = `${yyyy}-${mm}-25`;
     }
 
-    function switchVendorTab(tab) {
-      document.getElementById('vtabPlanBtn').classList.toggle('active', tab === 'PLAN');
-      document.getElementById('vtabDebitBtn').classList.toggle('active', tab === 'DEBIT');
-      document.getElementById('vtabFleetBtn').classList.toggle('active', tab === 'FLEET');
+    // Header Dropdown Menu Switcher: Kế hoạch điều xe | Chuyến xe & đối soát | Đội xe của tôi
+    function switchVendorView(view) {
+      document.getElementById('headerMenuSelect').value = view;
+      document.getElementById('vendorViewPlan').style.display = view === 'PLAN' ? 'block' : 'none';
+      document.getElementById('vendorViewDebit').style.display = view === 'DEBIT' ? 'block' : 'none';
+      document.getElementById('vendorViewFleet').style.display = view === 'FLEET' ? 'block' : 'none';
 
-      document.getElementById('vendorTabPlan').style.display = tab === 'PLAN' ? 'block' : 'none';
-      document.getElementById('vendorTabDebit').style.display = tab === 'DEBIT' ? 'block' : 'none';
-      document.getElementById('vendorTabFleet').style.display = tab === 'FLEET' ? 'block' : 'none';
+      // Chỉ hiện thanh Bottom Nav & Nút lọc 20"/40" khi ở màn hình Kế hoạch điều xe
+      document.getElementById('planBottomNav').style.display = view === 'PLAN' ? 'flex' : 'none';
+      document.getElementById('floatingSizeDock').style.display = view === 'PLAN' ? 'flex' : 'none';
+    }
+
+    function toggleSearchBox() {
+      const wrap = document.getElementById('searchBoxWrap');
+      const isHidden = wrap.style.display === 'none';
+      wrap.style.display = isHidden ? 'block' : 'none';
+      if (isHidden) document.getElementById('planSearchInput').focus();
+    }
+
+    function toggleContSize(size) {
+      contSizeFilter = (contSizeFilter === size) ? 'ALL' : size;
+      document.getElementById('fabSize20').classList.toggle('active-20', contSizeFilter === '20');
+      document.getElementById('fabSize40').classList.toggle('active-40', contSizeFilter === '40');
+      renderPlanCards();
     }
 
     function setPlanDateMode(mode) {
@@ -517,26 +761,24 @@
         planSelectedDate = getLocalTodayISO(1);
         document.getElementById('planCustomDate').value = planSelectedDate;
       }
-      renderPlanTable();
+      renderPlanCards();
     }
 
     function onPlanCustomDate(val) {
       if (!val) return;
       planSelectedDate = val;
       planDateMode = 'CUSTOM';
-      document.getElementById('vDateToday').classList.remove('active');
-      document.getElementById('vDateYesterday').classList.remove('active');
-      document.getElementById('vDateTomorrow').classList.remove('active');
-      document.getElementById('vDateAll').classList.remove('active');
+      document.querySelectorAll('.date-chips .chip-btn').forEach(b => b.classList.remove('active'));
       loadVendorTrips(false);
     }
 
     function setPlanType(type) {
       planTypeFilter = type;
-      document.getElementById('vTypeAll').className = 'chip-btn' + (type === 'ALL' ? ' active' : '');
-      document.getElementById('vTypeN').className = 'chip-btn' + (type === 'N' ? ' active-nhap' : '');
-      document.getElementById('vTypeX').className = 'chip-btn' + (type === 'X' ? ' active-xuat' : '');
-      renderPlanTable();
+      document.getElementById('bnavN').className = 'nav-item' + (type === 'N' ? ' active-nhap' : '');
+      document.getElementById('bnavX').className = 'nav-item' + (type === 'X' ? ' active-xuat' : '');
+      document.getElementById('bnavWait').className = 'nav-item' + (type === 'WAIT' ? ' active-wait' : '');
+      document.getElementById('bnavAll').className = 'nav-item' + (type === 'ALL' ? ' active-all' : '');
+      renderPlanCards();
     }
 
     async function handleVendorLogin(e) {
@@ -582,7 +824,7 @@
     async function loadVendorTrips(forceRefresh = false) {
       const token = localStorage.getItem('vs_vendor_token');
       const vInfo = JSON.parse(localStorage.getItem('vs_vendor_info') || '{}');
-      document.getElementById('navVendorName').textContent = `${vInfo.name || 'Vendor'} (ID: ${vInfo.code || ''})`;
+      document.getElementById('navVendorCode').textContent = vInfo.code || vInfo.name || 'VENDOR';
 
       try {
         const url = `${API_BASE}/vendor/trips&date=${encodeURIComponent(planSelectedDate)}${forceRefresh ? '&refresh=1' : ''}`;
@@ -598,8 +840,9 @@
         if (liveData.ok) {
           allVendorTrips = liveData.trips || [];
           populatePlateFilters();
-          renderPlanTable();
+          renderPlanCards();
           renderDebitTable();
+          if (forceRefresh) showToast('✅ Đã đồng bộ dữ liệu mới nhất từ TMS!');
         }
       } catch (err) {
         console.error('Error loading vendor trips:', err);
@@ -610,12 +853,12 @@
       const plateMap = new Map();
       myFleetList.forEach(d => {
         const p = cleanPlate(d.assigned_plate);
-        if (p) plateMap.set(p, `${p} - ${d.full_name || d.driver_name || ''}`);
+        if (p) plateMap.set(p, `${p} (${d.full_name || d.driver_name || ''})`);
       });
       allVendorTrips.forEach(t => {
         const p = cleanPlate(t.soXePo);
         if (p && !plateMap.has(p)) {
-          plateMap.set(p, `${p}${t._driverName ? ' - ' + t._driverName : ''}`);
+          plateMap.set(p, `${p}${t._driverName ? ' (' + t._driverName + ')' : ''}`);
         }
       });
 
@@ -623,7 +866,7 @@
 
       const planSel = document.getElementById('planPlateFilter');
       const curPlanVal = planSel.value;
-      planSel.innerHTML = `<option value="ALL">🚛 Tất cả Số xe (${sortedPlates.length} xe)</option>` +
+      planSel.innerHTML = `<option value="ALL">🚛 Tất cả xe (${sortedPlates.length})</option>` +
         sortedPlates.map(([p, label]) => `<option value="${p}">${label}</option>`).join('');
       if (plateMap.has(curPlanVal)) planSel.value = curPlanVal;
 
@@ -634,11 +877,11 @@
       if (plateMap.has(curDebitVal)) debitSel.value = curDebitVal;
     }
 
-    function renderPlanTable() {
+    function renderPlanCards() {
       const plateFilter = document.getElementById('planPlateFilter').value;
       const q = (document.getElementById('planSearchInput').value || '').toLowerCase().trim();
 
-      // 1. Lọc theo ngày & số xe & từ khóa trước để tính số lượng Nhập / Xuất
+      // 1. Lọc theo ngày + biển số xe + từ khóa
       const baseFiltered = allVendorTrips.filter(t => {
         if (planDateMode !== 'ALL') {
           const d = getTripDateISO(t);
@@ -657,92 +900,303 @@
       const cntAll = baseFiltered.length;
       const cntN = baseFiltered.filter(t => t.xuatNhapPo === 'N').length;
       const cntX = baseFiltered.filter(t => t.xuatNhapPo === 'X').length;
+      const cntWait = baseFiltered.filter(t => !cleanPlate(t.soXePo)).length;
 
-      document.getElementById('cntPlanAll').textContent = cntAll;
       document.getElementById('cntPlanN').textContent = cntN;
       document.getElementById('cntPlanX').textContent = cntX;
-      document.getElementById('planTabCount').textContent = cntAll;
+      document.getElementById('cntPlanWait').textContent = cntWait;
+      document.getElementById('cntPlanAll').textContent = cntAll;
 
-      // 2. Lọc theo loại hàng Nhập / Xuất
-      const finalTrips = baseFiltered.filter(t => {
-        if (planTypeFilter === 'ALL') return true;
-        return t.xuatNhapPo === planTypeFilter;
+      // 2. Lọc theo Tab Nhập / Xuất / Chờ gán xe / Tất cả
+      const typeFiltered = baseFiltered.filter(t => {
+        if (planTypeFilter === 'N') return t.xuatNhapPo === 'N';
+        if (planTypeFilter === 'X') return t.xuatNhapPo === 'X';
+        if (planTypeFilter === 'WAIT') return !cleanPlate(t.soXePo);
+        return true;
       });
 
-      // Ưu tiên sắp xếp Hàng Nhập ('N') lên trước, sau đó đến Hàng Xuất ('X')
+      // Cập nhật số lượng trên nút nổi 20" / 40"
+      const count20 = typeFiltered.filter(t => Number(t.cont40Po) === 0).length;
+      const count40 = typeFiltered.filter(t => Number(t.cont40Po) > 0).length;
+      document.getElementById('fabCount20').textContent = count20;
+      document.getElementById('fabCount40').textContent = count40;
+
+      // 3. Lọc theo kích thước Cont 20" / 40"
+      const finalTrips = typeFiltered.filter(t => {
+        if (contSizeFilter === '20') return Number(t.cont40Po) === 0;
+        if (contSizeFilter === '40') return Number(t.cont40Po) > 0;
+        return true;
+      });
+
+      // Ưu tiên xếp Hàng Nhập lên trước
       finalTrips.sort((a, b) => {
-        if (a.xuatNhapPo !== b.xuatNhapPo) {
-          return a.xuatNhapPo === 'N' ? -1 : 1;
-        }
+        if (a.xuatNhapPo !== b.xuatNhapPo) return a.xuatNhapPo === 'N' ? -1 : 1;
         return Number(b.idPo || 0) - Number(a.idPo || 0);
       });
 
-      const activePlates = new Set(finalTrips.map(t => cleanPlate(t.soXePo)).filter(Boolean));
-      document.getElementById('statPlanTotal').textContent = finalTrips.length;
-      document.getElementById('statPlanNhap').textContent = cntN;
-      document.getElementById('statPlanXuat').textContent = cntX;
-      document.getElementById('statPlanTrucks').textContent = `${activePlates.size} xe`;
-
-      const tbody = document.getElementById('planTableBody');
+      const container = document.getElementById('planCardsContainer');
       if (finalTrips.length === 0) {
+        const tabLabel = planTypeFilter === 'N' ? 'Hàng Nhập' : (planTypeFilter === 'X' ? 'Hàng Xuất' : 'chuyến xe');
         const dateDesc = planDateMode === 'ALL' ? 'tất cả các ngày' : `ngày ${formatVNDate(planSelectedDate)}`;
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="10" style="text-align:center;padding:36px;color:var(--text-muted);">
-              <div style="font-size:32px;margin-bottom:6px;">📭</div>
-              <div style="font-weight:700;color:#334155;font-size:14.5px;">Không có chuyến xe nào trong ${dateDesc} theo bộ lọc hiện tại.</div>
-              ${allVendorTrips.length > 0 && planDateMode !== 'ALL' ? `
-                <div style="margin-top:10px;">
-                  <button class="btn btn-primary" onclick="setPlanDateMode('YESTERDAY')" style="margin-right:6px;">⏪ Xem Hôm qua</button>
-                  <button class="btn" style="background:#e2e8f0;color:#0f172a;" onclick="setPlanDateMode('ALL')">📋 Xem tất cả ${allVendorTrips.length} chuyến của đội xe</button>
-                </div>
-              ` : ''}
-            </td>
-          </tr>
+        const otherCount = planTypeFilter === 'N' ? cntX : (planTypeFilter === 'X' ? cntN : 0);
+
+        container.innerHTML = `
+          <div style="text-align:center;padding:38px 16px;background:#fff;border-radius:14px;border:1px dashed var(--border);color:var(--text-muted);">
+            <div style="font-size:36px;margin-bottom:6px;">📭</div>
+            <div style="font-weight:800;color:#334155;font-size:14.5px;">Chưa có ${tabLabel} trong ${dateDesc}</div>
+            ${otherCount > 0 ? `<div style="margin-top:10px;"><button onclick="setPlanType('${planTypeFilter === 'N' ? 'X' : 'N'}')" style="background:var(--primary);color:#fff;border:none;padding:8px 14px;border-radius:8px;font-weight:700;font-size:12.5px;cursor:pointer;">👉 Xem ${otherCount} chuyến ${planTypeFilter === 'N' ? 'Hàng Xuất' : 'Hàng Nhập'}</button></div>` : ''}
+            ${allVendorTrips.length > 0 && planDateMode !== 'ALL' ? `
+              <div style="margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap;">
+                <button onclick="setPlanDateMode('YESTERDAY')" style="background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;padding:7px 12px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;">⏪ Hôm qua</button>
+                <button onclick="setPlanDateMode('ALL');setPlanType('ALL');" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:7px 12px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;">📋 Xem tất cả (${allVendorTrips.length} chuyến)</button>
+              </div>
+            ` : ''}
+          </div>
         `;
         return;
       }
 
-      tbody.innerHTML = finalTrips.map(t => {
+      container.innerHTML = finalTrips.map(t => {
         const isXuat = t.xuatNhapPo === 'X';
-        const rowClass = isXuat ? 'row-xuat' : 'row-nhap';
-        const typeBadge = isXuat
-          ? '<span style="background:#ffedd5;color:#c2410c;padding:3px 8px;border-radius:6px;font-weight:800;font-size:11.5px;">📤 XUẤT</span>'
-          : '<span style="background:#dbeafe;color:#1d4ed8;padding:3px 8px;border-radius:6px;font-weight:800;font-size:11.5px;">📥 NHẬP</span>';
+        const is40 = Number(t.cont40Po) > 0;
+        const sizeBadge = is40 ? '<span class="badge badge-40">40"</span>' : '<span class="badge badge-20">20"</span>';
         const tripDate = formatVNDate(getTripDateISO(t));
+        const phoneClean = (t.lienHeNhanPo || '').replace(/[^0-9]/g, '');
+        const warehouseTitle = t.khoNhanHangPo || t.tenKhachPo || '--';
+        const addrText = `${t.diaChiNhanPo || ''}${t.tinhNhanPo ? ' (' + t.tinhNhanPo + ')' : ''}`;
 
+        // ============================================================
+        // 1. THẺ HÀNG NHẬP: GỌN GÀNG + Ô NHẬP SỐ XE NHANH (CHỈ GỢI Ý XE CỦA VENDOR)
+        // ============================================================
+        if (!isXuat) {
+          return `
+            <div class="po-card nhap-card" id="card_${t.idPo}">
+              <div class="card-top">
+                <div style="display:flex;gap:5px;align-items:center;">
+                  <span class="badge badge-nhap">📥 NHẬP</span>
+                  ${sizeBadge}
+                  <span style="font-size:11.5px;font-weight:700;color:#64748b;">#${t.idPo}</span>
+                </div>
+                <span class="badge badge-date">📅 ${tripDate}</span>
+              </div>
+
+              <!-- Tên Kho & Địa chỉ -->
+              <div class="info-line">
+                <span class="ic">📍</span>
+                <div>
+                  <div style="font-weight:800;color:#0f172a;font-size:13.5px;">${warehouseTitle}</div>
+                  ${addrText ? `<div style="font-size:12px;color:#475569;">${addrText}</div>` : ''}
+                </div>
+              </div>
+
+              <!-- Số Cont & Seal -->
+              <div class="cont-box">
+                <div>
+                  <span style="font-size:11px;color:#64748b;font-weight:700;">CONT:</span>
+                  <span class="cont-num">${t.soContPo || '(Chưa có)'}</span>
+                </div>
+                <div>
+                  <span style="font-size:11px;color:#64748b;font-weight:700;">SEAL:</span>
+                  <span class="seal-num">${t.soSealPo || '--'}</span>
+                </div>
+                ${t.noiLayContPo ? `<div style="font-size:11.5px;color:#047857;font-weight:700;">Trả rỗng: ${t.noiLayContPo}</div>` : ''}
+              </div>
+
+              <!-- Liên hệ kho -->
+              ${t.lienHeNhanPo ? `
+              <div class="info-line" style="justify-content:space-between;align-items:center;">
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <span class="ic">📞</span>
+                  <span><b>Liên hệ:</b> ${t.lienHeNhanPo}</span>
+                </div>
+                ${phoneClean ? `<a href="tel:${phoneClean}" style="background:#dcfce7;color:#15803d;padding:4px 9px;border-radius:7px;font-weight:800;font-size:11.5px;text-decoration:none;">📞 Gọi</a>` : ''}
+              </div>` : ''}
+
+              <!-- Ô NHẬP SỐ XE THAO TÁC NHANH (CHỈ GỢI Ý XE THUỘC VENDOR) -->
+              <div class="quick-truck-box">
+                <div class="quick-truck-row">
+                  <span class="quick-truck-label">🚛 Số xe:</span>
+                  <div class="quick-truck-inp-wrap">
+                    <input
+                      type="text"
+                      class="quick-truck-inp"
+                      id="inpXe_${t.idPo}"
+                      value="${t.soXePo || ''}"
+                      placeholder="Chạm chọn hoặc gõ số xe..."
+                      autocomplete="off"
+                      onfocus="showVendorFleetSuggestions('${t.idPo}', '${t.codePo || ''}', this.value)"
+                      oninput="showVendorFleetSuggestions('${t.idPo}', '${t.codePo || ''}', this.value)"
+                      onkeydown="if(event.key==='Enter'){ event.preventDefault(); saveQuickTruck('${t.idPo}', '${t.codePo || ''}'); }"
+                    />
+                    <div class="ac-dropdown" id="acXe_${t.idPo}"></div>
+                  </div>
+                  <button type="button" class="btn-save-truck" onclick="saveQuickTruck('${t.idPo}', '${t.codePo || ''}')">Lưu</button>
+                </div>
+                <div id="drvHint_${t.idPo}" style="font-size:11.5px;color:#475569;margin-top:4px;font-weight:600;">
+                  ${t._driverName ? `👨‍✈️ Tài xế: ${t._driverName} ${t._driverPhone ? '• 📞 ' + t._driverPhone : ''}` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        // ============================================================
+        // 2. THẺ HÀNG XUẤT: CHỈ HIỂN THỊ THÔNG TIN, KHÔNG CHO SỬA (ĐỂ TÀI XẾ NHẬP)
+        // ============================================================
         return `
-          <tr class="${rowClass}">
-            <td><b>#${t.idPo}</b></td>
-            <td><span style="font-weight:700;color:#0369a1;">${tripDate}</span></td>
-            <td>${typeBadge}</td>
-            <td>
-              <span class="badge-plate">${t.soXePo || '(Chưa gán xe)'}</span>
-              ${t._driverName ? `<div style="font-size:11.5px;color:#475569;margin-top:3px;font-weight:600;">👨‍✈️ ${t._driverName} ${t._driverPhone ? `(${t._driverPhone})` : ''}</div>` : ''}
-            </td>
-            <td>
-              <div style="font-weight:700;">${t.tenKhachPo || '--'}</div>
-              ${t.chuHangPo ? `<div style="font-size:11.5px;color:var(--text-muted);">Chủ hàng: ${t.chuHangPo}</div>` : ''}
-            </td>
-            <td>
-              <div style="font-weight:700;">${t.khoNhanHangPo || '--'}</div>
-              <div style="font-size:12px;color:var(--text-muted);">${t.diaChiNhanPo || ''} ${t.tinhNhanPo ? `(${t.tinhNhanPo})` : ''}</div>
-            </td>
-            <td>
-              <div style="font-weight:800;color:#1e40af;">${t.soContPo || '--'}</div>
-              <div style="font-size:12px;color:#475569;">Seal: ${t.soSealPo || '--'}</div>
-            </td>
-            <td><b>${Number(t.cont40Po) > 0 ? "40'" : "20'"}</b></td>
-            <td>
-              ${isXuat
-                ? `<div>Lấy: <b>${t.noiLayContPo || '--'}</b></div><div style="font-size:11.5px;color:#c2410c;">Hạ: ${t.cangDiPo || ''} → ${t.cangDenPo || t.tinhXuatHangPo || ''}</div>`
-                : `<div>Cảng: <b>${t.cangDiPo || '--'}</b></div><div style="font-size:11.5px;color:#047857;">Trả rỗng: ${t.noiLayContPo || '--'}</div>`
-              }
-            </td>
-            <td>${t.lienHeNhanPo || '--'}</td>
-          </tr>
+          <div class="po-card xuat-card">
+            <div class="card-top">
+              <div style="display:flex;gap:5px;align-items:center;">
+                <span class="badge badge-xuat">📤 XUẤT</span>
+                ${sizeBadge}
+                <span style="font-size:11.5px;font-weight:700;color:#64748b;">#${t.idPo}</span>
+              </div>
+              <span class="badge badge-date">📅 ${tripDate}</span>
+            </div>
+
+            <!-- Số xe đang chạy (Chỉ xem) -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;background:#fff;padding:6px 10px;border-radius:8px;border:1px solid #fed7aa;">
+              <div>
+                <span style="font-size:11.5px;color:#9a3412;font-weight:700;">🚛 Xe chạy:</span>
+                <b style="font-size:14px;color:#1e3a8a;margin-left:4px;">${t.soXePo || '(Chưa gán xe)'}</b>
+              </div>
+              ${t._driverName ? `<span style="font-size:11.5px;color:#475569;font-weight:600;">👨‍✈️ ${t._driverName}</span>` : ''}
+            </div>
+
+            <!-- Tên Kho & Địa chỉ -->
+            <div class="info-line">
+              <span class="ic">📍</span>
+              <div>
+                <div style="font-weight:800;color:#0f172a;font-size:13.5px;">${warehouseTitle}</div>
+                ${addrText ? `<div style="font-size:12px;color:#475569;">${addrText}</div>` : ''}
+              </div>
+            </div>
+
+            <!-- Số Cont & Seal (Tài xế nhập) -->
+            <div class="cont-box" style="background:#fff;">
+              <div>
+                <span style="font-size:11px;color:#64748b;font-weight:700;">CONT:</span>
+                <span class="cont-num">${t.soContPo || '(Chờ TX nhập)'}</span>
+              </div>
+              <div>
+                <span style="font-size:11px;color:#64748b;font-weight:700;">SEAL:</span>
+                <span class="seal-num">${t.soSealPo || '(Chờ TX nhập)'}</span>
+              </div>
+              <div style="width:100%;font-size:11.5px;color:#c2410c;font-weight:700;border-top:1px dashed #e2e8f0;padding-top:4px;margin-top:2px;">
+                Lấy rỗng: ${t.noiLayContPo || '--'} • Hạ: ${t.cangDiPo || '--'} → ${t.tinhXuatHangPo || t.cangDenPo || '--'}
+              </div>
+            </div>
+
+            ${t.lienHeNhanPo ? `
+            <div class="info-line" style="justify-content:space-between;align-items:center;">
+              <div style="display:flex;gap:6px;align-items:center;">
+                <span class="ic">📞</span>
+                <span><b>Liên hệ:</b> ${t.lienHeNhanPo}</span>
+              </div>
+              ${phoneClean ? `<a href="tel:${phoneClean}" style="background:#dcfce7;color:#15803d;padding:4px 9px;border-radius:7px;font-weight:800;font-size:11.5px;text-decoration:none;">📞 Gọi</a>` : ''}
+            </div>` : ''}
+
+            <div style="font-size:11px;color:#9a3412;margin-top:6px;font-style:italic;">
+              🔒 Thông tin Cont/Seal do tài xế tự cập nhật trên App Tài Xế (/driver)
+            </div>
+          </div>
         `;
       }).join('');
+    }
+
+    // Gợi ý CHỈ các biển số xe thuộc đội xe của Vendor đang đăng nhập
+    function showVendorFleetSuggestions(idPo, codePo, queryStr) {
+      document.querySelectorAll('.ac-dropdown.open').forEach(el => {
+        if (el.id !== `acXe_${idPo}`) el.classList.remove('open');
+      });
+
+      const dropEl = document.getElementById(`acXe_${idPo}`);
+      if (!dropEl) return;
+
+      const q = cleanPlate(queryStr);
+      const matches = myFleetList.filter(d => {
+        const p = cleanPlate(d.assigned_plate);
+        const name = (d.full_name || d.driver_name || '').toUpperCase();
+        if (!q) return true;
+        return p.includes(q) || name.includes(q);
+      });
+
+      if (matches.length === 0) {
+        dropEl.classList.remove('open');
+        return;
+      }
+
+      dropEl.innerHTML = matches.map(d => {
+        const p = cleanPlate(d.assigned_plate);
+        const dName = d.full_name || d.driver_name || '';
+        const dPhone = d.phone || '';
+        return `
+          <div class="ac-item" onclick="selectFleetTruck('${idPo}', '${codePo}', '${p}', '${dName.replace(/'/g, "\\'")}', '${dPhone}')">
+            <span class="ac-plate">🚛 ${p}</span>
+            <span class="ac-drv">${dName}${dPhone ? ' • ' + dPhone : ''}</span>
+          </div>
+        `;
+      }).join('');
+      dropEl.classList.add('open');
+    }
+
+    function selectFleetTruck(idPo, codePo, plate, drvName, drvPhone) {
+      const inp = document.getElementById(`inpXe_${idPo}`);
+      const drop = document.getElementById(`acXe_${idPo}`);
+      const hint = document.getElementById(`drvHint_${idPo}`);
+      if (inp) inp.value = plate;
+      if (drop) drop.classList.remove('open');
+      if (hint) {
+        hint.textContent = drvName ? `👨‍✈️ Tài xế: ${drvName} ${drvPhone ? '• 📞 ' + drvPhone : ''}` : '';
+      }
+      saveQuickTruck(idPo, codePo);
+    }
+
+    async function saveQuickTruck(idPo, codePo) {
+      const inp = document.getElementById(`inpXe_${idPo}`);
+      const drop = document.getElementById(`acXe_${idPo}`);
+      if (drop) drop.classList.remove('open');
+      if (!inp) return;
+
+      const rawPlate = cleanPlate(inp.value);
+      inp.value = rawPlate;
+      inp.classList.remove('saved-ok');
+      inp.classList.add('saving-wait');
+
+      const token = localStorage.getItem('vs_vendor_token');
+      try {
+        const res = await fetch(`${API_BASE}/vendor/assign-truck`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ idPo, codePo, soXePo: rawPlate })
+        });
+        const data = await res.json();
+        inp.classList.remove('saving-wait');
+        if (data.ok) {
+          inp.classList.add('saved-ok');
+          // Cập nhật vào bộ nhớ local
+          const found = allVendorTrips.find(x => String(x.idPo) === String(idPo));
+          if (found) {
+            found.soXePo = rawPlate;
+            const drv = myFleetList.find(d => cleanPlate(d.assigned_plate) === rawPlate);
+            if (drv) {
+              found._driverName = drv.full_name || drv.driver_name || '';
+              found._driverPhone = drv.phone || '';
+              const hint = document.getElementById(`drvHint_${idPo}`);
+              if (hint) hint.textContent = `👨‍✈️ Tài xế: ${found._driverName} ${found._driverPhone ? '• 📞 ' + found._driverPhone : ''}`;
+            }
+          }
+          showToast(`✅ Đã gán xe ${rawPlate} cho lô #${idPo} lên TMS!`);
+        } else {
+          alert('Lỗi: ' + (data.error || 'Không thể lưu số xe'));
+        }
+      } catch (err) {
+        inp.classList.remove('saving-wait');
+        alert('Lỗi kết nối máy chủ khi lưu số xe!');
+      }
     }
 
     async function loadDebitReport() {
@@ -783,29 +1237,25 @@
 
       const tbody = document.getElementById('vendorTripsBody');
       if (!filtered.length) {
-        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:30px;color:var(--text-muted);">Không có chuyến xe nào trong kỳ đối soát này.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">Không có chuyến xe nào trong kỳ đối soát này.</td></tr>';
         return;
       }
 
       tbody.innerHTML = filtered.map(t => {
         const isXuat = t.xuatNhapPo === 'X';
-        const typeBadge = isXuat ? '<span style="color:#ea580c;font-weight:700;">📤 XUẤT</span>' : '<span style="color:#2563eb;font-weight:700;">📥 NHẬP</span>';
-        const tripDate = formatVNDate(getTripDateISO(t));
+        const typeBadge = isXuat ? '<span style="color:#ea580c;font-weight:800;">XUẤT</span>' : '<span style="color:#2563eb;font-weight:800;">NHẬP</span>';
+        const tripDate = formatVNDate(getTripDateISO(t)).slice(0, 5);
 
         return `
           <tr>
-            <td><b>#${t.idPo}</b></td>
             <td>${tripDate}</td>
             <td>${typeBadge}</td>
-            <td><span class="badge-plate">${t.soXePo || '(Chưa có xe)'}</span></td>
-            <td>${t.tenKhachPo || '--'}</td>
-            <td>${t.khoNhanHangPo || ''}</td>
-            <td>${t.soContPo || '--'} / ${t.soSealPo || '--'}</td>
-            <td>${Number(t.cont40Po) > 0 ? "40'" : "20'"}</td>
-            <td><b>${(2500000).toLocaleString('vi-VN')} đ</b></td>
-            <td><span style="color:var(--success);font-weight:700;">--</span></td>
+            <td><b style="color:#1e40af;">${t.soXePo || '--'}</b></td>
+            <td>${t.khoNhanHangPo || t.tenKhachPo || '--'}</td>
+            <td><b>${t.soContPo || '--'}</b></td>
+            <td><b>2.5tr</b></td>
             <td>
-              <button onclick="adjustRatePrompt('${t.idPo}')" style="background:#f1f5f9;border:1px solid var(--border);padding:4px 8px;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;">✏️ Chỉnh cước</button>
+              <button onclick="adjustRatePrompt('${t.idPo}')" style="background:#f1f5f9;border:1px solid var(--border);padding:4px 7px;border-radius:6px;cursor:pointer;font-weight:700;font-size:11.5px;">✏️</button>
             </td>
           </tr>
         `;
@@ -831,25 +1281,26 @@
     }
 
     function renderMyFleet() {
-      const tbody = document.getElementById('myFleetBody');
+      const wrap = document.getElementById('myFleetListContainer');
       if (!myFleetList.length) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">Chưa có xe nào trong đội. Nhấn "Thêm xe mới" để tạo.</td></tr>';
+        wrap.innerHTML = '<div style="text-align:center;padding:30px;background:#fff;border-radius:12px;color:var(--text-muted);">Chưa có xe nào trong đội.</div>';
         return;
       }
-      tbody.innerHTML = myFleetList.map((d, idx) => `
-        <tr>
-          <td>${idx + 1}</td>
-          <td><span class="badge-plate">${d.assigned_plate}</span></td>
-          <td><code>${d.pin_code || '123456'}</code></td>
-          <td><b>${d.full_name || d.driver_name || '--'}</b></td>
-          <td>${d.phone || '--'}</td>
-          <td>${d.cccd || '--'}</td>
-          <td>${d.gplx || '--'}</td>
-          <td>
-            <button onclick='openDriverModal(${JSON.stringify(d).replace(/'/g, "&#39;")})' style="background:#f1f5f9;border:1px solid var(--border);padding:4px 8px;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;">✏️ Sửa / Đổi MK</button>
-            <button onclick="deleteMyDriver(${d.id}, '${d.assigned_plate}')" style="background:#fee2e2;color:#b91c1c;border:none;padding:4px 8px;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;margin-left:4px;">🗑️ Xóa</button>
-          </td>
-        </tr>
+      wrap.innerHTML = myFleetList.map(d => `
+        <div class="po-card" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="background:#dbeafe;color:#1e40af;font-weight:800;padding:3px 8px;border-radius:6px;font-size:13.5px;">🚛 ${d.assigned_plate}</span>
+              <span style="font-size:12px;color:#b45309;background:#fef3c7;padding:2px 6px;border-radius:5px;font-weight:700;">MK: ${d.pin_code || '123456'}</span>
+            </div>
+            <div style="font-weight:700;margin-top:5px;color:#0f172a;">👨‍✈️ ${d.full_name || d.driver_name || '--'}</div>
+            <div style="font-size:12px;color:var(--text-muted);">📞 ${d.phone || '--'} ${d.cccd ? '• CCCD: ' + d.cccd : ''}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <button onclick='openDriverModal(${JSON.stringify(d).replace(/'/g, "&#39;")})' style="background:#f1f5f9;border:1px solid var(--border);padding:6px 10px;border-radius:7px;cursor:pointer;font-weight:700;font-size:12px;">✏️ Sửa</button>
+            <button onclick="deleteMyDriver(${d.id}, '${d.assigned_plate}')" style="background:#fee2e2;color:#b91c1c;border:none;padding:6px 10px;border-radius:7px;cursor:pointer;font-weight:700;font-size:12px;">🗑️ Xóa</button>
+          </div>
+        </div>
       `).join('');
     }
 
@@ -889,23 +1340,21 @@
       if (data.ok) {
         closeModal('driverEditModal');
         loadMyFleet();
-        loadVendorTrips(true);
+        showToast('✅ Đã lưu thông tin xe!');
       } else {
         alert('Lỗi: ' + (data.error || 'Không thể lưu'));
       }
     }
 
     async function deleteMyDriver(id, plate) {
-      if (!confirm(`Bạn có chắc muốn xóa xe ${plate} khỏi đội xe?`)) return;
+      if (!confirm(`Xóa xe ${plate} khỏi đội xe?`)) return;
       const res = await fetch(`${API_BASE}/admin/delete-driver`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id })
       });
       const data = await res.json();
-      if (data.ok) {
-        loadMyFleet();
-      }
+      if (data.ok) loadMyFleet();
     }
 
     function openVendorPassModal() {
@@ -933,7 +1382,7 @@
       });
       const data = await res.json();
       if (data.ok) {
-        alert('✅ Đã đổi mật khẩu Nhà xe thành công!');
+        showToast('✅ Đã đổi mật khẩu Nhà xe!');
         closeModal('vendorPassModal');
       } else {
         alert('Lỗi: ' + (data.error || 'Không thể đổi mật khẩu'));
@@ -943,7 +1392,7 @@
     async function adjustRatePrompt(idPo) {
       const newRate = prompt('Nhập giá cước mới cần điều chỉnh (VNĐ):', '2500000');
       if (!newRate) return;
-      const reason = prompt('Lý do điều chỉnh (VD: Phụ phí vượt tải, giá thỏa thuận lại...):', '');
+      const reason = prompt('Lý do điều chỉnh:', '');
 
       const token = localStorage.getItem('vs_vendor_token');
       try {
@@ -957,10 +1406,8 @@
         });
         const data = await res.json();
         if (data.ok) {
-          alert('✅ Đã cập nhật giá cước đối soát thành công!');
+          showToast('✅ Đã cập nhật giá cước!');
           loadDebitReport();
-        } else {
-          alert('Lỗi: ' + (data.error || 'Không thể lưu!'));
         }
       } catch (err) {
         alert('Lỗi kết nối máy chủ!');

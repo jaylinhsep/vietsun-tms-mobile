@@ -15,7 +15,7 @@
       --success: #16a34a;
       --warning: #d97706;
       --danger: #dc2626;
-      --bg: #f8fafc;
+      --bg: #f1f5f9;
       --card: #ffffff;
       --text: #0f172a;
       --text-muted: #64748b;
@@ -29,54 +29,57 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg);
       color: var(--text);
-      font-size: 14.5px;
+      font-size: 14px;
       line-height: 1.45;
-      padding-bottom: calc(75px + var(--safe-bottom));
+      padding-bottom: calc(74px + var(--safe-bottom));
     }
 
     /* HEADER */
     .driver-header {
-      position: sticky; top: 0; z-index: 50;
-      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+      position: sticky; top: 0; z-index: 60;
+      background: linear-gradient(135deg, #0f172a 0%, #1e40af 100%);
       color: #fff;
-      padding: 12px 14px;
-      box-shadow: 0 4px 14px rgba(30, 58, 138, 0.2);
+      padding: 10px 14px;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
       display: flex; align-items: center; justify-content: space-between;
     }
     .header-user { display: flex; align-items: center; gap: 10px; }
     .driver-avatar {
-      width: 40px; height: 40px; border-radius: 50%;
+      width: 38px; height: 38px; border-radius: 50%;
       background: #fff; color: var(--primary);
       display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 15px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      font-weight: 800; font-size: 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
-    .driver-name { font-weight: 700; font-size: 14.5px; }
+    .driver-name { font-weight: 800; font-size: 14px; }
     .driver-plate {
       display: inline-block; background: #fbbf24; color: #000;
-      font-weight: 800; font-size: 12px; padding: 2px 7px;
-      border-radius: 6px; margin-top: 2px; letter-spacing: 0.5px;
+      font-weight: 800; font-size: 11.5px; padding: 2px 7px;
+      border-radius: 6px; margin-top: 2px; letter-spacing: 0.4px;
     }
 
     /* DATE BAR */
     .date-bar {
       background: #fff;
-      padding: 10px 12px;
+      padding: 9px 12px;
       border-bottom: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 7px;
+      max-width: 680px;
+      margin: 0 auto;
     }
     .date-chips {
       display: flex;
       gap: 6px;
       overflow-x: auto;
-      padding-bottom: 2px;
+      scrollbar-width: none;
     }
+    .date-chips::-webkit-scrollbar { display: none; }
     .date-chip {
       padding: 6px 11px;
       border-radius: 8px;
       font-weight: 700;
-      font-size: 12.5px;
+      font-size: 12px;
       border: 1px solid var(--border);
       background: #f8fafc;
       color: #334155;
@@ -96,68 +99,134 @@
     }
     .date-input {
       flex: 1;
-      padding: 7px 10px;
+      padding: 6px 10px;
       border-radius: 8px;
       border: 1px solid var(--border);
       font-weight: 700;
-      font-size: 13.5px;
+      font-size: 13px;
       color: #0f172a;
       background: #f8fafc;
     }
 
-    /* TABS (ƯU TIÊN NHẬP TRƯỚC, XUẤT SAU) */
-    .tabs-bar {
-      display: flex; background: #fff; border-bottom: 1px solid var(--border);
-      position: sticky; top: 64px; z-index: 40;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
-    }
-    .tab-btn {
-      flex: 1; padding: 12px 4px; text-align: center;
-      font-weight: 800; font-size: 13.5px; color: var(--text-muted);
-      border: none; background: none; cursor: pointer;
-      border-bottom: 3px solid transparent; transition: all 0.2s;
-    }
-    .tab-btn.active-nhap { color: #1d4ed8; border-bottom-color: #2563eb; background: #eff6ff; }
-    .tab-btn.active-xuat { color: #c2410c; border-bottom-color: #f97316; background: #fff7ed; }
-    .tab-btn.active-all  { color: #0f172a; border-bottom-color: #0f172a; background: #f8fafc; }
-
     /* CONTENT */
-    .container { padding: 14px; max-width: 600px; margin: 0 auto; }
+    .container { padding: 12px; max-width: 680px; margin: 0 auto; }
     .trip-card {
       background: var(--card); border-radius: var(--radius);
-      border: 1px solid var(--border); padding: 14px;
-      margin-bottom: 14px; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+      border: 1px solid var(--border); padding: 13px;
+      margin-bottom: 12px; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
     }
     .trip-card.xuat-card { border-left: 5px solid #f97316; background: #fffaf5; }
     .trip-card.nhap-card { border-left: 5px solid #2563eb; background: #ffffff; }
 
     .badge {
       display: inline-block; padding: 3px 8px; border-radius: 6px;
-      font-weight: 700; font-size: 11.5px;
+      font-weight: 800; font-size: 11px;
     }
     .badge-xuat { background: #ffedd5; color: #c2410c; }
     .badge-nhap { background: #dbeafe; color: #1d4ed8; }
+    .badge-20 { background: #e0f2fe; color: #0369a1; }
+    .badge-40 { background: #fef3c7; color: #b45309; }
 
-    .info-row { display: flex; align-items: flex-start; gap: 8px; margin: 7px 0; font-size: 13.5px; }
-    .info-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+    .info-row { display: flex; align-items: flex-start; gap: 8px; margin: 6px 0; font-size: 13px; }
+    .info-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
 
     /* ACTION BUTTONS */
-    .btn-row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
     .btn {
-      flex: 1; padding: 10px 12px; border-radius: 10px; font-weight: 700;
-      font-size: 13px; text-align: center; border: none; cursor: pointer;
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      flex: 1; padding: 9px 10px; border-radius: 9px; font-weight: 700;
+      font-size: 12.5px; text-align: center; border: none; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 5px;
       text-decoration: none;
     }
-    .btn-call { background: #dcfce7; color: #15803d; }
+    .btn-call { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
     .btn-update { background: var(--primary); color: #fff; }
-    .btn-expense { background: #fef3c7; color: #b45309; }
+    .btn-expense { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+
+    /* FLOATING 20' / 40' QUICK FILTER DOCK (BOTTOM RIGHT - GIỐNG VS.HUUHOA.NET) */
+    .floating-size-dock {
+      position: fixed;
+      right: 12px;
+      bottom: calc(68px + var(--safe-bottom));
+      z-index: 95;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .fab-size-btn {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(6px);
+      border: 1.5px solid #cbd5e1;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.16);
+      color: #1e293b;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2px;
+      transition: all 0.16s ease;
+    }
+    .fab-size-lbl { font-size: 13px; font-weight: 800; line-height: 1.1; }
+    .fab-size-cnt {
+      font-size: 10px; font-weight: 700; color: #64748b;
+      background: #f1f5f9; padding: 0 5px; border-radius: 6px; margin-top: 2px;
+    }
+    .fab-size-btn.active-20 {
+      background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+      border-color: #1d4ed8; color: #fff;
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.42); transform: scale(1.06);
+    }
+    .fab-size-btn.active-40 {
+      background: linear-gradient(135deg, #d97706 0%, #ea580c 100%);
+      border-color: #c2410c; color: #fff;
+      box-shadow: 0 6px 18px rgba(234, 88, 12, 0.42); transform: scale(1.06);
+    }
+    .fab-size-btn.active-20 .fab-size-cnt,
+    .fab-size-btn.active-40 .fab-size-cnt {
+      background: rgba(255, 255, 255, 0.24); color: #fff;
+    }
+
+    /* BOTTOM NAVIGATION BAR (GIỐNG VS.HUUHOA.NET, ƯU TIÊN NHẬP TRƯỚC) */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      padding: 6px 8px calc(6px + var(--safe-bottom));
+      z-index: 90;
+      box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.06);
+    }
+    .nav-item {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 6px 4px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .nav-item .nav-icon { font-size: 17px; }
+    .nav-item.active-nhap { background: #eff6ff; color: #1d4ed8; font-weight: 800; }
+    .nav-item.active-xuat { background: #fff7ed; color: #c2410c; font-weight: 800; }
+    .nav-item.active-all  { background: #f1f5f9; color: #0f172a; font-weight: 800; }
 
     /* MODAL */
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.6);
       display: none; align-items: flex-end; justify-content: center;
-      z-index: 100;
+      z-index: 150;
     }
     .modal-overlay.open { display: flex; }
     .modal-sheet {
@@ -228,17 +297,10 @@
       <button class="date-chip" id="chipAll" onclick="setDateMode('ALL')">📋 Tất cả ngày</button>
     </div>
     <div class="date-picker-row">
-      <span style="font-size:12.5px;font-weight:700;color:#475569;">Ngày chạy:</span>
+      <span style="font-size:12px;font-weight:700;color:#475569;">Ngày chạy:</span>
       <input type="date" id="driverDateInput" class="date-input" onchange="onCustomDateChange(this.value)" />
-      <button onclick="loadDriverData(true)" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:7px 11px;border-radius:8px;font-weight:700;font-size:12.5px;cursor:pointer;">🔄 Làm mới</button>
+      <button onclick="loadDriverData(true)" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:6px 10px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;">🔄 Tải lại</button>
     </div>
-  </div>
-
-  <!-- TABS: ƯU TIÊN TAB NHẬP TRƯỚC, TAB XUẤT SAU -->
-  <div class="tabs-bar">
-    <button class="tab-btn active-nhap" id="tabN" onclick="switchTab('N')">📥 HÀNG NHẬP (<span id="cntN">0</span>)</button>
-    <button class="tab-btn" id="tabX" onclick="switchTab('X')">📤 HÀNG XUẤT (<span id="cntX">0</span>)</button>
-    <button class="tab-btn" id="tabAll" onclick="switchTab('ALL')">Tất cả (<span id="cntAll">0</span>)</button>
   </div>
 
   <main class="container" id="tripsContainer">
@@ -248,11 +310,40 @@
     </div>
   </main>
 
+  <!-- FLOATING 20' / 40' FILTER DOCK (GÓC PHẢI DƯỚI CHẠY THEO) -->
+  <div class="floating-size-dock" id="floatingSizeDock">
+    <button type="button" class="fab-size-btn" id="fabSize20" onclick="toggleContSize('20')">
+      <span class="fab-size-lbl">20"</span>
+      <span class="fab-size-cnt" id="fabCount20">0</span>
+    </button>
+    <button type="button" class="fab-size-btn" id="fabSize40" onclick="toggleContSize('40')">
+      <span class="fab-size-lbl">40"</span>
+      <span class="fab-size-cnt" id="fabCount40">0</span>
+    </button>
+  </div>
+
+  <!-- BOTTOM NAVIGATION: ƯU TIÊN TAB NHẬP TRƯỚC, TAB XUẤT SAU -->
+  <nav class="bottom-nav">
+    <button class="nav-item active-nhap" id="tabN" onclick="switchTab('N')">
+      <span class="nav-icon">📥</span>
+      <span>Hàng Nhập (<span id="cntN">0</span>)</span>
+    </button>
+    <button class="nav-item" id="tabX" onclick="switchTab('X')">
+      <span class="nav-icon">📤</span>
+      <span>Hàng Xuất (<span id="cntX">0</span>)</span>
+    </button>
+    <button class="nav-item" id="tabAll" onclick="switchTab('ALL')">
+      <span class="nav-icon">📋</span>
+      <span>Tất cả (<span id="cntAll">0</span>)</span>
+    </button>
+  </nav>
+
   <!-- MODAL: CẬP NHẬT HÀNG XUẤT (CONT, SEAL, CẢNG ĐẾN...) -->
   <div class="modal-overlay" id="updateTripModal">
     <div class="modal-sheet">
       <h3 style="margin:0 0 14px;font-size:17px;font-weight:800;color:#1e3a8a;">📝 Cập nhật thông tin hàng xuất</h3>
       <input type="hidden" id="modalPoId" />
+      <input type="hidden" id="modalCodePo" />
       <div class="form-group">
         <label>Số Container (4 chữ + 7 số)</label>
         <input type="text" id="modalSoCont" class="form-control" placeholder="VD: DRYU9969790" style="text-transform:uppercase;" />
@@ -263,7 +354,7 @@
       </div>
       <div class="form-group">
         <label>Cảng đến (Phía Bắc)</label>
-        <input type="text" id="modalCangDen" class="form-control" placeholder="VD: BEN NGHE, HP, DN..." style="text-transform:uppercase;" />
+        <input type="text" id="modalCangDen" class="form-control" placeholder="VD: CLO, HPG, DAN..." style="text-transform:uppercase;" />
       </div>
       <div class="form-group">
         <label>Giờ vào cảng / Port Time</label>
@@ -328,10 +419,10 @@
 
   <script>
     let currentTrips = [];
-    // Mặc định ưu tiên hiện tab HÀNG NHẬP ('N') và ngày HÔM NAY
-    let currentFilter = 'N';
+    let currentFilter = 'N'; // Mặc định ưu tiên Tab Nhập
     let currentDateMode = 'TODAY';
     let selectedDateISO = getLocalTodayISO();
+    let contSizeFilter = 'ALL'; // 'ALL' | '20' | '40'
     const API_BASE = '/api/index.php?route=';
 
     function getLocalTodayISO(offsetDays = 0) {
@@ -368,6 +459,13 @@
         loadDriverData();
       }
     });
+
+    function toggleContSize(size) {
+      contSizeFilter = (contSizeFilter === size) ? 'ALL' : size;
+      document.getElementById('fabSize20').classList.toggle('active-20', contSizeFilter === '20');
+      document.getElementById('fabSize40').classList.toggle('active-40', contSizeFilter === '40');
+      renderTrips();
+    }
 
     function setDateMode(mode) {
       currentDateMode = mode;
@@ -499,17 +597,13 @@
 
     function switchTab(type) {
       currentFilter = type;
-      const tabN = document.getElementById('tabN');
-      const tabX = document.getElementById('tabX');
-      const tabAll = document.getElementById('tabAll');
-      tabN.className = 'tab-btn' + (type === 'N' ? ' active-nhap' : '');
-      tabX.className = 'tab-btn' + (type === 'X' ? ' active-xuat' : '');
-      tabAll.className = 'tab-btn' + (type === 'ALL' ? ' active-all' : '');
+      document.getElementById('tabN').className = 'nav-item' + (type === 'N' ? ' active-nhap' : '');
+      document.getElementById('tabX').className = 'nav-item' + (type === 'X' ? ' active-xuat' : '');
+      document.getElementById('tabAll').className = 'nav-item' + (type === 'ALL' ? ' active-all' : '');
       renderTrips();
     }
 
     function renderTrips() {
-      // 1. Lọc theo ngày trước
       const dateFiltered = currentTrips.filter(t => {
         if (currentDateMode === 'ALL') return true;
         const d = getTripDateISO(t);
@@ -524,10 +618,20 @@
       document.getElementById('cntX').textContent = cntX;
       document.getElementById('cntAll').textContent = cntAll;
 
-      // 2. Lọc theo tab Nhập / Xuất
-      const filtered = dateFiltered.filter(t => {
+      const tabFiltered = dateFiltered.filter(t => {
         if (currentFilter === 'ALL') return true;
         return t.xuatNhapPo === currentFilter;
+      });
+
+      const c20 = tabFiltered.filter(t => Number(t.cont40Po) === 0).length;
+      const c40 = tabFiltered.filter(t => Number(t.cont40Po) > 0).length;
+      document.getElementById('fabCount20').textContent = c20;
+      document.getElementById('fabCount40').textContent = c40;
+
+      const filtered = tabFiltered.filter(t => {
+        if (contSizeFilter === '20') return Number(t.cont40Po) === 0;
+        if (contSizeFilter === '40') return Number(t.cont40Po) > 0;
+        return true;
       });
 
       const container = document.getElementById('tripsContainer');
@@ -550,52 +654,51 @@
 
       container.innerHTML = filtered.map(t => {
         const isXuat = t.xuatNhapPo === 'X';
+        const is40 = Number(t.cont40Po) > 0;
         const typeClass = isXuat ? 'xuat-card' : 'nhap-card';
-        const typeBadge = isXuat ? '<span class="badge badge-xuat">📤 HÀNG XUẤT</span>' : '<span class="badge badge-nhap">📥 HÀNG NHẬP</span>';
+        const typeBadge = isXuat ? '<span class="badge badge-xuat">📤 XUẤT</span>' : '<span class="badge badge-nhap">📥 NHẬP</span>';
+        const sizeBadge = is40 ? '<span class="badge badge-40">40"</span>' : '<span class="badge badge-20">20"</span>';
         const phoneClean = (t.lienHeNhanPo || '').replace(/[^0-9]/g, '');
         const tripDate = formatVNDate(getTripDateISO(t));
 
         return `
           <div class="trip-card ${typeClass}">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <div>${typeBadge} <b style="font-size:13px;color:#1e3a8a;margin-left:4px;">#${t.idPo}</b></div>
-              <div style="display:flex;gap:6px;align-items:center;">
-                <span class="badge" style="background:#e0f2fe;color:#0369a1;">📅 ${tripDate}</span>
-                <span class="badge" style="background:#f1f5f9;color:#334155;">Cont ${Number(t.cont40Po) > 0 ? "40'" : "20'"}</span>
+              <div style="display:flex;gap:5px;align-items:center;">
+                ${typeBadge} ${sizeBadge} <b style="font-size:12.5px;color:#64748b;">#${t.idPo}</b>
               </div>
-            </div>
-
-            <div class="info-row">
-              <span class="info-icon">🏢</span>
-              <div><b>Khách hàng:</b> ${t.tenKhachPo || '--'} ${t.chuHangPo ? `<span style="color:#64748b;">(${t.chuHangPo})</span>` : ''}</div>
+              <span class="badge" style="background:#f1f5f9;color:#0f172a;">📅 ${tripDate}</span>
             </div>
 
             <div class="info-row">
               <span class="info-icon">📍</span>
-              <div><b>Kho / Địa chỉ:</b> ${t.khoNhanHangPo || ''} - ${t.diaChiNhanPo || ''} ${t.tinhNhanPo ? `(${t.tinhNhanPo})` : ''}</div>
+              <div>
+                <div style="font-weight:800;color:#0f172a;">${t.khoNhanHangPo || t.tenKhachPo || '--'}</div>
+                <div style="font-size:12.5px;color:#475569;">${t.diaChiNhanPo || ''} ${t.tinhNhanPo ? `(${t.tinhNhanPo})` : ''}</div>
+              </div>
             </div>
 
-            ${t.lienHeNhanPo ? `
-            <div class="info-row">
-              <span class="info-icon">📞</span>
-              <div><b>Liên hệ:</b> ${t.lienHeNhanPo}</div>
-            </div>` : ''}
-
-            <div style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12.5px;">
-              <div><b>Số Cont:</b> <span style="color:#2563eb;font-weight:800;">${t.soContPo || '(Chưa có)'}</span></div>
-              <div><b>Số Seal:</b> <span style="color:#2563eb;font-weight:800;">${t.soSealPo || '(Chưa có)'}</span></div>
+            <div style="margin-top:8px;padding:8px 10px;background:rgba(241,245,249,0.7);border-radius:9px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12.5px;">
+              <div><b>Số Cont:</b> <span style="color:#1e40af;font-weight:800;">${t.soContPo || '(Chưa có)'}</span></div>
+              <div><b>Số Seal:</b> <span style="color:#0f172a;font-weight:700;">${t.soSealPo || '(Chưa có)'}</span></div>
               ${isXuat ? `
                 <div><b>Lấy rỗng:</b> ${t.noiLayContPo || '--'}</div>
-                <div><b>Hạ cảng / Đến:</b> <span style="color:#d97706;font-weight:700;">${t.cangDiPo || ''} → ${t.cangDenPo || t.tinhXuatHangPo || '--'}</span></div>
+                <div><b>Cảng đến:</b> <span style="color:#c2410c;font-weight:700;">${t.tinhXuatHangPo || t.cangDenPo || '--'}</span></div>
               ` : `
                 <div><b>Cảng nhận:</b> ${t.cangDiPo || '--'}</div>
                 <div><b>Hạ rỗng:</b> <span style="color:#047857;font-weight:700;">${t.noiLayContPo || '--'}</span></div>
               `}
             </div>
 
+            ${t.lienHeNhanPo ? `
+            <div class="info-row" style="margin-top:8px;">
+              <span class="info-icon">📞</span>
+              <div><b>Liên hệ kho:</b> ${t.lienHeNhanPo}</div>
+            </div>` : ''}
+
             <div class="btn-row">
               ${phoneClean ? `<a href="tel:${phoneClean}" class="btn btn-call">📞 Gọi kho</a>` : ''}
-              ${isXuat ? `<button class="btn btn-update" onclick="openUpdateModal('${t.idPo}', '${t.soContPo || ''}', '${t.soSealPo || ''}', '${t.cangDenPo || ''}')">✏️ Nhập Cont/Seal</button>` : ''}
+              ${isXuat ? `<button class="btn btn-update" onclick="openUpdateModal('${t.idPo}', '${t.codePo || ''}', '${t.soContPo || ''}', '${t.soSealPo || ''}', '${t.tinhXuatHangPo || t.cangDenPo || ''}')">✏️ Nhập Cont/Seal</button>` : ''}
               <button class="btn btn-expense" onclick="openExpenseModal('${t.idPo}')">💰 Báo chi phí</button>
             </div>
           </div>
@@ -603,8 +706,9 @@
       }).join('');
     }
 
-    function openUpdateModal(idPo, soCont, soSeal, cangDen) {
+    function openUpdateModal(idPo, codePo, soCont, soSeal, cangDen) {
       document.getElementById('modalPoId').value = idPo;
+      document.getElementById('modalCodePo').value = codePo;
       document.getElementById('modalSoCont').value = soCont;
       document.getElementById('modalSoSeal').value = soSeal;
       document.getElementById('modalCangDen').value = cangDen;
@@ -626,6 +730,7 @@
     async function saveTripUpdate() {
       const token = localStorage.getItem('vs_driver_token');
       const idPo = document.getElementById('modalPoId').value;
+      const codePo = document.getElementById('modalCodePo').value;
       const soCont = document.getElementById('modalSoCont').value.trim();
       const soSeal = document.getElementById('modalSoSeal').value.trim();
       const cangDen = document.getElementById('modalCangDen').value.trim();
@@ -638,7 +743,7 @@
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ idPo, soCont, soSeal, cangDen, portTime })
+          body: JSON.stringify({ idPo, codePo, soCont, soSeal, cangDen, portTime })
         });
         const data = await res.json();
         if (data.ok) {

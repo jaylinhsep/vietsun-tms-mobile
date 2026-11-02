@@ -444,6 +444,12 @@ function push_vietsun_crud($params) {
     if (!file_exists($COOKIE_FILE)) {
         vietsun_login();
     }
+    if (!isset($params['TenDangNhap'])) {
+        $params['TenDangNhap'] = 'trucking14';
+    }
+    if (!isset($params['userString'])) {
+        $params['userString'] = 'trucking14<<|7<<|a0b923820d<<|1<<|0.0.0.0.0.0.1.0.1.1.0.1.0.1.';
+    }
     $ch = curl_init("$REMOTE_BASE/index-crud.php");
     curl_setopt_array($ch, [
         CURLOPT_POST           => true,
@@ -459,8 +465,58 @@ function push_vietsun_crud($params) {
     ]);
     $res = curl_exec($ch);
     curl_close($ch);
-    @unlink(sys_get_temp_dir() . '/vietsun_hub_cache.json');
+    foreach (glob(sys_get_temp_dir() . '/vietsun_cycle_*.json') as $cf) {
+        @unlink($cf);
+    }
     return $res;
+}
+
+function update_tms_field($idPo, $codePo, $fieldName, $val) {
+    $val = trim((string)$val);
+    if ($fieldName === 'soContPo') {
+        $val = strtoupper($val);
+        push_vietsun_crud([
+            'cv'       => 5,
+            'loai'     => 21,
+            'iddt'     => $idPo,
+            'cot'      => $val,
+            'thongtin' => $codePo
+        ]);
+        return push_vietsun_crud([
+            'cv'       => 3,
+            'loai'     => 1,
+            'iddt'     => 1,
+            'cot'      => "b18<<|4<<|50<<|{$idPo}<<|soContPo<<|{$codePo}",
+            'thongtin' => $val
+        ]);
+    }
+    if ($fieldName === 'soXePo') {
+        $val = strtoupper($val);
+        return push_vietsun_crud([
+            'cv'       => 3,
+            'loai'     => 1,
+            'iddt'     => 1,
+            'cot'      => "b18newtruck<<|4<<|50<<|{$idPo}<<|soXePo<<|{$codePo}",
+            'thongtin' => $val
+        ]);
+    }
+    $lenMap = [
+        'soSealPo'       => 50,
+        'donViVcPo'      => 30,
+        'noiLayContPo'   => 100,
+        'cangDiPo'       => 100,
+        'tinhXuatHangPo' => 50,
+        'cangDenPo'      => 30,
+        'portTimePo'     => 20
+    ];
+    $maxLen = $lenMap[$fieldName] ?? 100;
+    return push_vietsun_crud([
+        'cv'       => 3,
+        'loai'     => 1,
+        'iddt'     => 1,
+        'cot'      => "b18<<|4<<|{$maxLen}<<|{$idPo}<<|{$fieldName}<<|{$codePo}",
+        'thongtin' => $val
+    ]);
 }
 
 try {
@@ -769,24 +825,47 @@ try {
     // Tài xế cập nhật Cont/Seal/Cảng đến -> Đẩy về Vietsun TMS
     if ($route === 'driver/update-trip') {
         $idPo = $jsonBody['idPo'] ?? '';
+        $codePo = $jsonBody['codePo'] ?? '';
         if (!$idPo) {
             http_response_code(400);
             echo json_encode(['ok' => false, 'error' => 'Thiếu mã chuyến idPo']);
             exit;
         }
         if (isset($jsonBody['soCont'])) {
-            push_vietsun_crud(['cv' => 4, 'loai' => 4, 'iddt' => $idPo, 'cot' => 1, 'thongtin' => trim($jsonBody['soCont'])]);
+            update_tms_field($idPo, $codePo, 'soContPo', $jsonBody['soCont']);
         }
         if (isset($jsonBody['soSeal'])) {
-            push_vietsun_crud(['cv' => 4, 'loai' => 5, 'iddt' => $idPo, 'cot' => 1, 'thongtin' => trim($jsonBody['soSeal'])]);
+            update_tms_field($idPo, $codePo, 'soSealPo', $jsonBody['soSeal']);
         }
         if (isset($jsonBody['portTime']) && trim($jsonBody['portTime']) !== '') {
-            push_vietsun_crud(['cv' => 4, 'loai' => 6, 'iddt' => $idPo, 'cot' => 1, 'thongtin' => trim($jsonBody['portTime'])]);
+            update_tms_field($idPo, $codePo, 'portTimePo', $jsonBody['portTime']);
         }
         if (isset($jsonBody['cangDen']) && trim($jsonBody['cangDen']) !== '') {
-            push_vietsun_crud(['cv' => 4, 'loai' => 30, 'iddt' => $idPo, 'cot' => 1, 'thongtin' => trim($jsonBody['cangDen'])]);
+            update_tms_field($idPo, $codePo, 'tinhXuatHangPo', $jsonBody['cangDen']);
         }
         echo json_encode(['ok' => true, 'message' => 'Đã cập nhật và đẩy ngược về Vietsun TMS!']);
+        exit;
+    }
+
+    // Chủ Vendor gán / đổi Số xe nhanh cho Hàng Nhập -> Đẩy thẳng về Vietsun TMS
+    if ($route === 'vendor/assign-truck') {
+        $idPo = $jsonBody['idPo'] ?? '';
+        $codePo = $jsonBody['codePo'] ?? '';
+        $soXe = to_clean_code($jsonBody['soXePo'] ?? '');
+        if (!$idPo) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Thiếu mã lô hàng idPo']);
+            exit;
+        }
+        update_tms_field($idPo, $codePo, 'soXePo', $soXe);
+        if (!empty($user['vendorName'])) {
+            update_tms_field($idPo, $codePo, 'donViVcPo', strtoupper(trim($user['vendorName'])));
+        }
+        echo json_encode([
+            'ok'      => true,
+            'soXePo'  => $soXe,
+            'message' => "Đã gán xe $soXe lên Vietsun TMS!"
+        ]);
         exit;
     }
 
