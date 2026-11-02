@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - Quản Lý Tài Khoản Vendor & Đội Xe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1e40af;
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 0;
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg); color: var(--text); font-size: 13.5px;
+    }
+    .admin-nav {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+      color: #fff; padding: 14px 24px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+    .nav-title { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+    .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .nav-links a, .nav-links button {
+      background: rgba(255,255,255,0.14); color: #fff; text-decoration: none;
+      padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 13px;
+      border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .nav-links .btn-sync { background: #16a34a; }
+
+    .container { max-width: 1440px; margin: 20px auto; padding: 0 16px; }
+
+    .stats-row {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px; margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+    .stat-title { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    .stat-num { font-size: 26px; font-weight: 800; margin-top: 4px; color: var(--primary); }
+
+    .tabs { display: flex; gap: 10px; margin-bottom: 16px; }
+    .tab-btn {
+      padding: 11px 20px; border-radius: 10px; font-weight: 800; font-size: 14px;
+      border: 1px solid var(--border); background: #fff; color: var(--text-muted);
+      cursor: pointer;
+    }
+    .tab-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    .toolbar {
+      background: #fff; padding: 14px 16px; border-radius: 12px;
+      border: 1px solid var(--border); margin-bottom: 14px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .form-control {
+      padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border);
+      font-size: 13.5px; width: 100%;
+    }
+    .btn {
+      padding: 9px 14px; border-radius: 8px; font-weight: 700; font-size: 13px;
+      border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
+
+    .table-card {
+      background: #fff; border-radius: 12px; border: 1px solid var(--border);
+      overflow-x: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th {
+      background: #f1f5f9; padding: 12px 14px; font-weight: 700; color: #334155;
+      border-bottom: 1px solid var(--border); white-space: nowrap;
+    }
+    td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:hover { background: #f8fafc; }
+
+    .badge-code {
+      background: #dbeafe; color: #1e40af; font-weight: 800;
+      padding: 4px 8px; border-radius: 6px; font-family: monospace; font-size: 13px;
+    }
+    .badge-pass {
+      background: #fef3c7; color: #b45309; font-weight: 700;
+      padding: 3px 8px; border-radius: 6px; font-family: monospace; font-size: 12.5px;
+    }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.75);
+      display: none; align-items: center; justify-content: center; z-index: 300; padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: #fff; width: 100%; max-width: 460px;
+      border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-weight: 700; font-size: 12.5px; margin-bottom: 5px; color: #334155; }
+  </style>
+</head>
+<body>
+
+  <header class="admin-nav">
+    <div class="nav-title">
+      <span>⚙️</span>
+      <div>
+        <div>QUẢN TRỊ TÀI KHOẢN VENDOR & ĐỘI XE</div>
+        <div style="font-size:11.5px;font-weight:500;opacity:0.8;">Quản lý ID đăng nhập, mật khẩu & đồng bộ trực tiếp từ Google Sheet</div>
+      </div>
+    </div>
+    <div class="nav-links">
+      <button class="btn-sync" onclick="syncFromGoogleSheet()" id="btnSyncSheet">🔄 Đồng bộ từ Google Sheet</button>
+      <a href="https://docs.google.com/spreadsheets/d/13ndQsSmBsKlHjIRQR0S0MO5BPqqL6J4CECBAYfQi1oo/edit?gid=1046738475#gid=1046738475" target="_blank">📄 Mở Google Sheet gốc</a>
+      <a href="/vendor">🏢 Cổng Vendor</a>
+      <a href="/driver">🚛 App Tài Xế</a>
+      <a href="/">🏠 Trang Chủ</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-title">Tổng số Nhà xe (Vendor)</div>
+        <div class="stat-num" id="statVendorCount">0</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">ID: viết liền không dấu | Pass mặc định: 123456</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Tổng số Xe / Tài xế</div>
+        <div class="stat-num" id="statDriverCount" style="color:var(--success);">0</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">User: Số xe | Pass mặc định: 123456</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tabBtnVendors" onclick="switchAdminTab('VENDORS')">🏢 Quản lý Nhà xe / Vendor</button>
+      <button class="tab-btn" id="tabBtnDrivers" onclick="switchAdminTab('DRIVERS')">🚛 Quản lý Xe & Tài xế</button>
+    </div>
+
+    <!-- TAB 1: VENDORS -->
+    <div id="sectionVendors">
+      <div class="toolbar">
+        <div style="display:flex;gap:10px;align-items:center;flex:1;max-width:420px;">
+          <input type="text" id="searchVendorInput" class="form-control" placeholder="🔍 Tìm kiếm tên nhà xe hoặc mã ID..." oninput="renderVendors()" />
+        </div>
+        <button class="btn btn-primary" onclick="openVendorModal()">➕ Thêm Nhà xe (Vendor) mới</button>
+      </div>
+
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>STT</th>
+              <th>ID Đăng nhập (/vendor)</th>
+              <th>Tên Nhà xe hiển thị</th>
+              <th>Mật khẩu hiện tại</th>
+              <th>Số lượng xe</th>
+              <th>SĐT Liên hệ</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="vendorsTableBody">
+            <tr><td colspan="7" style="text-align:center;padding:30px;">Đang tải danh sách Vendor...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 2: DRIVERS / TRUCKS -->
+    <div id="sectionDrivers" style="display:none;">
+      <div class="toolbar">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;flex:1;">
+          <input type="text" id="searchDriverInput" class="form-control" style="max-width:300px;" placeholder="🔍 Tìm biển số xe, tên tài xế, SĐT..." oninput="renderDrivers()" />
+          <select id="filterVendorSelect" class="form-control" style="max-width:240px;" onchange="renderDrivers()">
+            <option value="">-- Tất cả Nhà xe (Vendor) --</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="openDriverModal()">➕ Thêm Xe / Tài xế mới</button>
+      </div>
+
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>STT</th>
+              <th>Số Xe (User /driver)</th>
+              <th>Mật khẩu</th>
+              <th>Thuộc Nhà xe (Vendor)</th>
+              <th>Họ tên Tài xế</th>
+              <th>SĐT</th>
+              <th>CCCD</th>
+              <th>GPLX</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="driversTableBody">
+            <tr><td colspan="9" style="text-align:center;padding:30px;">Đang tải danh sách Xe & Tài xế...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL VENDOR -->
+  <div class="modal-overlay" id="vendorModal">
+    <div class="modal-box">
+      <h3 style="margin:0 0 14px;color:var(--primary);" id="vendorModalTitle">➕ Thêm / Sửa Nhà Xe (Vendor)</h3>
+      <input type="hidden" id="vId" />
+      <div class="form-group">
+        <label>Tên Nhà xe (VD: HOANG LONG PHAT)</label>
+        <input type="text" id="vName" class="form-control" placeholder="VD: HOANG LONG PHAT" oninput="autoFillVendorCode()" />
+      </div>
+      <div class="form-group">
+        <label>ID Đăng nhập (Viết liền không dấu)</label>
+        <input type="text" id="vCode" class="form-control" placeholder="VD: HOANGLONGPHAT" style="text-transform:uppercase;font-weight:800;" />
+      </div>
+      <div class="form-group">
+        <label>Mật khẩu đăng nhập (Mặc định: 123456)</label>
+        <input type="text" id="vPass" class="form-control" value="123456" />
+      </div>
+      <div class="form-group">
+        <label>SĐT Liên hệ (Tuỳ chọn)</label>
+        <input type="text" id="vPhone" class="form-control" placeholder="VD: 0909..." />
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+        <button class="btn" style="background:#e2e8f0;" onclick="closeModal('vendorModal')">Hủy</button>
+        <button class="btn btn-primary" onclick="saveVendor()">💾 Lưu Vendor</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DRIVER -->
+  <div class="modal-overlay" id="driverModal">
+    <div class="modal-box">
+      <h3 style="margin:0 0 14px;color:var(--primary);">➕ Thêm / Sửa Xe & Tài xế</h3>
+      <input type="hidden" id="dId" />
+      <div class="form-group">
+        <label>Thuộc Nhà xe (Vendor)</label>
+        <select id="dVendorId" class="form-control"></select>
+      </div>
+      <div class="form-group">
+        <label>Số Xe / Biển số xe (User đăng nhập /driver)</label>
+        <input type="text" id="dPlate" class="form-control" placeholder="VD: 50E65375" style="text-transform:uppercase;font-weight:800;" />
+      </div>
+      <div class="form-group">
+        <label>Mật khẩu (Mặc định: 123456)</label>
+        <input type="text" id="dPin" class="form-control" value="123456" />
+      </div>
+      <div class="form-group">
+        <label>Họ tên Tài xế</label>
+        <input type="text" id="dName" class="form-control" placeholder="VD: LƯƠNG THẾ DUY" />
+      </div>
+      <div class="form-group">
+        <label>Số điện thoại</label>
+        <input type="text" id="dPhone" class="form-control" placeholder="VD: 0888352428" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="form-group">
+          <label>CCCD</label>
+          <input type="text" id="dCccd" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label>GPLX</label>
+          <input type="text" id="dGplx" class="form-control" />
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+        <button class="btn" style="background:#e2e8f0;" onclick="closeModal('driverModal')">Hủy</button>
+        <button class="btn btn-primary" onclick="saveDriver()">💾 Lưu Xe / Tài xế</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '/api/index.php?route=';
+    let allVendors = [];
+    let allDrivers = [];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadOverview();
+    });
+
+    function switchAdminTab(tab) {
+      document.getElementById('tabBtnVendors').classList.toggle('active', tab === 'VENDORS');
+      document.getElementById('tabBtnDrivers').classList.toggle('active', tab === 'DRIVERS');
+      document.getElementById('sectionVendors').style.display = tab === 'VENDORS' ? 'block' : 'none';
+      document.getElementById('sectionDrivers').style.display = tab === 'DRIVERS' ? 'block' : 'none';
+    }
+
+    async function loadOverview() {
+      try {
+        const res = await fetch(`${API_BASE}/admin/overview`);
+        const data = await res.json();
+        if (data.ok) {
+          allVendors = data.vendors || [];
+          allDrivers = data.drivers || [];
+          document.getElementById('statVendorCount').textContent = allVendors.length;
+          document.getElementById('statDriverCount').textContent = allDrivers.length;
+          populateVendorDropdowns();
+          renderVendors();
+          renderDrivers();
+        }
+      } catch (err) {
+        console.error('Load overview error:', err);
+      }
+    }
+
+    function populateVendorDropdowns() {
+      const filterSel = document.getElementById('filterVendorSelect');
+      const currentVal = filterSel.value;
+      filterSel.innerHTML = '<option value="">-- Tất cả Nhà xe (Vendor) --</option>' +
+        allVendors.map(v => `<option value="${v.id}">${v.vendor_name} (${v.vendor_code})</option>`).join('');
+      filterSel.value = currentVal;
+
+      const modalSel = document.getElementById('dVendorId');
+      modalSel.innerHTML = allVendors.map(v => `<option value="${v.id}">${v.vendor_name} (ID: ${v.vendor_code})</option>`).join('');
+    }
+
+    function renderVendors() {
+      const q = (document.getElementById('searchVendorInput').value || '').toLowerCase();
+      const filtered = allVendors.filter(v =>
+        (v.vendor_code || '').toLowerCase().includes(q) ||
+        (v.vendor_name || '').toLowerCase().includes(q)
+      );
+      const tbody = document.getElementById('vendorsTableBody');
+      if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;">Không tìm thấy Vendor nào.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = filtered.map((v, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td><span class="badge-code">${v.vendor_code}</span></td>
+          <td><b>${v.vendor_name}</b></td>
+          <td><span class="badge-pass">${v.password_hash || '123456'}</span></td>
+          <td><b style="color:var(--primary);">${v.truck_count || 0} xe</b></td>
+          <td>${v.contact_phone || '--'}</td>
+          <td>
+            <button class="btn btn-sm" style="background:#f1f5f9;border:1px solid var(--border);" onclick='openVendorModal(${JSON.stringify(v).replace(/'/g, "&#39;")})'>✏️ Sửa / Đổi MK</button>
+            <button class="btn btn-sm" style="background:#dbeafe;color:#1e40af;margin-left:4px;" onclick="filterByVendor(${v.id})">🚛 Xem xe</button>
+            <button class="btn btn-sm" style="background:#fee2e2;color:#b91c1c;margin-left:4px;" onclick="deleteVendor(${v.id}, '${v.vendor_name}')">🗑️ Xóa</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterByVendor(vendorId) {
+      document.getElementById('filterVendorSelect').value = String(vendorId);
+      switchAdminTab('DRIVERS');
+      renderDrivers();
+    }
+
+    function renderDrivers() {
+      const q = (document.getElementById('searchDriverInput').value || '').toLowerCase();
+      const vFilter = document.getElementById('filterVendorSelect').value;
+
+      const filtered = allDrivers.filter(d => {
+        if (vFilter && String(d.vendor_id) !== String(vFilter)) return false;
+        if (!q) return true;
+        return (
+          (d.assigned_plate || '').toLowerCase().includes(q) ||
+          (d.full_name || '').toLowerCase().includes(q) ||
+          (d.phone || '').toLowerCase().includes(q) ||
+          (d.vendor_name || '').toLowerCase().includes(q)
+        );
+      });
+
+      const tbody = document.getElementById('driversTableBody');
+      if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:24px;">Không tìm thấy xe / tài xế phù hợp.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map((d, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td><span class="badge-code">${d.assigned_plate}</span></td>
+          <td><span class="badge-pass">${d.pin_code || '123456'}</span></td>
+          <td><b>${d.vendor_name || '--'}</b> <span style="color:var(--text-muted);font-size:11.5px;">(${d.vendor_code || ''})</span></td>
+          <td><b>${d.full_name || '--'}</b></td>
+          <td>${d.phone || '--'}</td>
+          <td>${d.cccd || '--'}</td>
+          <td>${d.gplx || '--'}</td>
+          <td>
+            <button class="btn btn-sm" style="background:#f1f5f9;border:1px solid var(--border);" onclick='openDriverModal(${JSON.stringify(d).replace(/'/g, "&#39;")})'>✏️ Sửa / Đổi MK</button>
+            <button class="btn btn-sm" style="background:#fee2e2;color:#b91c1c;margin-left:4px;" onclick="deleteDriver(${d.id}, '${d.assigned_plate}')">🗑️ Xóa</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function syncFromGoogleSheet() {
+      const btn = document.getElementById('btnSyncSheet');
+      btn.disabled = true;
+      btn.textContent = '⏳ Đang đồng bộ từ Google Sheet...';
+      try {
+        const res = await fetch(`${API_BASE}/admin/sync-sheet`, { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) {
+          alert(`✅ Đã đồng bộ thành công từ Google Sheet!\n- Nhà xe (Vendor): ${data.synced.vendors}\n- Số xe / Tài xế: ${data.synced.drivers}`);
+          loadOverview();
+        } else {
+          alert('Lỗi đồng bộ: ' + (data.error || 'Không xác định'));
+        }
+      } catch (err) {
+        alert('Lỗi kết nối máy chủ!');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🔄 Đồng bộ từ Google Sheet';
+      }
+    }
+
+    function toCleanCode(str) {
+      return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'D').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    }
+
+    function autoFillVendorCode() {
+      const id = document.getElementById('vId').value;
+      if (!id) {
+        const name = document.getElementById('vName').value;
+        document.getElementById('vCode').value = toCleanCode(name);
+      }
+    }
+
+    function openVendorModal(v = null) {
+      document.getElementById('vId').value = v ? v.id : '';
+      document.getElementById('vName').value = v ? v.vendor_name : '';
+      document.getElementById('vCode').value = v ? v.vendor_code : '';
+      document.getElementById('vPass').value = v ? (v.password_hash || '123456') : '123456';
+      document.getElementById('vPhone').value = v ? (v.contact_phone || '') : '';
+      document.getElementById('vendorModal').classList.add('open');
+    }
+
+    async function saveVendor() {
+      const payload = {
+        id: document.getElementById('vId').value || undefined,
+        vendor_name: document.getElementById('vName').value.trim(),
+        vendor_code: document.getElementById('vCode').value.trim(),
+        password: document.getElementById('vPass').value.trim() || '123456',
+        contact_phone: document.getElementById('vPhone').value.trim()
+      };
+      if (!payload.vendor_name || !payload.vendor_code) {
+        alert('Vui lòng nhập Tên nhà xe và ID đăng nhập!');
+        return;
+      }
+      const res = await fetch(`${API_BASE}/admin/save-vendor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.ok) {
+        closeModal('vendorModal');
+        loadOverview();
+      } else {
+        alert('Lỗi: ' + (data.error || 'Không thể lưu'));
+      }
+    }
+
+    async function deleteVendor(id, name) {
+      if (!confirm(`Xóa Nhà xe "${name}" và toàn bộ xe thuộc nhà xe này?`)) return;
+      const res = await fetch(`${API_BASE}/admin/delete-vendor`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      const data = await res.json();
+      if (data.ok) loadOverview();
+    }
+
+    function openDriverModal(d = null) {
+      document.getElementById('dId').value = d ? d.id : '';
+      if (d && d.vendor_id) {
+        document.getElementById('dVendorId').value = d.vendor_id;
+      }
+      document.getElementById('dPlate').value = d ? d.assigned_plate : '';
+      document.getElementById('dPin').value = d ? (d.pin_code || '123456') : '123456';
+      document.getElementById('dName').value = d ? (d.full_name || '') : '';
+      document.getElementById('dPhone').value = d ? (d.phone || '') : '';
+      document.getElementById('dCccd').value = d ? (d.cccd || '') : '';
+      document.getElementById('dGplx').value = d ? (d.gplx || '') : '';
+      document.getElementById('driverModal').classList.add('open');
+    }
+
+    async function saveDriver() {
+      const payload = {
+        id: document.getElementById('dId').value || undefined,
+        vendor_id: document.getElementById('dVendorId').value,
+        assigned_plate: document.getElementById('dPlate').value.trim(),
+        pin_code: document.getElementById('dPin').value.trim() || '123456',
+        full_name: document.getElementById('dName').value.trim(),
+        phone: document.getElementById('dPhone').value.trim(),
+        cccd: document.getElementById('dCccd').value.trim(),
+        gplx: document.getElementById('dGplx').value.trim()
+      };
+      if (!payload.assigned_plate) {
+        alert('Vui lòng nhập Biển số xe!');
+        return;
+      }
+      const res = await fetch(`${API_BASE}/admin/save-driver`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.ok) {
+        closeModal('driverModal');
+        loadOverview();
+      } else {
+        alert('Lỗi: ' + (data.error || 'Không thể lưu'));
+      }
+    }
+
+    async function deleteDriver(id, plate) {
+      if (!confirm(`Xóa xe "${plate}" khỏi hệ thống?`)) return;
+      const res = await fetch(`${API_BASE}/admin/delete-driver`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      const data = await res.json();
+      if (data.ok) loadOverview();
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+  </script>
+</body>
+</html>

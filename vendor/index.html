@@ -33,15 +33,29 @@
       padding: 12px 24px; display: flex;
       justify-content: space-between; align-items: center;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      flex-wrap: wrap; gap: 10px;
     }
     .nav-brand { font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-    .nav-user { display: flex; align-items: center; gap: 14px; font-size: 13.5px; }
+    .nav-user { display: flex; align-items: center; gap: 10px; font-size: 13.5px; flex-wrap: wrap; }
 
     .main-layout { max-width: 1400px; margin: 20px auto; padding: 0 16px; }
 
+    /* TABS */
+    .vendor-tabs {
+      display: flex; gap: 10px; margin-bottom: 18px; border-bottom: 2px solid var(--border); padding-bottom: 10px;
+    }
+    .vtab-btn {
+      padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 14px;
+      border: 1px solid var(--border); background: #fff; color: var(--text-muted);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .vtab-btn.active {
+      background: var(--primary); color: #fff; border-color: var(--primary);
+    }
+
     /* SUMMARY STATS */
     .stats-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 16px; margin-bottom: 22px;
     }
     .stat-card {
@@ -60,10 +74,12 @@
     .btn {
       padding: 9px 16px; border-radius: 8px; font-weight: 700;
       font-size: 13.5px; border: none; cursor: pointer;
-      display: inline-flex; align-items: center; gap: 6px;
+      display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
     }
     .btn-primary { background: var(--primary); color: #fff; }
     .btn-success { background: var(--success); color: #fff; }
+    .btn-warning { background: var(--warning); color: #fff; }
+    .btn-danger { background: var(--danger); color: #fff; }
 
     /* TABLE */
     .table-container {
@@ -79,14 +95,16 @@
     td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     tr:hover { background: #f8fafc; }
 
-    /* LOGIN MODAL */
-    .login-overlay {
-      position: fixed; inset: 0; background: #0f172a;
-      display: flex; align-items: center; justify-content: center; z-index: 200;
+    /* LOGIN & MODALS */
+    .login-overlay, .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85);
+      display: flex; align-items: center; justify-content: center; z-index: 200; padding: 16px;
     }
-    .login-box {
-      background: #fff; padding: 32px; border-radius: 16px;
-      width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    .modal-overlay { display: none; }
+    .modal-overlay.open { display: flex; }
+    .login-box, .modal-box {
+      background: #fff; padding: 28px; border-radius: 16px;
+      width: 100%; max-width: 440px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
     .form-group { margin-bottom: 14px; }
     .form-group label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px; }
@@ -108,16 +126,20 @@
       </div>
       <form onsubmit="handleVendorLogin(event)">
         <div class="form-group">
-          <label>Mã nhà xe (Vendor Code)</label>
-          <input type="text" id="vCode" class="form-control" placeholder="VD: HLP, TRANCO, VIETSUN..." required style="text-transform:uppercase;" />
+          <label>ID Nhà xe (Viết liền không dấu)</label>
+          <input type="text" id="vCode" class="form-control" placeholder="VD: HOANGLONGPHAT, TRANCO, NHATSON..." required style="text-transform:uppercase;" autocomplete="username" />
+          <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">Gợi ý: HOANGLONGPHAT, ANTHANHPHAT, BAONAMPHAT, TRANCO, NHATSON, VIETSUN...</div>
         </div>
         <div class="form-group">
-          <label>Mật khẩu</label>
-          <input type="password" id="vPass" class="form-control" placeholder="Nhập mật khẩu" required />
+          <label>Mật khẩu (Mặc định: 123456)</label>
+          <input type="password" id="vPass" class="form-control" placeholder="Nhập mật khẩu (mặc định 123456)" required autocomplete="current-password" />
         </div>
         <div id="vLoginErr" style="color:var(--danger);font-size:13px;font-weight:600;margin:8px 0;display:none;"></div>
-        <button type="submit" class="btn btn-primary" style="width:100%;padding:12px;font-size:15px;margin-top:10px;">ĐĂNG NHẬP VENDOR</button>
+        <button type="submit" class="btn btn-primary" style="width:100%;padding:12px;font-size:15px;margin-top:10px;justify-content:center;">ĐĂNG NHẬP VENDOR</button>
       </form>
+      <div style="margin-top:16px;padding-top:12px;border-top:1px dashed var(--border);text-align:center;">
+        <a href="/admin" style="font-size:13px;font-weight:700;color:var(--primary);text-decoration:none;">⚙️ Vào Dashboard Quản Trị Tổng (Admin) →</a>
+      </div>
     </div>
   </div>
 
@@ -127,73 +149,169 @@
       <span>🚚</span> <span id="navVendorTitle">PORTAL NHÀ XE</span>
     </div>
     <div class="nav-user">
-      <span id="navVendorName" style="font-weight:700;">--</span>
+      <span id="navVendorName" style="font-weight:700;background:rgba(255,255,255,0.15);padding:5px 10px;border-radius:6px;">--</span>
+      <button onclick="openVendorPassModal()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-weight:600;">🔑 Đổi mật khẩu</button>
+      <a href="/admin" style="background:#f59e0b;color:#fff;padding:6px 12px;border-radius:6px;text-decoration:none;font-weight:700;font-size:12.5px;">⚙️ Quản lý tổng</a>
       <button onclick="handleVendorLogout()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;">Đăng xuất</button>
     </div>
   </nav>
 
   <main class="main-layout">
-    <!-- STATS -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">Tổng chuyến đội xe chạy</div>
-        <div class="stat-value" id="valTotalTrips" style="color:var(--primary);">0</div>
+    <!-- TABS -->
+    <div class="vendor-tabs">
+      <button class="vtab-btn active" id="vtabTripsBtn" onclick="switchVendorTab('TRIPS')">📊 Chuyến xe & Đối soát công nợ</button>
+      <button class="vtab-btn" id="vtabFleetBtn" onclick="switchVendorTab('FLEET')">🚛 Đội xe của tôi (<span id="myFleetCount">0</span> xe)</button>
+    </div>
+
+    <!-- TAB 1: CHUYẾN XE & CÔNG NỢ -->
+    <div id="vendorTabTrips">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Tổng chuyến đội xe chạy</div>
+          <div class="stat-value" id="valTotalTrips" style="color:var(--primary);">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Tổng Doanh Thu Cước (Debit)</div>
+          <div class="stat-value" id="valRevenue" style="color:var(--success);">0 đ</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Chi phí phát sinh (Xe báo)</div>
+          <div class="stat-value" id="valExpenses" style="color:var(--warning);">0 đ</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Tổng Thanh Toán Vietsun</div>
+          <div class="stat-value" id="valNetTotal" style="color:#7c3aed;">0 đ</div>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Tổng Doanh Thu Cước (Debit)</div>
-        <div class="stat-value" id="valRevenue" style="color:var(--success);">0 đ</div>
+
+      <div class="controls-bar">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <label style="font-weight:700;">Kỳ đối soát:</label>
+          <input type="date" id="reportFromDate" class="form-control" style="width:150px;" />
+          <span>đến</span>
+          <input type="date" id="reportToDate" class="form-control" style="width:150px;" />
+          <button class="btn btn-primary" onclick="loadVendorData()">🔍 Lọc dữ liệu</button>
+        </div>
+        <div>
+          <button class="btn btn-success" onclick="exportExcel()">📊 Xuất Bảng Đối Soát Excel</button>
+        </div>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">Chi phí phát sinh (Xe báo)</div>
-        <div class="stat-value" id="valExpenses" style="color:var(--warning);">0 đ</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Tổng Thanh Toán Vietsun</div>
-        <div class="stat-value" id="valNetTotal" style="color:#7c3aed;">0 đ</div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Loại</th>
+              <th>Số Xe</th>
+              <th>Khách Hàng</th>
+              <th>Kho Nhận / Giao</th>
+              <th>Số Cont / Seal</th>
+              <th>Loại Cont</th>
+              <th>Cước Vietsun (Debit)</th>
+              <th>Cước Điều Chỉnh</th>
+              <th>Phát Sinh</th>
+              <th>Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody id="vendorTripsBody">
+            <tr><td colspan="11" style="text-align:center;padding:30px;color:var(--text-muted);">Đang tải dữ liệu chuyến xe...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <!-- CONTROLS & DATE FILTER -->
-    <div class="controls-bar">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <label style="font-weight:700;">Kỳ đối soát:</label>
-        <input type="date" id="reportFromDate" class="form-control" style="width:150px;" />
-        <span>đến</span>
-        <input type="date" id="reportToDate" class="form-control" style="width:150px;" />
-        <button class="btn btn-primary" onclick="loadVendorData()">🔍 Lọc dữ liệu</button>
+    <!-- TAB 2: QUẢN LÝ ĐỘI XE CỦA NHÀ XE -->
+    <div id="vendorTabFleet" style="display:none;">
+      <div class="controls-bar">
+        <div>
+          <h3 style="margin:0;font-size:16px;">🚛 Danh sách Xe & Tài xế thuộc nhà xe</h3>
+          <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">Tài xế đăng nhập tại <b>/driver</b> bằng Biển số xe (User) và Mật khẩu bên dưới</div>
+        </div>
+        <button class="btn btn-primary" onclick="openDriverModal()">➕ Thêm xe mới vào đội</button>
       </div>
-      <div>
-        <button class="btn btn-success" onclick="exportExcel()">📊 Xuất Bảng Đối Soát Excel</button>
-      </div>
-    </div>
 
-    <!-- TABLE OF BOOKINGS -->
-    <div class="table-container">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Loại</th>
-            <th>Số Xe</th>
-            <th>Khách Hàng</th>
-            <th>Kho Nhận / Giao</th>
-            <th>Số Cont / Seal</th>
-            <th>Loại Cont</th>
-            <th>Cước Vietsun (Debit)</th>
-            <th>Cước Điều Chỉnh</th>
-            <th>Phát Sinh</th>
-            <th>Thao Tác</th>
-          </tr>
-        </thead>
-        <tbody id="vendorTripsBody">
-          <tr><td colspan="11" style="text-align:center;padding:30px;color:var(--text-muted);">Đang tải dữ liệu chuyến xe...</td></tr>
-        </tbody>
-      </table>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Số Xe (User đăng nhập)</th>
+              <th>Mật khẩu</th>
+              <th>Họ tên Tài xế</th>
+              <th>Số điện thoại</th>
+              <th>CCCD</th>
+              <th>GPLX</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="myFleetBody">
+            <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">Đang tải danh sách đội xe...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </main>
 
+  <!-- MODAL: ĐỔI MẬT KHẨU VENDOR -->
+  <div class="modal-overlay" id="vendorPassModal">
+    <div class="modal-box">
+      <h3 style="margin:0 0 14px;color:var(--primary);">🔑 Đổi mật khẩu Nhà xe</h3>
+      <div class="form-group">
+        <label>Mật khẩu hiện tại</label>
+        <input type="password" id="vOldPass" class="form-control" placeholder="Nhập mật khẩu hiện tại" />
+      </div>
+      <div class="form-group">
+        <label>Mật khẩu mới</label>
+        <input type="password" id="vNewPass" class="form-control" placeholder="Nhập mật khẩu mới (tối thiểu 4 ký tự)" />
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+        <button class="btn" style="background:#e2e8f0;" onclick="closeModal('vendorPassModal')">Hủy</button>
+        <button class="btn btn-primary" onclick="submitVendorPassChange()">Lưu mật khẩu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: THÊM / SỬA XE TRONG ĐỘI -->
+  <div class="modal-overlay" id="driverEditModal">
+    <div class="modal-box">
+      <h3 style="margin:0 0 14px;color:var(--primary);" id="driverModalTitle">➕ Thêm / Sửa Xe & Tài xế</h3>
+      <input type="hidden" id="editDriverId" />
+      <div class="form-group">
+        <label>Biển số xe (Dùng làm User đăng nhập /driver)</label>
+        <input type="text" id="editDriverPlate" class="form-control" placeholder="VD: 50E65375" style="text-transform:uppercase;font-weight:700;" />
+      </div>
+      <div class="form-group">
+        <label>Mật khẩu đăng nhập xe (Mặc định: 123456)</label>
+        <input type="text" id="editDriverPin" class="form-control" value="123456" />
+      </div>
+      <div class="form-group">
+        <label>Họ tên tài xế</label>
+        <input type="text" id="editDriverName" class="form-control" placeholder="VD: NGUYỄN VĂN A" />
+      </div>
+      <div class="form-group">
+        <label>Số điện thoại</label>
+        <input type="text" id="editDriverPhone" class="form-control" placeholder="VD: 0912345678" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="form-group">
+          <label>CCCD</label>
+          <input type="text" id="editDriverCccd" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label>GPLX</label>
+          <input type="text" id="editDriverGplx" class="form-control" />
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px;">
+        <button class="btn" style="background:#e2e8f0;" onclick="closeModal('driverEditModal')">Đóng</button>
+        <button class="btn btn-primary" onclick="saveMyDriver()">💾 Lưu thông tin xe</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const API_BASE = '/api/index.php?route=';
+    let myFleetList = [];
 
     window.addEventListener('DOMContentLoaded', () => {
       const token = localStorage.getItem('vs_vendor_token');
@@ -201,6 +319,7 @@
         document.getElementById('vendorLoginView').style.display = 'none';
         initDates();
         loadVendorData();
+        loadMyFleet();
       }
     });
 
@@ -208,9 +327,17 @@
       const now = new Date();
       const yyyy = now.getFullYear();
       const mm = String(now.getMonth() + 1).padStart(2, '0');
-      // Mặc định từ ngày 26 tháng trước đến 25 tháng này (Chu kỳ Vietsun)
-      document.getElementById('reportFromDate').value = `${yyyy}-${String(now.getMonth()).padStart(2, '0')}-26`;
+      const prevMm = String(now.getMonth() === 0 ? 12 : now.getMonth()).padStart(2, '0');
+      const prevYyyy = now.getMonth() === 0 ? yyyy - 1 : yyyy;
+      document.getElementById('reportFromDate').value = `${prevYyyy}-${prevMm}-26`;
       document.getElementById('reportToDate').value = `${yyyy}-${mm}-25`;
+    }
+
+    function switchVendorTab(tab) {
+      document.getElementById('vtabTripsBtn').classList.toggle('active', tab === 'TRIPS');
+      document.getElementById('vtabFleetBtn').classList.toggle('active', tab === 'FLEET');
+      document.getElementById('vendorTabTrips').style.display = tab === 'TRIPS' ? 'block' : 'none';
+      document.getElementById('vendorTabFleet').style.display = tab === 'FLEET' ? 'block' : 'none';
     }
 
     async function handleVendorLogin(e) {
@@ -237,6 +364,7 @@
         document.getElementById('vendorLoginView').style.display = 'none';
         initDates();
         loadVendorData();
+        loadMyFleet();
       } catch (err) {
         errBox.textContent = 'Lỗi kết nối máy chủ!';
         errBox.style.display = 'block';
@@ -254,19 +382,17 @@
     async function loadVendorData() {
       const token = localStorage.getItem('vs_vendor_token');
       const vInfo = JSON.parse(localStorage.getItem('vs_vendor_info') || '{}');
-      document.getElementById('navVendorName').textContent = vInfo.name || 'Vendor';
+      document.getElementById('navVendorName').textContent = `${vInfo.name || 'Vendor'} (ID: ${vInfo.code || ''})`;
 
       const fromDate = document.getElementById('reportFromDate').value;
       const toDate = document.getElementById('reportToDate').value;
 
       try {
-        // 1. Kéo chuyến live đang chạy
         const resLive = await fetch(`${API_BASE}/vendor/trips`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const liveData = await resLive.json();
 
-        // 2. Kéo báo cáo doanh thu & công nợ
         const resRev = await fetch(`${API_BASE}/vendor/revenue-report&fromDate=${fromDate}&toDate=${toDate}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -283,6 +409,132 @@
         }
       } catch (err) {
         console.error('Error loading vendor data:', err);
+      }
+    }
+
+    async function loadMyFleet() {
+      const token = localStorage.getItem('vs_vendor_token');
+      try {
+        const res = await fetch(`${API_BASE}/vendor/my-drivers`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.ok) {
+          myFleetList = data.drivers || [];
+          document.getElementById('myFleetCount').textContent = myFleetList.length;
+          renderMyFleet();
+        }
+      } catch (err) {
+        console.error('Error loading fleet:', err);
+      }
+    }
+
+    function renderMyFleet() {
+      const tbody = document.getElementById('myFleetBody');
+      if (!myFleetList.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">Chưa có xe nào trong đội. Nhấn "Thêm xe mới" để tạo.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = myFleetList.map(d => `
+        <tr>
+          <td><span style="background:#dbeafe;color:#1e40af;font-weight:800;padding:4px 8px;border-radius:6px;">${d.assigned_plate}</span></td>
+          <td><code>${d.pin_code || '123456'}</code></td>
+          <td><b>${d.full_name || '--'}</b></td>
+          <td>${d.phone || '--'}</td>
+          <td>${d.cccd || '--'}</td>
+          <td>${d.gplx || '--'}</td>
+          <td>
+            <button onclick='openDriverModal(${JSON.stringify(d).replace(/'/g, "&#39;")})' style="background:#f1f5f9;border:1px solid var(--border);padding:4px 8px;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;">✏️ Sửa / Đổi MK</button>
+            <button onclick="deleteMyDriver(${d.id}, '${d.assigned_plate}')" style="background:#fee2e2;color:#b91c1c;border:none;padding:4px 8px;border-radius:6px;cursor:pointer;font-weight:600;font-size:12px;margin-left:4px;">🗑️ Xóa</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openDriverModal(driver = null) {
+      document.getElementById('editDriverId').value = driver ? driver.id : '';
+      document.getElementById('editDriverPlate').value = driver ? driver.assigned_plate : '';
+      document.getElementById('editDriverPin').value = driver ? (driver.pin_code || '123456') : '123456';
+      document.getElementById('editDriverName').value = driver ? (driver.full_name || '') : '';
+      document.getElementById('editDriverPhone').value = driver ? (driver.phone || '') : '';
+      document.getElementById('editDriverCccd').value = driver ? (driver.cccd || '') : '';
+      document.getElementById('editDriverGplx').value = driver ? (driver.gplx || '') : '';
+      document.getElementById('driverEditModal').classList.add('open');
+    }
+
+    async function saveMyDriver() {
+      const vInfo = JSON.parse(localStorage.getItem('vs_vendor_info') || '{}');
+      const payload = {
+        id: document.getElementById('editDriverId').value || undefined,
+        vendor_id: vInfo.id,
+        assigned_plate: document.getElementById('editDriverPlate').value.trim(),
+        pin_code: document.getElementById('editDriverPin').value.trim() || '123456',
+        full_name: document.getElementById('editDriverName').value.trim(),
+        phone: document.getElementById('editDriverPhone').value.trim(),
+        cccd: document.getElementById('editDriverCccd').value.trim(),
+        gplx: document.getElementById('editDriverGplx').value.trim()
+      };
+      if (!payload.assigned_plate) {
+        alert('Vui lòng nhập biển số xe!');
+        return;
+      }
+      const res = await fetch(`${API_BASE}/admin/save-driver`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.ok) {
+        closeModal('driverEditModal');
+        loadMyFleet();
+        loadVendorData();
+      } else {
+        alert('Lỗi: ' + (data.error || 'Không thể lưu'));
+      }
+    }
+
+    async function deleteMyDriver(id, plate) {
+      if (!confirm(`Bạn có chắc muốn xóa xe ${plate} khỏi đội xe?`)) return;
+      const res = await fetch(`${API_BASE}/admin/delete-driver`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        loadMyFleet();
+      }
+    }
+
+    function openVendorPassModal() {
+      document.getElementById('vOldPass').value = '';
+      document.getElementById('vNewPass').value = '';
+      document.getElementById('vendorPassModal').classList.add('open');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+
+    async function submitVendorPassChange() {
+      const token = localStorage.getItem('vs_vendor_token');
+      const oldPassword = document.getElementById('vOldPass').value.trim();
+      const newPassword = document.getElementById('vNewPass').value.trim();
+      if (!newPassword || newPassword.length < 4) {
+        alert('Mật khẩu mới phải từ 4 ký tự trở lên!');
+        return;
+      }
+      const res = await fetch(`${API_BASE}/vendor/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ oldPassword, newPassword })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        alert('✅ Đã đổi mật khẩu Nhà xe thành công!');
+        closeModal('vendorPassModal');
+      } else {
+        alert('Lỗi: ' + (data.error || 'Không thể đổi mật khẩu'));
       }
     }
 

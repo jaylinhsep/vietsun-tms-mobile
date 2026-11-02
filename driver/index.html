@@ -137,16 +137,16 @@
     <div style="text-align:center;margin-bottom:24px;">
       <div style="font-size:46px;margin-bottom:8px;">🚛</div>
       <h2 style="margin:0;font-size:22px;font-weight:800;color:#1e3a8a;">VIETSUN TMS - TÀI XẾ</h2>
-      <p style="margin:4px 0 0;color:var(--text-muted);font-size:13.5px;">Nhập SĐT & Mã PIN để nhận chuyến</p>
+      <p style="margin:4px 0 0;color:var(--text-muted);font-size:13.5px;">Nhập Biển số xe & Mật khẩu để nhận chuyến</p>
     </div>
     <form id="driverLoginForm" onsubmit="handleDriverLogin(event)">
       <div class="form-group">
-        <label>Số điện thoại tài xế</label>
-        <input type="tel" id="loginPhone" class="form-control" placeholder="VD: 0911000001" required autocomplete="tel" />
+        <label>Số xe / Biển số xe (User)</label>
+        <input type="text" id="loginPlate" class="form-control" placeholder="VD: 50E65375 hoặc 50H10106" required style="text-transform:uppercase;" autocomplete="username" />
       </div>
       <div class="form-group" style="margin-top:14px;">
-        <label>Mã PIN (6 số)</label>
-        <input type="password" id="loginPin" class="form-control" placeholder="Nhập mã PIN" required maxlength="6" inputmode="numeric" />
+        <label>Mật khẩu (Mặc định: 123456)</label>
+        <input type="password" id="loginPin" class="form-control" placeholder="Nhập mật khẩu (mặc định 123456)" required autocomplete="current-password" />
       </div>
       <div id="loginError" style="color:var(--danger);font-size:13px;font-weight:600;margin:8px 0;display:none;"></div>
       <button type="submit" class="btn btn-update" style="width:100%;padding:14px;font-size:16px;margin-top:14px;">ĐĂNG NHẬP NHANH</button>
@@ -162,7 +162,10 @@
         <div class="driver-plate" id="displayDriverPlate">--</div>
       </div>
     </div>
-    <button onclick="handleLogout()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Đăng xuất</button>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button onclick="openChangePassModal()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">🔑 Đổi MK</button>
+      <button onclick="handleLogout()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Thoát</button>
+    </div>
   </header>
 
   <div class="tabs-bar">
@@ -237,6 +240,25 @@
     </div>
   </div>
 
+  <!-- MODAL: ĐỔI MẬT KHẨU TÀI XẾ -->
+  <div class="modal-overlay" id="changePassModal">
+    <div class="modal-sheet">
+      <h3 style="margin:0 0 14px;font-size:17px;font-weight:800;color:#1e3a8a;">🔑 Đổi mật khẩu xe</h3>
+      <div class="form-group">
+        <label>Mật khẩu hiện tại</label>
+        <input type="password" id="oldDriverPass" class="form-control" placeholder="Nhập mật khẩu đang dùng (VD: 123456)" />
+      </div>
+      <div class="form-group">
+        <label>Mật khẩu mới</label>
+        <input type="password" id="newDriverPass" class="form-control" placeholder="Nhập mật khẩu mới (tối thiểu 4 ký tự)" />
+      </div>
+      <div class="btn-row" style="margin-top:18px;">
+        <button class="btn" style="background:#e2e8f0;color:#334155;" onclick="closeModal('changePassModal')">Đóng</button>
+        <button class="btn btn-update" onclick="submitChangeDriverPass()">LƯU MẬT KHẨU MỚI</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let currentTrips = [];
     let currentFilter = 'ALL';
@@ -253,7 +275,7 @@
 
     async function handleDriverLogin(e) {
       e.preventDefault();
-      const phone = document.getElementById('loginPhone').value.trim();
+      const plate = document.getElementById('loginPlate').value.trim().toUpperCase();
       const pin = document.getElementById('loginPin').value.trim();
       const errBox = document.getElementById('loginError');
 
@@ -261,7 +283,7 @@
         const res = await fetch(`${API_BASE}/auth/driver-login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone, pin })
+          body: JSON.stringify({ plate, password: pin })
         });
         const data = await res.json();
         if (!res.ok || !data.ok) {
@@ -277,6 +299,38 @@
       } catch (err) {
         errBox.textContent = 'Lỗi kết nối máy chủ!';
         errBox.style.display = 'block';
+      }
+    }
+
+    function openChangePassModal() {
+      document.getElementById('oldDriverPass').value = '';
+      document.getElementById('newDriverPass').value = '';
+      document.getElementById('changePassModal').classList.add('open');
+    }
+
+    async function submitChangeDriverPass() {
+      const token = localStorage.getItem('vs_driver_token');
+      const oldPassword = document.getElementById('oldDriverPass').value.trim();
+      const newPassword = document.getElementById('newDriverPass').value.trim();
+      if (!newPassword || newPassword.length < 4) {
+        alert('Vui lòng nhập mật khẩu mới tối thiểu 4 ký tự!');
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/driver/change-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ oldPassword, newPassword })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          alert('✅ Đã đổi mật khẩu thành công!');
+          closeModal('changePassModal');
+        } else {
+          alert('Lỗi: ' + (data.error || 'Không thể đổi mật khẩu'));
+        }
+      } catch (err) {
+        alert('Lỗi kết nối máy chủ!');
       }
     }
 

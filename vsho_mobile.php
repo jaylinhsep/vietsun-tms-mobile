@@ -1,139 +1,42 @@
 ﻿<?php
-/**
- * VIETSUN TMS MOBILE - STANDALONE HOSTING EDITION
- * Hoáº¡t Ä‘á»™ng Ä‘á»™c láº­p 100% trÃªn Domain / Hosting riÃªng cá»§a báº¡n.
- * Káº¿t ná»‘i qua Server-side cURL tá»›i https://vsho.vietsunlogistics.com (KhÃ´ng xung Ä‘á»™t code gá»‘c, khÃ´ng lá»—i CORS)
- */
-error_reporting(0);
-$REMOTE_BASE = 'https://vsho.vietsunlogistics.com';
-$COOKIE_FILE = sys_get_temp_dir() . '/vietsun_tms_cookie.txt';
-
-function tms_remote_login($username, $password, $remoteBase, $cookieFile) {
-    $ch = curl_init("$remoteBase/0login.php");
-    $postData = http_build_query([
-        'username' => $username,
-        'password' => $password,
-        'login'    => 'ÄÄ‚NG NHáº¬P'
-    ]);
-    curl_setopt_array($ch, [
-        CURLOPT_POST           => true,
-        CURLOPT_POSTFIELDS     => $postData,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_COOKIEJAR      => $cookieFile,
-        CURLOPT_COOKIEFILE     => $cookieFile,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_SSL_VERIFYHOST => false,
-        CURLOPT_TIMEOUT        => 25,
-        CURLOPT_USERAGENT      => 'Mozilla/5.0 (Linux; Android 14) VietsunTMSMobile/1.0'
-    ]);
-    $html = curl_exec($ch);
-    curl_close($ch);
-
-    $userString = 'trucking14<<|7<<|a0b923820d<<|1<<|0.0.0.0.0.0.1.0.1.1.0.1.0.1.';
-    if (preg_match('/id="userString"\s+value="([^"]+)"/', $html, $matches)) {
-        $userString = $matches[1];
-    }
-    return $userString;
-}
-
-if (isset($_GET['api'])) {
+// VSHO Mobile Standalone Proxy + App
+if (isset($_GET['ajax_proxy'])) {
+    header('Content-Type: application/json; charset=utf-8');
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type');
-
-    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-        http_response_code(200);
-        exit;
-    }
-
-    $api = $_GET['api'];
-
-    // 1. API ÄÄƒng nháº­p tÃ i khoáº£n TMS
-    if ($api === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        header('Content-Type: application/json; charset=utf-8');
-        $raw = file_get_contents('php://input');
-        $body = json_decode($raw, true);
-        $user = isset($body['username']) ? $body['username'] : 'trucking14';
-        $pass = isset($body['password']) ? $body['password'] : '1';
-        $uStr = tms_remote_login($user, $pass, $REMOTE_BASE, $COOKIE_FILE);
-        echo json_encode([
-            'ok'         => true,
-            'username'   => $user,
-            'userString' => $uStr
-        ]);
-        exit;
-    }
-
-    // 2. API Truy xuáº¥t dá»¯ liá»‡u xuáº¥t nháº­p (return_json.php)
-    if ($api === 'return_json') {
-        header('Content-Type: application/json; charset=utf-8');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization');
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
+    $act = isset($_GET['act']) ? $_GET['act'] : '';
+    $base = 'http://203.205.21.186:8028';
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    if ($act === 'return_json') {
         $ngay = isset($_GET['ngay']) ? urlencode($_GET['ngay']) : date('Y-m-d');
-        if (!file_exists($COOKIE_FILE) || filesize($COOKIE_FILE) < 10) {
-            tms_remote_login('trucking14', '1', $REMOTE_BASE, $COOKIE_FILE);
+        curl_setopt($ch, CURLOPT_URL, $base . '/API/return_json.php?ngay=' . $ngay);
+    } elseif ($act === 'sync_vendor_sheet') {
+        $sheetUrl = 'https://docs.google.com/spreadsheets/d/13ndQsSmBsKlHjIRQR0S0MO5BPqqL6J4CECBAYfQi1oo/export?format=csv&gid=1046738475';
+        curl_setopt($ch, CURLOPT_URL, $sheetUrl);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        header('Content-Type: text/csv; charset=utf-8');
+    } else {
+        $targetPath = isset($_GET['path']) ? $_GET['path'] : '/main/action.php';
+        curl_setopt($ch, CURLOPT_URL, $base . $targetPath);
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            curl_setopt($ch, CURLOPT_POST, true);
+            $rawBody = file_get_contents('php://input');
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $rawBody);
+            $contentType = isset($_SERVER['CONTENT_TYPE']) ? $_SERVER['CONTENT_TYPE'] : 'application/x-www-form-urlencoded; charset=UTF-8';
+            curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: ' . $contentType));
         }
-        $ch = curl_init("$REMOTE_BASE/return_json.php?ngay=$ngay");
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_COOKIEJAR      => $COOKIE_FILE,
-            CURLOPT_COOKIEFILE     => $COOKIE_FILE,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
-            CURLOPT_TIMEOUT        => 30,
-            CURLOPT_USERAGENT      => 'Mozilla/5.0 (Linux; Android 14) VietsunTMSMobile/1.0',
-            CURLOPT_ENCODING       => ''
-        ]);
-        $json = curl_exec($ch);
-        curl_close($ch);
-
-        if (!$json || substr(trim($json), 0, 1) !== '[') {
-            tms_remote_login('trucking14', '1', $REMOTE_BASE, $COOKIE_FILE);
-            $ch = curl_init("$REMOTE_BASE/return_json.php?ngay=$ngay");
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_COOKIEJAR      => $COOKIE_FILE,
-                CURLOPT_COOKIEFILE     => $COOKIE_FILE,
-                CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_SSL_VERIFYHOST => false,
-                CURLOPT_TIMEOUT        => 30,
-                CURLOPT_USERAGENT      => 'Mozilla/5.0 (Linux; Android 14) VietsunTMSMobile/1.0',
-                CURLOPT_ENCODING       => ''
-            ]);
-            $json = curl_exec($ch);
-            curl_close($ch);
-        }
-
-        echo $json ? trim($json) : '[]';
-        exit;
     }
-
-    // 3. API Cáº­p nháº­t thÃ´ng tin Cont, Seal, Sá»‘ xe, ÄVVT, NgÃ y giao (index-crud.php)
-    if ($api === 'index_crud' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-        header('Content-Type: text/html; charset=utf-8');
-        if (!file_exists($COOKIE_FILE)) {
-            tms_remote_login('trucking14', '1', $REMOTE_BASE, $COOKIE_FILE);
-        }
-        $rawPost = file_get_contents('php://input');
-        $ch = curl_init("$REMOTE_BASE/index-crud.php");
-        curl_setopt_array($ch, [
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => $rawPost,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_COOKIEJAR      => $COOKIE_FILE,
-            CURLOPT_COOKIEFILE     => $COOKIE_FILE,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
-            CURLOPT_TIMEOUT        => 25,
-            CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded; charset=UTF-8']
-        ]);
-        $resp = curl_exec($ch);
-        curl_close($ch);
-        echo $resp;
-        exit;
-    }
+    $res = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    http_response_code($code ? $code : 200);
+    echo $res;
+    exit;
 }
 ?>
 <!DOCTYPE html>
@@ -2237,6 +2140,11 @@ if (isset($_GET['api'])) {
           </div>
           <div style="margin-top:4px;font-size:11.5px;">
             📄 <a href="https://docs.google.com/spreadsheets/d/13ndQsSmBsKlHjIRQR0S0MO5BPqqL6J4CECBAYfQi1oo/edit?gid=1046738475#gid=1046738475" target="_blank" style="color:#15803d;font-weight:700;text-decoration:underline;">Mở bảng Google Sheet Đội xe Vendor</a>
+          </div>
+          <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+            <a href="/admin" target="_blank" style="background:#1e3a8a;color:#fff;padding:5px 10px;border-radius:6px;font-size:11.5px;font-weight:700;text-decoration:none;">⚙️ Quản lý User (/admin)</a>
+            <a href="/vendor" target="_blank" style="background:#0284c7;color:#fff;padding:5px 10px;border-radius:6px;font-size:11.5px;font-weight:700;text-decoration:none;">🏢 Cổng Vendor (/vendor)</a>
+            <a href="/driver" target="_blank" style="background:#16a34a;color:#fff;padding:5px 10px;border-radius:6px;font-size:11.5px;font-weight:700;text-decoration:none;">🚛 App Tài xế (/driver)</a>
           </div>
         </div>
         <div class="info-banner" style="margin-top:10px;">
@@ -5661,3 +5569,4 @@ if (isset($_GET['api'])) {
   </script>
 </body>
 </html>
+
