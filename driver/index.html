@@ -338,12 +338,14 @@
     </button>
   </nav>
 
-  <!-- MODAL: CẬP NHẬT HÀNG XUẤT (CONT, SEAL, CẢNG ĐẾN...) -->
+  <!-- MODAL: CẬP NHẬT HÀNG XUẤT (CHỈ NHẬP SỐ CONT & SỐ SEAL) -->
   <div class="modal-overlay" id="updateTripModal">
     <div class="modal-sheet">
-      <h3 style="margin:0 0 14px;font-size:17px;font-weight:800;color:#1e3a8a;">📝 Cập nhật thông tin hàng xuất</h3>
+      <h3 style="margin:0 0 14px;font-size:17px;font-weight:800;color:#1e3a8a;">📝 Cập nhật Số Cont / Seal</h3>
       <input type="hidden" id="modalPoId" />
       <input type="hidden" id="modalCodePo" />
+      <input type="hidden" id="modalCangDen" />
+      <input type="hidden" id="modalPortTime" />
       <div class="form-group">
         <label>Số Container (4 chữ + 7 số)</label>
         <input type="text" id="modalSoCont" class="form-control" placeholder="VD: DRYU9969790" style="text-transform:uppercase;" />
@@ -352,17 +354,9 @@
         <label>Số Seal</label>
         <input type="text" id="modalSoSeal" class="form-control" placeholder="VD: 678504" />
       </div>
-      <div class="form-group">
-        <label>Cảng đến (Phía Bắc)</label>
-        <input type="text" id="modalCangDen" class="form-control" placeholder="VD: CLO, HPG, DAN..." style="text-transform:uppercase;" />
-      </div>
-      <div class="form-group">
-        <label>Giờ vào cảng / Port Time</label>
-        <input type="text" id="modalPortTime" class="form-control" placeholder="VD: 02/11/2026 14:30" />
-      </div>
       <div class="btn-row" style="margin-top:18px;">
         <button class="btn" style="background:#e2e8f0;color:#334155;" onclick="closeModal('updateTripModal')">Đóng</button>
-        <button class="btn btn-update" onclick="saveTripUpdate()">⏳ GỬI ĐIỀU VẬN DUYỆT</button>
+        <button class="btn btn-update" onclick="saveTripUpdate()">⏳ LƯU CONT / SEAL</button>
       </div>
     </div>
   </div>
@@ -417,13 +411,25 @@
     </div>
   </div>
 
+  <div id="driverToast" style="display:none;position:fixed;bottom:85px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:800;box-shadow:0 8px 25px rgba(0,0,0,0.3);z-index:9999;white-space:nowrap;">✅ Đã copy thông tin!</div>
+
   <script>
     let currentTrips = [];
+    let currentDriverInfo = {};
     let currentFilter = 'N'; // Mặc định ưu tiên Tab Nhập
     let currentDateMode = 'TODAY';
     let selectedDateISO = getLocalTodayISO();
     let contSizeFilter = 'ALL'; // 'ALL' | '20' | '40'
     const API_BASE = '/api/index.php?route=';
+
+    function showDriverToast(msg) {
+      const el = document.getElementById('driverToast');
+      if (!el) return;
+      el.textContent = msg;
+      el.style.display = 'block';
+      clearTimeout(window._driverToastTimer);
+      window._driverToastTimer = setTimeout(() => { el.style.display = 'none'; }, 2600);
+    }
 
     function getLocalTodayISO(offsetDays = 0) {
       const d = new Date();
@@ -590,9 +596,97 @@
 
     function renderDriverHeader(info) {
       if (!info) return;
+      currentDriverInfo = { ...currentDriverInfo, ...info };
+      localStorage.setItem('vs_driver_info', JSON.stringify(currentDriverInfo));
       document.getElementById('displayDriverName').textContent = info.name || 'Tài xế';
       document.getElementById('displayDriverPlate').textContent = `${info.plate || '--'} • ${info.vendor || ''}`;
       document.getElementById('avatarLetter').textContent = (info.name || 'TX').slice(0, 2).toUpperCase();
+    }
+
+    function buildDriverZaloText(t) {
+      if (!t) return '';
+      const isXuat = t.xuatNhapPo === 'X';
+      const ngayGiao = formatVNDate(getTripDateISO(t));
+      const plate = (t.soXePo || currentDriverInfo.plate || '').trim();
+      const tenLaiXe = (currentDriverInfo.name || '').trim();
+      const sdtLaiXe = (currentDriverInfo.phone || '').trim();
+      const cccd = (currentDriverInfo.cccd || '').trim();
+      const gplx = (currentDriverInfo.gplx || '').trim();
+
+      if (isXuat) {
+        return [
+          `THÔNG TIN ĐÓNG HÀNG:`,
+          `- Khách hàng: ${t.tenKhachPo || ''}`,
+          `- Kho ĐÓNG: ${t.khoNhanHangPo || ''}`,
+          `- Địa chỉ: ${t.diaChiNhanPo || ''}\t- Tỉnh: ${t.tinhNhanPo || ''}`,
+          `- Số cont: ${t.soContPo || ''}\t\t- Số seal: ${t.soSealPo || ''}`,
+          `- Ngày ĐÓNG: ${ngayGiao}`,
+          `- Nơi cấp rỗng: ${t.noiLayContPo || ''}`,
+          `- Thời gian dự kiến tới kho: `,
+          `- Liên hệ: ${t.lienHeNhanPo || ''}`,
+          `- Số xe: ${plate}`,
+          `- Tên Lái Xe: ${tenLaiXe}`,
+          `- Số CMND: ${cccd}     Nơi cấp: Cục QLHC & TTXH`,
+          `- Số GPLX: ${gplx}           Nơi cấp:SỞ GTVT`,
+          `- SĐT: ${sdtLaiXe}`
+        ].join('\n');
+      } else {
+        return [
+          `THÔNG TIN GIAO HÀNG:`,
+          `- Khách hàng: ${t.tenKhachPo || ''}`,
+          `- Kho GIAO: ${t.khoNhanHangPo || ''}`,
+          `- Địa chỉ: ${t.diaChiNhanPo || ''}\t- Tỉnh: ${t.tinhNhanPo || ''}`,
+          `- Liên hệ: ${t.lienHeNhanPo || ''}`,
+          `- Số cont: ${t.soContPo || ''}\t\t- Số seal: ${t.soSealPo || ''}`,
+          `- Ngày GIAO: ${ngayGiao}`,
+          `- Hạ rỗng: ${t.noiLayContPo || ''}`,
+          `- Số xe: ${plate}`,
+          `- Tên Lái Xe: ${tenLaiXe}`,
+          `- SĐT: ${sdtLaiXe}`,
+          `- Thời gian tới kho: `
+        ].join('\n');
+      }
+    }
+
+    async function copyTextToClipboard(text) {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+          return true;
+        }
+      } catch (e) {}
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      return true;
+    }
+
+    async function copyDriverTripText(idPo) {
+      const t = currentTrips.find(x => String(x.idPo) === String(idPo));
+      if (!t) return;
+      const text = buildDriverZaloText(t);
+      await copyTextToClipboard(text);
+      showDriverToast('📋 Đã copy đầy đủ thông tin chuyến!');
+    }
+
+    async function shareDriverTripZalo(idPo) {
+      const t = currentTrips.find(x => String(x.idPo) === String(idPo));
+      if (!t) return;
+      const text = buildDriverZaloText(t);
+      await copyTextToClipboard(text);
+      showDriverToast('💬 Đã copy thông tin! Chọn Zalo để dán / chia sẻ');
+      if (navigator.share) {
+        try {
+          await navigator.share({ text });
+        } catch (err) {
+          // User cancelled share sheet; text is already in clipboard
+        }
+      }
     }
 
     function switchTab(type) {
@@ -666,6 +760,8 @@
         const statusBadge = isLocked
           ? '<span class="badge" style="background:#fee2e2;color:#b91c1c;">🔒 Đã khóa sổ</span>'
           : (isPending ? '<span class="badge" style="background:#fef3c7;color:#b45309;">⏳ Chờ duyệt TMS</span>' : '');
+        const warehouseTitle = (t.khoNhanHangPo || t.tenKhachPo || 'Chưa rõ tên kho').trim();
+        const addrText = [t.diaChiNhanPo, t.tinhNhanPo ? `(${t.tinhNhanPo})` : ''].filter(Boolean).join(' ');
 
         return `
           <div class="trip-card ${typeClass}">
@@ -676,13 +772,21 @@
               <span class="badge" style="background:#f1f5f9;color:#0f172a;">📅 ${tripDate}</span>
             </div>
 
-            <div class="info-row">
-              <span class="info-icon">📍</span>
-              <div>
-                <div style="font-weight:800;color:#0f172a;">${t.khoNhanHangPo || t.tenKhachPo || '--'}</div>
-                <div style="font-size:12.5px;color:#475569;">${t.diaChiNhanPo || ''} ${t.tinhNhanPo ? `(${t.tinhNhanPo})` : ''}</div>
-              </div>
+            ${isXuat ? `
+            <div style="background:#ffedd5;border:1.5px solid #fdba74;border-radius:10px;padding:9px 11px;margin:6px 0;">
+              <div style="font-size:10.5px;font-weight:800;color:#9a3412;text-transform:uppercase;letter-spacing:0.3px;">🏭 KHO ĐÓNG HÀNG</div>
+              <div style="font-size:15.5px;font-weight:900;color:#c2410c;margin-top:2px;line-height:1.25;">📍 ${warehouseTitle}</div>
+              ${addrText ? `<div style="font-size:12.5px;color:#7c2d12;font-weight:600;margin-top:3px;">${addrText}</div>` : ''}
+              ${t.tenKhachPo && t.tenKhachPo !== warehouseTitle ? `<div style="font-size:11.5px;color:#9a3412;margin-top:2px;">👤 KH: ${t.tenKhachPo}</div>` : ''}
             </div>
+            ` : `
+            <div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:10px;padding:9px 11px;margin:6px 0;">
+              <div style="font-size:10.5px;font-weight:800;color:#1e40af;text-transform:uppercase;letter-spacing:0.3px;">🏭 KHO GIAO / TRẢ HÀNG</div>
+              <div style="font-size:15.5px;font-weight:900;color:#1d4ed8;margin-top:2px;line-height:1.25;">📍 ${warehouseTitle}</div>
+              ${addrText ? `<div style="font-size:12.5px;color:#1e3a8a;font-weight:600;margin-top:3px;">${addrText}</div>` : ''}
+              ${t.tenKhachPo && t.tenKhachPo !== warehouseTitle ? `<div style="font-size:11.5px;color:#1e40af;margin-top:2px;">👤 KH: ${t.tenKhachPo}</div>` : ''}
+            </div>
+            `}
 
             <div style="margin-top:8px;padding:8px 10px;background:rgba(241,245,249,0.7);border-radius:9px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12.5px;">
               <div><b>Số Cont:</b> <span style="color:#1e40af;font-weight:800;">${t.soContPo || '(Chưa có)'}</span></div>
@@ -702,10 +806,14 @@
               <div><b>Liên hệ kho:</b> ${t.lienHeNhanPo}</div>
             </div>` : ''}
 
-            <div class="btn-row">
-              ${phoneClean ? `<a href="tel:${phoneClean}" class="btn btn-call">📞 Gọi kho</a>` : ''}
+            <div class="btn-row" style="flex-wrap:wrap;">
+              ${phoneClean ? `<a href="tel:${phoneClean}" class="btn btn-call" style="flex:1 1 auto;">📞 Gọi kho</a>` : ''}
+              <button class="btn" style="background:#0068ff;color:#fff;flex:1 1 auto;" onclick="shareDriverTripZalo('${t.idPo}')">💬 Share Zalo</button>
+              <button class="btn" style="background:#e0f2fe;color:#0369a1;border:1px solid #bae6fd;flex:1 1 auto;" onclick="copyDriverTripText('${t.idPo}')">📋 Copy TT</button>
+            </div>
+            <div class="btn-row" style="margin-top:6px;">
               ${isLocked ? `
-                <div style="flex:2;background:#f1f5f9;color:#94a3b8;border:1px solid #cbd5e1;padding:10px;border-radius:10px;text-align:center;font-weight:700;font-size:12px;">
+                <div style="flex:1;background:#f1f5f9;color:#94a3b8;border:1px solid #cbd5e1;padding:9px;border-radius:10px;text-align:center;font-weight:700;font-size:12px;">
                   🔒 Đã kết thúc ngày - Khóa chỉnh sửa
                 </div>
               ` : `

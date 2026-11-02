@@ -1317,6 +1317,11 @@ try {
         $plate = to_clean_code($user['plate'] ?? '');
         $targetDate = $_GET['date'] ?? null;
         $forceRefresh = !empty($_GET['refresh']);
+
+        $stDrv = $pdo->prepare("SELECT driver_name, phone, cccd, gplx FROM drivers WHERE assigned_plate = ? LIMIT 1");
+        $stDrv->execute([$plate]);
+        $drvRow = $stDrv->fetch() ?: [];
+
         $all = fetch_vietsun_shipments($targetDate, $forceRefresh);
         $myTrips = [];
         foreach ($all as $item) {
@@ -1330,9 +1335,12 @@ try {
             'today'      => date('Y-m-d'),
             'trips'      => $myTrips,
             'driverInfo' => [
-                'name'   => $user['driverName'] ?? '',
+                'name'   => $drvRow['driver_name'] ?? ($user['driverName'] ?? ''),
                 'plate'  => $user['plate'] ?? '',
-                'vendor' => $user['vendorName'] ?? ''
+                'vendor' => $user['vendorName'] ?? '',
+                'phone'  => $drvRow['phone'] ?? '',
+                'cccd'   => $drvRow['cccd'] ?? '',
+                'gplx'   => $drvRow['gplx'] ?? ''
             ]
         ]);
         exit;
