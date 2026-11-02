@@ -526,12 +526,11 @@
               <th>Số Xe</th>
               <th>Kho / Khách</th>
               <th>Số Cont</th>
-              <th>Cước</th>
-              <th>Sửa</th>
+              <th style="text-align:right;">Cước Debit</th>
             </tr>
           </thead>
           <tbody id="vendorTripsBody">
-            <tr><td colspan="7" style="text-align:center;padding:24px;">Đang tải...</td></tr>
+            <tr><td colspan="6" style="text-align:center;padding:24px;">Đang tải...</td></tr>
           </tbody>
         </table>
       </div>
@@ -1253,11 +1252,11 @@
       const soCont = t.soContPo || '--';
       const isXuat = t.xuatNhapPo === 'X';
 
-      // Hàng Nhập: Ngày trả| Tên Kho | Số Cont | Số Xe | Tài xế |
-      // Hàng Xuất: Ngày đóng hàng| Tên Kho | Số Xe | Tài xế |
+      // Hàng Nhập: Nhập | Ngày trả | Tên Kho | Số Cont | Số Xe | Tài xế |
+      // Hàng Xuất: Xuất | Ngày đóng hàng | Tên Kho | Số Xe | Tài xế |
       const textToCopy = isXuat
-        ? `${ngay} | ${tenKho} | ${soXe} | ${taiXeInfo} |`
-        : `${ngay} | ${tenKho} | ${soCont} | ${soXe} | ${taiXeInfo} |`;
+        ? `Xuất | ${ngay} | ${tenKho} | ${soXe} | ${taiXeInfo} |`
+        : `Nhập | ${ngay} | ${tenKho} | ${soCont} | ${soXe} | ${taiXeInfo} |`;
 
       try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1310,24 +1309,39 @@
         return true;
       });
 
-      const defaultRevenue = filtered.length * 2500000;
+      // Chỉ cộng tổng doanh thu của các chuyến đã có giá cước Debit thực tế từ TMS (hoặc tính theo % kết hợp / R)
+      const totalDebitRevenue = filtered.reduce((sum, t) => {
+        const rate = Number(t._debitRate || 0);
+        return sum + (rate > 0 ? rate : 0);
+      }, 0);
       const expTotal = (revData && revData.summary && revData.summary.totalExpenses) ? revData.summary.totalExpenses : 0;
 
       document.getElementById('valTotalTrips').textContent = filtered.length;
-      document.getElementById('valRevenue').textContent = defaultRevenue.toLocaleString('vi-VN') + ' đ';
+      document.getElementById('valRevenue').textContent = totalDebitRevenue > 0 ? totalDebitRevenue.toLocaleString('vi-VN') + ' đ' : '0 đ';
       document.getElementById('valExpenses').textContent = expTotal.toLocaleString('vi-VN') + ' đ';
-      document.getElementById('valNetTotal').textContent = (defaultRevenue + expTotal).toLocaleString('vi-VN') + ' đ';
+      document.getElementById('valNetTotal').textContent = (totalDebitRevenue + expTotal).toLocaleString('vi-VN') + ' đ';
 
       const tbody = document.getElementById('vendorTripsBody');
       if (!filtered.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">Không có chuyến xe nào trong kỳ đối soát này.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text-muted);">Không có chuyến xe nào trong kỳ đối soát này.</td></tr>';
         return;
       }
 
       tbody.innerHTML = filtered.map(t => {
         const isXuat = t.xuatNhapPo === 'X';
-        const typeBadge = isXuat ? '<span style="color:#ea580c;font-weight:800;">XUẤT</span>' : '<span style="color:#2563eb;font-weight:800;">NHẬP</span>';
+        const khBadge = (isXuat && t._tyLeKetHop)
+          ? `<div style="font-size:10px;background:#ffedd5;color:#9a3412;padding:1px 5px;border-radius:4px;font-weight:800;display:inline-block;margin-top:2px;">KH: ${t._tyLeKetHop}</div>`
+          : '';
+        const typeBadge = isXuat
+          ? `<span style="color:#ea580c;font-weight:800;">XUẤT</span><br>${khBadge}`
+          : '<span style="color:#2563eb;font-weight:800;">NHẬP</span>';
         const tripDate = formatVNDate(getTripDateISO(t)).slice(0, 5);
+
+        const rateNum = Number(t._debitRate || 0);
+        const rateHtml = rateNum > 0
+          ? `<div style="font-weight:800;color:#059669;white-space:nowrap;">${rateNum.toLocaleString('vi-VN')} đ</div>` +
+            (t._debitNote ? `<div style="font-size:10px;color:#64748b;">${t._debitNote}</div>` : '')
+          : (t._debitNote ? `<div style="font-size:10.5px;color:#94a3b8;font-style:italic;">${t._debitNote}</div>` : '');
 
         return `
           <tr>
@@ -1336,10 +1350,7 @@
             <td><b style="color:#1e40af;">${t.soXePo || '--'}</b></td>
             <td>${t.khoNhanHangPo || t.tenKhachPo || '--'}</td>
             <td><b>${t.soContPo || '--'}</b></td>
-            <td><b>2.5tr</b></td>
-            <td>
-              <button onclick="adjustRatePrompt('${t.idPo}')" style="background:#f1f5f9;border:1px solid var(--border);padding:4px 7px;border-radius:6px;cursor:pointer;font-weight:700;font-size:11.5px;">✏️</button>
-            </td>
+            <td style="text-align:right;">${rateHtml}</td>
           </tr>
         `;
       }).join('');
@@ -1502,18 +1513,21 @@
         alert('Không có dữ liệu chuyến để xuất!');
         return;
       }
-      const headers = ['ID', 'Ngay', 'Loai', 'SoXe', 'KhachHang', 'Kho', 'DiaChi', 'SoCont', 'SoSeal', 'LoaiCont'];
+      const headers = ['ID', 'Ngay', 'Loai', 'TyLeKetHop', 'SoXe', 'KhachHang', 'Kho', 'DiaChi', 'SoCont', 'SoSeal', 'LoaiCont', 'CuocDebit', 'GhiChuCuoc'];
       const rows = allVendorTrips.map(t => [
         t.idPo,
         getTripDateISO(t),
         t.xuatNhapPo === 'X' ? 'XUAT' : 'NHAP',
+        t._tyLeKetHop || '',
         t.soXePo || '',
         `"${(t.tenKhachPo || '').replace(/"/g, '""')}"`,
         `"${(t.khoNhanHangPo || '').replace(/"/g, '""')}"`,
         `"${(t.diaChiNhanPo || '').replace(/"/g, '""')}"`,
         t.soContPo || '',
         t.soSealPo || '',
-        Number(t.cont40Po) > 0 ? '40' : '20'
+        Number(t.cont40Po) > 0 ? '40' : '20',
+        t._debitRate && Number(t._debitRate) > 0 ? Number(t._debitRate) : '',
+        `"${(t._debitNote || '').replace(/"/g, '""')}"`
       ]);
       const csv = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });

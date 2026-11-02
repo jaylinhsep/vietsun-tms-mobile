@@ -413,6 +413,158 @@ function fetch_single_cycle($cycleDate, $forceRefresh = false) {
     return [];
 }
 
+function parse_tms_ajax_debit_html($html, &$map) {
+    if (!$html) return;
+    $fields = ['donGiaDebitPo', 'donGia1ThucTraChoxePo', 'ghiChuPo', 'hinhThucKHopPo', 'notePo'];
+    foreach ($fields as $prefix) {
+        if (preg_match_all('/id="' . $prefix . '(\d+)"[^>]*value="([^"]*)"/i', $html, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $m) {
+                $id = $m[1];
+                $val = html_entity_decode(trim($m[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                if (!isset($map[$id])) $map[$id] = [];
+                if ($prefix === 'donGiaDebitPo' || $prefix === 'donGia1ThucTraChoxePo') {
+                    $num = (int)preg_replace('/[^0-9]/', '', $val);
+                    if ($num > 0 || !isset($map[$id][$prefix])) {
+                        $map[$id][$prefix] = $num;
+                    }
+                } else {
+                    if ($val !== '' || !isset($map[$id][$prefix])) {
+                        $map[$id][$prefix] = $val;
+                    }
+                }
+            }
+        }
+    }
+}
+
+function call_tms_post($endpoint, $postFields) {
+    global $REMOTE_BASE, $COOKIE_FILE;
+    $ch = curl_init("$REMOTE_BASE/$endpoint");
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => http_build_query($postFields),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_COOKIEJAR      => $COOKIE_FILE,
+        CURLOPT_COOKIEFILE     => $COOKIE_FILE,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => false,
+        CURLOPT_TIMEOUT        => 25,
+        CURLOPT_USERAGENT      => 'Mozilla/5.0 (VietsunSyncHub/1.0)',
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/x-www-form-urlencoded; charset=UTF-8']
+    ]);
+    $resp = curl_exec($ch);
+    curl_close($ch);
+    return $resp ?: '';
+}
+
+function fetch_tms_debit_map($startDate, $endDate, $forceRefresh = false) {
+    global $COOKIE_FILE;
+    $safeKey = preg_replace('/[^0-9\-]/', '', $startDate . '_' . $endDate);
+    $cacheFile = sys_get_temp_dir() . '/vietsun_debit_map_' . $safeKey . '.json';
+    if (!$forceRefresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 120)) {
+        $cached = json_decode(file_get_contents($cacheFile), true);
+        if (is_array($cached) && count($cached) > 0) return $cached;
+    }
+
+    if (!file_exists($COOKIE_FILE)) {
+        vietsun_login();
+    }
+
+    $userString = 'trucking14<<|7<<|a0b923820d<<|1<<|0.0.0.0.0.0.1.0.1.1.0.1.0.1.';
+    $map = [];
+
+    // 1. Lấy cước Debit của toàn bộ Hàng Nhập (NHẬP - ALL: kieuXemTrucking = 7)
+    call_tms_post('index-crud.php', [
+        'TenDangNhap' => 'trucking14',
+        'userString'  => $userString,
+        'cv'          => 3,
+        'loai'        => 1,
+        'iddt'        => 1,
+        'cot'         => 't9<<|1<<|1<<|20<<|kieuXemTrucking',
+        'thongtin'    => '7'
+    ]);
+    $htmlNhap = call_tms_post('index-ajax.php', [
+        'userString' => $userString,
+        'cv'         => 78,
+        'idxem'      => 6,
+        'kieuxem'    => 0,
+        'loaiload'   => 4,
+        'startDate'  => $startDate,
+        'endDate'    => $endDate,
+        'widthmh'    => 1920
+    ]);
+    if (strpos($htmlNhap, 'donGiaDebitPo') === false) {
+        vietsun_login();
+        call_tms_post('index-crud.php', [
+            'TenDangNhap' => 'trucking14',
+            'userString'  => $userString,
+            'cv'          => 3,
+            'loai'        => 1,
+            'iddt'        => 1,
+            'cot'         => 't9<<|1<<|1<<|20<<|kieuXemTrucking',
+            'thongtin'    => '7'
+        ]);
+        $htmlNhap = call_tms_post('index-ajax.php', [
+            'userString' => $userString,
+            'cv'         => 78,
+            'idxem'      => 6,
+            'kieuxem'    => 0,
+            'loaiload'   => 4,
+            'startDate'  => $startDate,
+            'endDate'    => $endDate,
+            'widthmh'    => 1920
+        ]);
+    }
+    parse_tms_ajax_debit_html($htmlNhap, $map);
+
+    // 2. Lấy cước Debit & Tỷ lệ kết hợp của Hàng Xuất (XUẤT - CHI PHÍ: kieuXemTrucking = 3)
+    call_tms_post('index-crud.php', [
+        'TenDangNhap' => 'trucking14',
+        'userString'  => $userString,
+        'cv'          => 3,
+        'loai'        => 1,
+        'iddt'        => 1,
+        'cot'         => 't9<<|1<<|1<<|20<<|kieuXemTrucking',
+        'thongtin'    => '3'
+    ]);
+    $htmlXuat = call_tms_post('index-ajax.php', [
+        'userString' => $userString,
+        'cv'         => 78,
+        'idxem'      => 3,
+        'kieuxem'    => 99,
+        'loaiload'   => 4,
+        'startDate'  => $startDate,
+        'endDate'    => $endDate,
+        'widthmh'    => 1920
+    ]);
+    parse_tms_ajax_debit_html($htmlXuat, $map);
+
+    // Khôi phục kieuXemTrucking = 6 (NHẬP mặc định)
+    call_tms_post('index-crud.php', [
+        'TenDangNhap' => 'trucking14',
+        'userString'  => $userString,
+        'cv'          => 3,
+        'loai'        => 1,
+        'iddt'        => 1,
+        'cot'         => 't9<<|1<<|1<<|20<<|kieuXemTrucking',
+        'thongtin'    => '6'
+    ]);
+
+    if (count($map) > 0) {
+        @file_put_contents($cacheFile, json_encode($map));
+    }
+    return $map;
+}
+
+function get_shipment_date_iso($item) {
+    $n = trim($item['ngayTraHang'] ?? '');
+    if ($n !== '' && $n !== '2021-11-11' && $n !== '1970-01-01') return $n;
+    $th = trim($item['timeThucHien'] ?? '');
+    if ($th !== '' && $th !== '2021-11-11' && $th !== '1970-01-01') return $th;
+    return '';
+}
+
 function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false) {
     $baseTs = $targetDate ? strtotime($targetDate) : time();
     if (!$baseTs) $baseTs = time();
@@ -434,6 +586,122 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false) {
             }
         }
     }
+
+    // Lấy bảng giá Debit & Tỷ lệ kết hợp từ TMS trong khoảng [baseTs - 35 ngày, baseTs + 10 ngày]
+    $startDate = date('Y-m-d', $baseTs - 35 * 86400);
+    $endDate   = date('Y-m-d', $baseTs + 10 * 86400);
+    $debitMap  = fetch_tms_debit_map($startDate, $endDate, $forceRefresh);
+
+    // Gắn thông tin donGiaDebitPo, ghiChuPo, hinhThucKHopPo vào từng chuyến và lập chỉ mục Hàng Nhập theo Số Cont
+    $nhapByCont = [];
+    foreach ($merged as $idPo => &$item) {
+        $dInfo = $debitMap[$idPo] ?? [];
+        $item['donGiaDebitPo']         = isset($dInfo['donGiaDebitPo']) && $dInfo['donGiaDebitPo'] > 0 ? (int)$dInfo['donGiaDebitPo'] : null;
+        $item['donGia1ThucTraChoxePo'] = isset($dInfo['donGia1ThucTraChoxePo']) && $dInfo['donGia1ThucTraChoxePo'] > 0 ? (int)$dInfo['donGia1ThucTraChoxePo'] : null;
+        if (!empty($dInfo['hinhThucKHopPo'])) {
+            $item['hinhThucKHopPo'] = $dInfo['hinhThucKHopPo'];
+        }
+        if (!empty($dInfo['ghiChuPo'])) {
+            $item['ghiChuPo'] = $dInfo['ghiChuPo'];
+        }
+
+        if (($item['xuatNhapPo'] ?? '') !== 'X') {
+            $contClean = strtoupper(trim($item['soContPo'] ?? ''));
+            if ($contClean !== '') {
+                if (!isset($nhapByCont[$contClean])) $nhapByCont[$contClean] = [];
+                $nhapByCont[$contClean][] = [
+                    'idPo'          => $idPo,
+                    'date'          => get_shipment_date_iso($item),
+                    'donGiaDebitPo' => $item['donGiaDebitPo']
+                ];
+            }
+        }
+    }
+    unset($item);
+
+    // Tính giá cước Debit (_debitRate) theo quy tắc Hàng Nhập / Hàng Xuất Kết Hợp
+    foreach ($merged as $idPo => &$item) {
+        $isXuat = ($item['xuatNhapPo'] ?? '') === 'X';
+        if (!$isXuat) {
+            // Hàng Nhập: lấy thẳng giá cước Debit ở TMS Vietsun, nếu chưa có thì để trống (null)
+            $item['_tyLeKetHop'] = '';
+            if (!empty($item['donGiaDebitPo']) && $item['donGiaDebitPo'] > 0) {
+                $item['_debitRate'] = (int)$item['donGiaDebitPo'];
+                $item['_debitType'] = 'NHAP';
+                $item['_debitNote'] = 'Debit TMS';
+            } else {
+                $item['_debitRate'] = null;
+                $item['_debitType'] = 'EMPTY';
+                $item['_debitNote'] = '';
+            }
+        } else {
+            // Hàng Xuất: kiểm tra TỶ LỆ KẾT HỢP (hinhThucKHopPo hoặc ghiChuPo dạng 80%, R)
+            $kh = trim($item['hinhThucKHopPo'] ?? '');
+            $gc = trim($item['ghiChuPo'] ?? '');
+            if ($kh === '' && preg_match('/^(\d+(?:\.\d+)?\s*%|R)$/i', $gc)) {
+                $kh = strtoupper(str_replace(' ', '', $gc));
+            }
+            $item['_tyLeKetHop'] = $kh;
+
+            if ($kh !== '' && preg_match('/^(\d+(?:\.\d+)?)\s*%$/', $kh, $mPct)) {
+                $pct = (float)$mPct[1];
+                $contClean = strtoupper(trim($item['soContPo'] ?? ''));
+                $xuatDate  = get_shipment_date_iso($item);
+                $matchedNhap = null;
+
+                if ($contClean !== '' && !empty($nhapByCont[$contClean])) {
+                    $candidates = $nhapByCont[$contClean];
+                    // Ưu tiên chuyến Hàng Nhập trùng số cont cùng ngày hoặc D-1 (hoặc gần nhất)
+                    usort($candidates, function($a, $b) use ($xuatDate) {
+                        $da = $a['date'] ? strtotime($a['date']) : 0;
+                        $db = $b['date'] ? strtotime($b['date']) : 0;
+                        $dx = $xuatDate ? strtotime($xuatDate) : 0;
+                        if ($dx > 0 && $da > 0 && $db > 0) {
+                            return abs($dx - $da) <=> abs($dx - $db);
+                        }
+                        return (int)$b['idPo'] <=> (int)$a['idPo'];
+                    });
+                    foreach ($candidates as $cand) {
+                        if (!empty($cand['donGiaDebitPo']) && $cand['donGiaDebitPo'] > 0) {
+                            $matchedNhap = $cand;
+                            break;
+                        }
+                    }
+                    if (!$matchedNhap) {
+                        $matchedNhap = $candidates[0];
+                    }
+                }
+
+                if ($matchedNhap && !empty($matchedNhap['donGiaDebitPo']) && $matchedNhap['donGiaDebitPo'] > 0) {
+                    $item['_debitRate'] = (int)round($matchedNhap['donGiaDebitPo'] * ($pct / 100.0));
+                    $item['_debitType'] = 'KH_PCT';
+                    $item['_debitNote'] = "{$pct}% cont Nhập";
+                } else {
+                    $item['_debitRate'] = null;
+                    $item['_debitType'] = 'EMPTY';
+                    $item['_debitNote'] = "{$pct}% (Chờ giá Nhập)";
+                }
+            } elseif (strtoupper($kh) === 'R') {
+                // Nếu TỶ LỆ KẾT HỢP: R -> lấy full (100%) giá Debit mà TMS Vietsun có
+                if (!empty($item['donGiaDebitPo']) && $item['donGiaDebitPo'] > 0) {
+                    $item['_debitRate'] = (int)$item['donGiaDebitPo'];
+                    $item['_debitType'] = 'KH_R';
+                    $item['_debitNote'] = 'R (100% Debit TMS)';
+                } else {
+                    $item['_debitRate'] = null;
+                    $item['_debitType'] = 'EMPTY';
+                    $item['_debitNote'] = 'R (Chờ giá TMS)';
+                }
+            } else {
+                // Hàng xuất chưa có tỷ lệ kết hợp -> để trống
+                $item['_debitRate'] = null;
+                $item['_debitType'] = 'EMPTY';
+                $item['_debitNote'] = '';
+            }
+        }
+    }
+    unset($item);
+
     // Sắp xếp mới nhất lên đầu
     krsort($merged, SORT_NUMERIC);
     return array_values($merged);
@@ -466,6 +734,9 @@ function push_vietsun_crud($params) {
     $res = curl_exec($ch);
     curl_close($ch);
     foreach (glob(sys_get_temp_dir() . '/vietsun_cycle_*.json') as $cf) {
+        @unlink($cf);
+    }
+    foreach (glob(sys_get_temp_dir() . '/vietsun_debit_map_*.json') as $cf) {
         @unlink($cf);
     }
     return $res;
