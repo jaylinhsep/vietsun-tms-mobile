@@ -1017,6 +1017,21 @@ try {
     }
 
     // ========================================================================
+    // 2B. ĐĂNG NHẬP QUẢN TRỊ VIÊN (/admin) - PASS: 69
+    // ========================================================================
+    if ($route === 'auth/admin-login') {
+        $pass = trim($jsonBody['password'] ?? '');
+        if ($pass !== '69') {
+            http_response_code(401);
+            echo json_encode(['ok' => false, 'error' => 'Mật khẩu quản trị không đúng!']);
+            exit;
+        }
+        $token = make_token(['role' => 'admin', 'admin' => true]);
+        echo json_encode(['ok' => true, 'token' => $token]);
+        exit;
+    }
+
+    // ========================================================================
     // 3. PROXY CHO TRANG ĐIỀU HÀNH CHÍNH & DASHBOARD QUẢN TRỊ (/admin)
     // ========================================================================
     if ($route === 'return_json') {
@@ -1032,6 +1047,18 @@ try {
     if ($route === 'index-crud' || $route === 'index_crud') {
         echo push_vietsun_crud($_POST ?: $jsonBody);
         exit;
+    }
+
+    // Kiểm tra quyền Admin cho các route /admin/*
+    if (strpos($route, 'admin/') === 0) {
+        $authPayload = verify_token($authHeader);
+        $isAdmin = ($authPayload && ($authPayload['role'] ?? '') === 'admin');
+        $isVendorFleetOp = ($authPayload && ($authPayload['role'] ?? '') === 'vendor' && in_array($route, ['admin/save-driver', 'admin/delete-driver'], true));
+        if (!$isAdmin && !$isVendorFleetOp) {
+            http_response_code(401);
+            echo json_encode(['ok' => false, 'error' => 'Yêu cầu mật khẩu Quản trị viên (/admin)!']);
+            exit;
+        }
     }
 
     // API Đồng bộ Google Sheet ngay lập tức

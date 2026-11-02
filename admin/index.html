@@ -113,89 +113,162 @@
     }
     .form-group { margin-bottom: 12px; }
     .form-group label { display: block; font-weight: 700; font-size: 12.5px; margin-bottom: 5px; color: #334155; }
+
+    /* MÀN HÌNH KHÓA MẬT KHẨU ADMIN */
+    .login-overlay {
+      position: fixed; inset: 0; background: #0f172a; z-index: 999;
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .login-box {
+      background: #fff; width: 100%; max-width: 360px; border-radius: 18px;
+      padding: 26px 22px; box-shadow: 0 12px 35px rgba(0,0,0,0.45); text-align: center;
+    }
+
+    /* THẺ DUYỆT YÊU CẦU GỌN RESPONSIVE TRÊN MOBILE & DESKTOP */
+    .approval-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 12px;
+    }
+    .approval-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--warning);
+      border-radius: 12px;
+      padding: 12px 14px;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .approval-card.status-APPROVED { border-left-color: var(--success); opacity: 0.92; }
+    .approval-card.status-REJECTED { border-left-color: var(--danger); opacity: 0.85; }
+    .ap-header {
+      display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .ap-po-bar {
+      display: flex; justify-content: space-between; align-items: center; gap: 6px;
+      background: #f8fafc; padding: 6px 10px; border-radius: 8px; border: 1px solid #e2e8f0;
+      font-size: 12.5px;
+    }
+    .ap-diff-box {
+      background: #fffbeb; border: 1px dashed #fcd34d; border-radius: 8px;
+      padding: 8px 10px; font-size: 13px; display: flex; flex-direction: column; gap: 4px;
+    }
+    .ap-actions {
+      display: flex; gap: 8px; margin-top: 2px;
+    }
+    .ap-actions .btn {
+      flex: 1; justify-content: center; padding: 10px 12px; font-size: 13px; border-radius: 9px;
+    }
+
+    @media (max-width: 640px) {
+      .admin-nav { padding: 10px 12px; }
+      .nav-title { font-size: 15px; }
+      .nav-links { width: 100%; justify-content: space-between; }
+      .nav-links a, .nav-links button { padding: 6px 10px; font-size: 11.5px; }
+      .container { margin: 12px auto; padding: 0 10px; }
+      .stats-row { grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+      .stat-card { padding: 10px; border-radius: 10px; }
+      .stat-title { font-size: 10px; }
+      .stat-num { font-size: 20px; }
+      .stat-desc { display: none; }
+      .tabs { gap: 6px; margin-bottom: 12px; }
+      .tab-btn { flex: 1; padding: 9px 8px; font-size: 12px; text-align: center; }
+      .toolbar { padding: 10px; gap: 8px; }
+      .approval-grid { grid-template-columns: 1fr; gap: 10px; }
+    }
   </style>
 </head>
 <body>
+
+  <!-- MÀN HÌNH KHÓA MẬT KHẨU ADMIN (PASS: 69) -->
+  <div class="login-overlay" id="adminLoginOverlay">
+    <div class="login-box">
+      <div style="font-size:42px;margin-bottom:6px;">🔐</div>
+      <h2 style="margin:0;font-size:19px;font-weight:800;color:#1e3a8a;">QUẢN TRỊ VIETSUN TMS</h2>
+      <p style="margin:4px 0 16px;font-size:12.5px;color:var(--text-muted);">Nhập mật khẩu Admin để truy cập</p>
+      <form onsubmit="handleAdminLogin(event)">
+        <input
+          type="password"
+          id="adminPassInput"
+          class="form-control"
+          placeholder="Nhập mật khẩu..."
+          style="text-align:center;font-size:18px;font-weight:800;letter-spacing:3px;margin-bottom:10px;"
+          required
+          autofocus
+        />
+        <div id="adminLoginErr" style="color:var(--danger);font-size:12.5px;font-weight:700;margin-bottom:8px;display:none;"></div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;font-size:14.5px;">ĐĂNG NHẬP ADMIN</button>
+      </form>
+    </div>
+  </div>
 
   <header class="admin-nav">
     <div class="nav-title">
       <span>⚙️</span>
       <div>
-        <div>QUẢN TRỊ TÀI KHOẢN VENDOR & ĐỘI XE</div>
-        <div style="font-size:11.5px;font-weight:500;opacity:0.8;">Quản lý ID đăng nhập, mật khẩu & đồng bộ trực tiếp từ Google Sheet</div>
+        <div>QUẢN TRỊ VENDOR & DUYỆT TMS</div>
+        <div style="font-size:11px;font-weight:500;opacity:0.8;">Kiểm duyệt thông tin đẩy TMS & Quản lý đội xe</div>
       </div>
     </div>
     <div class="nav-links">
-      <button class="btn-sync" onclick="syncFromGoogleSheet()" id="btnSyncSheet">🔄 Đồng bộ từ Google Sheet</button>
-      <a href="https://docs.google.com/spreadsheets/d/13ndQsSmBsKlHjIRQR0S0MO5BPqqL6J4CECBAYfQi1oo/edit?gid=1046738475#gid=1046738475" target="_blank">📄 Mở Google Sheet gốc</a>
-      <a href="/vendor">🏢 Cổng Vendor</a>
-      <a href="/driver">🚛 App Tài Xế</a>
+      <button class="btn-sync" onclick="syncFromGoogleSheet()" id="btnSyncSheet">🔄 Đồng bộ Sheet</button>
+      <a href="https://docs.google.com/spreadsheets/d/13ndQsSmBsKlHjIRQR0S0MO5BPqqL6J4CECBAYfQi1oo/edit?gid=1046738475#gid=1046738475" target="_blank">📄 Sheet gốc</a>
+      <a href="/vendor">🏢 Vendor</a>
+      <a href="/driver">🚛 Tài Xế</a>
       <a href="/">🏠 Trang Chủ</a>
+      <button onclick="logoutAdmin()" style="background:rgba(220,38,38,0.85);">🔒 Khóa</button>
     </div>
   </header>
 
   <main class="container">
     <div class="stats-row">
       <div class="stat-card" style="border-left:4px solid var(--warning);cursor:pointer;" onclick="switchAdminTab('APPROVALS')">
-        <div class="stat-title">⏳ Chờ kiểm duyệt đẩy TMS</div>
+        <div class="stat-title">⏳ Chờ duyệt TMS</div>
         <div class="stat-num" id="statPendingCount" style="color:var(--warning);">0</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Thông tin Vendor / Tài xế nhập chờ bạn duyệt</div>
+        <div class="stat-desc" style="font-size:12px;color:var(--text-muted);margin-top:4px;">Thông tin Vendor / Tài xế chờ duyệt</div>
       </div>
       <div class="stat-card" style="cursor:pointer;" onclick="switchAdminTab('VENDORS')">
-        <div class="stat-title">Tổng số Nhà xe (Vendor)</div>
+        <div class="stat-title">🏢 Nhà xe (Vendor)</div>
         <div class="stat-num" id="statVendorCount">0</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">ID: viết liền không dấu | Pass mặc định: 123456</div>
+        <div class="stat-desc" style="font-size:12px;color:var(--text-muted);margin-top:4px;">ID: viết liền không dấu</div>
       </div>
       <div class="stat-card" style="cursor:pointer;" onclick="switchAdminTab('DRIVERS')">
-        <div class="stat-title">Tổng số Xe / Tài xế</div>
+        <div class="stat-title">🚛 Số Xe / Tài xế</div>
         <div class="stat-num" id="statDriverCount" style="color:var(--success);">0</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">User: Số xe | Pass mặc định: 123456</div>
+        <div class="stat-desc" style="font-size:12px;color:var(--text-muted);margin-top:4px;">User: Số xe | MK: 123456</div>
       </div>
     </div>
 
     <div class="tabs" style="flex-wrap:wrap;">
       <button class="tab-btn active" id="tabBtnApprovals" onclick="switchAdminTab('APPROVALS')">
-        ⏳ Duyệt thông tin đẩy TMS (<span id="tabPendingCount">0</span>)
+        ⏳ Duyệt TMS (<span id="tabPendingCount">0</span>)
       </button>
-      <button class="tab-btn" id="tabBtnVendors" onclick="switchAdminTab('VENDORS')">🏢 Quản lý Nhà xe / Vendor</button>
-      <button class="tab-btn" id="tabBtnDrivers" onclick="switchAdminTab('DRIVERS')">🚛 Quản lý Xe & Tài xế</button>
+      <button class="tab-btn" id="tabBtnVendors" onclick="switchAdminTab('VENDORS')">🏢 Nhà xe / Vendor</button>
+      <button class="tab-btn" id="tabBtnDrivers" onclick="switchAdminTab('DRIVERS')">🚛 Xe & Tài xế</button>
     </div>
 
-    <!-- TAB 0: APPROVAL QUEUE (KIỂM DUYỆT THÔNG TIN VENDOR & TÀI XẾ TRƯỚC KHI ĐẨY VỀ TMS) -->
+    <!-- TAB 0: APPROVAL QUEUE (THẺ GỌN RESPONSIVE DÙNG TRÊN MOBILE & DESKTOP) -->
     <div id="sectionApprovals">
       <div class="toolbar">
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;flex:1;">
-          <select id="filterApprovalStatus" class="form-control" style="max-width:210px;font-weight:700;" onchange="renderApprovals()">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:1;width:100%;">
+          <select id="filterApprovalStatus" class="form-control" style="flex:1;min-width:140px;max-width:210px;font-weight:700;" onchange="renderApprovals()">
             <option value="PENDING">⏳ Đang chờ duyệt</option>
             <option value="APPROVED">✅ Đã duyệt đẩy TMS</option>
             <option value="REJECTED">❌ Đã từ chối</option>
             <option value="ALL">📋 Tất cả trạng thái</option>
           </select>
-          <input type="text" id="searchApprovalInput" class="form-control" style="max-width:300px;" placeholder="🔍 Tìm mã PO, số xe, số cont, nhà xe..." oninput="renderApprovals()" />
-          <button class="btn" style="background:#f1f5f9;border:1px solid var(--border);" onclick="loadOverview()">🔄 Làm mới</button>
+          <input type="text" id="searchApprovalInput" class="form-control" style="flex:2;min-width:160px;max-width:300px;" placeholder="🔍 Tìm PO, số xe, cont, nhà xe..." oninput="renderApprovals()" />
+          <button class="btn" style="background:#f1f5f9;border:1px solid var(--border);" onclick="loadOverview()">🔄</button>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn btn-success" onclick="approveAllPending()" id="btnApproveAll">✅ Duyệt tất cả chờ duyệt & Đẩy TMS</button>
+        <div style="display:flex;gap:8px;width:100%; sm:width:auto;">
+          <button class="btn btn-success" style="width:100%;justify-content:center;" onclick="approveAllPending()" id="btnApproveAll">✅ Duyệt tất cả chờ duyệt & Đẩy TMS</button>
         </div>
       </div>
 
-      <div class="table-card">
-        <table>
-          <thead>
-            <tr>
-              <th>Thời gian</th>
-              <th>Người gửi</th>
-              <th>Lô hàng / Ngày chạy</th>
-              <th>Kho / Khách hàng</th>
-              <th>Nội dung thay đổi (TMS cũ ➔ Mới)</th>
-              <th>Trạng thái</th>
-              <th>Thao tác duyệt</th>
-            </tr>
-          </thead>
-          <tbody id="approvalsTableBody">
-            <tr><td colspan="7" style="text-align:center;padding:30px;">Đang tải danh sách chờ duyệt...</td></tr>
-          </tbody>
-        </table>
+      <div id="approvalsCardList" class="approval-grid">
+        <div style="text-align:center;padding:30px;background:#fff;border-radius:12px;border:1px solid var(--border);grid-column:1/-1;">Đang tải danh sách chờ duyệt...</div>
       </div>
     </div>
 
@@ -349,11 +422,59 @@
       portTimePo: 'Port Time'
     };
 
+    function getAdminHeaders(extra = {}) {
+      const token = localStorage.getItem('vs_admin_token') || '';
+      return Object.assign({
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }, extra);
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
-      loadOverview();
-      // Tự động kiểm tra yêu cầu mới mỗi 15 giây
-      setInterval(loadOverview, 15000);
+      const token = localStorage.getItem('vs_admin_token');
+      if (token) {
+        document.getElementById('adminLoginOverlay').style.display = 'none';
+        loadOverview();
+      }
+      // Tự động kiểm tra yêu cầu mới mỗi 15 giây khi đã đăng nhập
+      setInterval(() => {
+        if (localStorage.getItem('vs_admin_token')) {
+          loadOverview();
+        }
+      }, 15000);
     });
+
+    async function handleAdminLogin(e) {
+      e.preventDefault();
+      const password = document.getElementById('adminPassInput').value.trim();
+      const errEl = document.getElementById('adminLoginErr');
+      errEl.style.display = 'none';
+      try {
+        const res = await fetch(`${API_BASE}/auth/admin-login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          errEl.textContent = data.error || 'Sai mật khẩu Admin!';
+          errEl.style.display = 'block';
+          return;
+        }
+        localStorage.setItem('vs_admin_token', data.token);
+        document.getElementById('adminLoginOverlay').style.display = 'none';
+        loadOverview();
+      } catch (err) {
+        errEl.textContent = 'Lỗi kết nối máy chủ!';
+        errEl.style.display = 'block';
+      }
+    }
+
+    function logoutAdmin() {
+      localStorage.removeItem('vs_admin_token');
+      document.getElementById('adminPassInput').value = '';
+      document.getElementById('adminLoginOverlay').style.display = 'flex';
+    }
 
     function switchAdminTab(tab) {
       document.getElementById('tabBtnApprovals').classList.toggle('active', tab === 'APPROVALS');
@@ -366,7 +487,13 @@
 
     async function loadOverview() {
       try {
-        const res = await fetch(`${API_BASE}/admin/overview`);
+        const res = await fetch(`${API_BASE}/admin/overview`, {
+          headers: getAdminHeaders()
+        });
+        if (res.status === 401 || res.status === 403) {
+          logoutAdmin();
+          return;
+        }
         const data = await res.json();
         if (data.ok) {
           allVendors = data.vendors || [];
@@ -398,64 +525,87 @@
         return rawText.includes(q);
       });
 
-      const tbody = document.getElementById('approvalsTableBody');
+      const listEl = document.getElementById('approvalsCardList');
       if (!filtered.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text-muted);">Không có yêu cầu thay đổi nào trong mục này.</td></tr>';
+        listEl.innerHTML = '<div style="text-align:center;padding:32px 16px;background:#fff;border-radius:12px;border:1px dashed var(--border);color:var(--text-muted);grid-column:1/-1;">📭 Không có yêu cầu thay đổi nào trong mục này.</div>';
         return;
       }
 
-      tbody.innerHTML = filtered.map(r => {
+      listEl.innerHTML = filtered.map(r => {
         const isXuat = r.xuat_nhap === 'X';
         const typeBadge = isXuat
-          ? '<span style="background:#ffedd5;color:#c2410c;padding:2px 6px;border-radius:4px;font-weight:800;font-size:11px;">XUẤT</span>'
-          : '<span style="background:#dbeafe;color:#1d4ed8;padding:2px 6px;border-radius:4px;font-weight:800;font-size:11px;">NHẬP</span>';
+          ? '<span style="background:#ffedd5;color:#c2410c;padding:2px 6px;border-radius:4px;font-weight:800;font-size:11px;">📤 XUẤT</span>'
+          : '<span style="background:#dbeafe;color:#1d4ed8;padding:2px 6px;border-radius:4px;font-weight:800;font-size:11px;">📥 NHẬP</span>';
         const roleBadge = r.actor_role === 'VENDOR'
-          ? '<span style="background:#ede9fe;color:#6d28d9;padding:2px 6px;border-radius:4px;font-weight:800;font-size:11px;">🏢 VENDOR</span>'
-          : '<span style="background:#dcfce7;color:#15803d;padding:2px 6px;border-radius:4px;font-weight:800;font-size:11px;">🚛 TÀI XẾ</span>';
+          ? '<span style="background:#ede9fe;color:#6d28d9;padding:2px 7px;border-radius:5px;font-weight:800;font-size:11px;">🏢 VENDOR</span>'
+          : '<span style="background:#dcfce7;color:#15803d;padding:2px 7px;border-radius:5px;font-weight:800;font-size:11px;">🚛 TÀI XẾ</span>';
 
         const changes = r.changes || {};
         const diffHtml = Object.keys(changes).map(fKey => {
           const lbl = FIELD_LABELS[fKey] || fKey;
           const oldVal = changes[fKey].old || '(Trống)';
           const newVal = changes[fKey].new || '(Xóa trống)';
-          return `<div style="margin:2px 0;"><b>${lbl}:</b> <span style="color:#64748b;text-decoration:line-through;">${oldVal}</span> ➔ <span style="background:#dcfce7;color:#166534;font-weight:800;padding:1px 6px;border-radius:4px;">${newVal}</span></div>`;
+          return `
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;">
+              <span style="font-weight:700;color:#475569;font-size:12px;">${lbl}:</span>
+              <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+                <span style="color:#64748b;text-decoration:line-through;font-size:12px;">${oldVal}</span>
+                <span style="color:#94a3b8;font-size:11px;">➔</span>
+                <span style="background:#dcfce7;color:#166534;font-weight:800;padding:2px 7px;border-radius:5px;font-size:13px;">${newVal}</span>
+              </div>
+            </div>
+          `;
         }).join('');
 
         let statusBadge = '';
         let actionHtml = '';
         if (r.status === 'PENDING') {
-          statusBadge = '<span style="background:#fef3c7;color:#b45309;padding:4px 8px;border-radius:6px;font-weight:800;font-size:12px;">⏳ Chờ duyệt</span>';
+          statusBadge = '<span style="background:#fef3c7;color:#b45309;padding:3px 7px;border-radius:6px;font-weight:800;font-size:11px;">⏳ Chờ duyệt</span>';
           actionHtml = `
-            <div style="display:flex;gap:6px;flex-wrap:wrap;">
-              <button class="btn btn-sm btn-success" onclick="approveSingle(${r.id})">✅ Duyệt & Đẩy TMS</button>
-              <button class="btn btn-sm" style="background:#fee2e2;color:#b91c1c;" onclick="rejectSingle(${r.id})">❌ Từ chối</button>
+            <div class="ap-actions">
+              <button class="btn btn-success" onclick="approveSingle(${r.id})">✅ Duyệt & Đẩy TMS</button>
+              <button class="btn" style="background:#fee2e2;color:#b91c1c;" onclick="rejectSingle(${r.id})">❌ Từ chối</button>
             </div>
           `;
         } else if (r.status === 'APPROVED') {
-          statusBadge = '<span style="background:#dcfce7;color:#15803d;padding:4px 8px;border-radius:6px;font-weight:800;font-size:12px;">✅ Đã đẩy TMS</span>';
-          actionHtml = `<span style="font-size:11.5px;color:#64748b;">Duyệt lúc: ${r.reviewed_at || '--'}</span>`;
+          statusBadge = '<span style="background:#dcfce7;color:#15803d;padding:3px 7px;border-radius:6px;font-weight:800;font-size:11px;">✅ Đã đẩy TMS</span>';
+          actionHtml = `<div style="font-size:11px;color:#64748b;text-align:right;">Đã duyệt lúc: ${r.reviewed_at || '--'}</div>`;
         } else {
-          statusBadge = '<span style="background:#fee2e2;color:#b91c1c;padding:4px 8px;border-radius:6px;font-weight:800;font-size:12px;">❌ Đã từ chối</span>';
-          actionHtml = `<span style="font-size:11.5px;color:#64748b;">Từ chối: ${r.reviewed_at || '--'}</span>`;
+          statusBadge = '<span style="background:#fee2e2;color:#b91c1c;padding:3px 7px;border-radius:6px;font-weight:800;font-size:11px;">❌ Đã từ chối</span>';
+          actionHtml = `<div style="font-size:11px;color:#64748b;text-align:right;">Từ chối lúc: ${r.reviewed_at || '--'}</div>`;
         }
 
+        const timeShort = (r.created_at || '').slice(5, 16);
+
         return `
-          <tr>
-            <td style="font-size:12px;color:#475569;white-space:nowrap;">${r.created_at || '--'}</td>
-            <td>
-              ${roleBadge}
-              <div style="font-weight:800;margin-top:3px;color:#0f172a;">${r.actor_name}</div>
-              ${r.vendor_name && r.actor_role === 'DRIVER' ? `<div style="font-size:11.5px;color:#64748b;">Nhà xe: ${r.vendor_name}</div>` : ''}
-            </td>
-            <td style="white-space:nowrap;">
-              ${typeBadge} <b style="color:#1e40af;">#${r.id_po}</b>
-              <div style="font-size:12px;color:#475569;margin-top:2px;">📅 ${r.trip_date || '--'}</div>
-            </td>
-            <td style="max-width:240px;font-weight:600;">${r.khach_kho || '--'}</td>
-            <td>${diffHtml}</td>
-            <td>${statusBadge}</td>
-            <td>${actionHtml}</td>
-          </tr>
+          <div class="approval-card status-${r.status}">
+            <div class="ap-header">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                ${roleBadge}
+                <b style="color:#0f172a;font-size:13.5px;">${r.actor_name}</b>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:11px;color:#64748b;">🕒 ${timeShort}</span>
+                ${statusBadge}
+              </div>
+            </div>
+
+            <div class="ap-po-bar">
+              <div>${typeBadge} <b style="color:#1e40af;margin-left:4px;">#${r.id_po}</b></div>
+              <div style="font-weight:700;color:#334155;">📅 ${r.trip_date || '--'}</div>
+            </div>
+
+            <div style="font-size:12.5px;color:#1e293b;font-weight:600;line-height:1.35;">
+              📍 ${r.khach_kho || '--'}
+              ${r.vendor_name && r.actor_role === 'DRIVER' ? `<span style="color:#64748b;font-weight:500;"> • (${r.vendor_name})</span>` : ''}
+            </div>
+
+            <div class="ap-diff-box">
+              ${diffHtml}
+            </div>
+
+            ${actionHtml}
+          </div>
         `;
       }).join('');
     }
@@ -464,7 +614,7 @@
       try {
         const res = await fetch(`${API_BASE}/admin/approve-update`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAdminHeaders(),
           body: JSON.stringify({ id })
         });
         const data = await res.json();
@@ -491,7 +641,7 @@
       try {
         const res = await fetch(`${API_BASE}/admin/approve-update`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAdminHeaders(),
           body: JSON.stringify({ approveAll: true })
         });
         const data = await res.json();
@@ -510,7 +660,7 @@
       try {
         const res = await fetch(`${API_BASE}/admin/reject-update`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAdminHeaders(),
           body: JSON.stringify({ id })
         });
         const data = await res.json();
@@ -609,12 +759,15 @@
     async function syncFromGoogleSheet() {
       const btn = document.getElementById('btnSyncSheet');
       btn.disabled = true;
-      btn.textContent = '⏳ Đang đồng bộ từ Google Sheet...';
+      btn.textContent = '⏳ Đang đồng bộ...';
       try {
-        const res = await fetch(`${API_BASE}/admin/sync-sheet`, { method: 'POST' });
+        const res = await fetch(`${API_BASE}/admin/sync-sheet`, {
+          method: 'POST',
+          headers: getAdminHeaders()
+        });
         const data = await res.json();
         if (data.ok) {
-          alert(`✅ Đã đồng bộ thành công từ Google Sheet!\n- Nhà xe (Vendor): ${data.synced.vendors}\n- Số xe / Tài xế: ${data.synced.drivers}`);
+          alert(`✅ Đã đồng bộ thành công từ Google Sheet!\n- Nhà xe (Vendor): ${data.synced.totalVendors || data.synced.vendors || 0}\n- Số xe / Tài xế: ${data.synced.syncedDrivers || data.synced.drivers || 0}`);
           loadOverview();
         } else {
           alert('Lỗi đồng bộ: ' + (data.error || 'Không xác định'));
@@ -623,7 +776,7 @@
         alert('Lỗi kết nối máy chủ!');
       } finally {
         btn.disabled = false;
-        btn.textContent = '🔄 Đồng bộ từ Google Sheet';
+        btn.textContent = '🔄 Đồng bộ Sheet';
       }
     }
 
@@ -662,7 +815,7 @@
       }
       const res = await fetch(`${API_BASE}/admin/save-vendor`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify(payload)
       });
       const data = await res.json();
@@ -678,7 +831,7 @@
       if (!confirm(`Xóa Nhà xe "${name}" và toàn bộ xe thuộc nhà xe này?`)) return;
       const res = await fetch(`${API_BASE}/admin/delete-vendor`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify({ id })
       });
       const data = await res.json();
@@ -716,7 +869,7 @@
       }
       const res = await fetch(`${API_BASE}/admin/save-driver`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify(payload)
       });
       const data = await res.json();
@@ -732,7 +885,7 @@
       if (!confirm(`Xóa xe "${plate}" khỏi hệ thống?`)) return;
       const res = await fetch(`${API_BASE}/admin/delete-driver`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify({ id })
       });
       const data = await res.json();

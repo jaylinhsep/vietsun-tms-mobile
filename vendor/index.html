@@ -1442,9 +1442,10 @@
         alert('Vui lòng nhập biển số xe!');
         return;
       }
+      const token = localStorage.getItem('vs_vendor_token');
       const res = await fetch(`${API_BASE}/admin/save-driver`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(payload)
       });
       const data = await res.json();
@@ -1459,9 +1460,10 @@
 
     async function deleteMyDriver(id, plate) {
       if (!confirm(`Xóa xe ${plate} khỏi đội xe?`)) return;
+      const token = localStorage.getItem('vs_vendor_token');
       const res = await fetch(`${API_BASE}/admin/delete-driver`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ id })
       });
       const data = await res.json();
