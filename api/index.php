@@ -1484,11 +1484,40 @@ try {
                 $myTrips[] = $item;
             }
         }
+
+        // Trích xuất danh sách tất cả cont trả hàng nhập (N) hôm nay hoặc hôm qua (day -1)
+        // để hỗ trợ tài xế gợi ý số cont và tự động nhảy nơi lấy rỗng KH 20'/40'
+        $todayIso = date('Y-m-d');
+        $yesterdayIso = date('Y-m-d', strtotime('-1 day'));
+        $importConts = [];
+        foreach ($all as $item) {
+            $isNhap = ($item['xuatNhapPo'] ?? '') === 'N';
+            if (!$isNhap) continue;
+            $soCont = strtoupper(trim($item['soContPo'] ?? ''));
+            if ($soCont === '' || $soCont === '--' || strpos($soCont, 'CHỜ') !== false) continue;
+            $tripDate = get_shipment_date_iso($item);
+            if ($tripDate === $todayIso || $tripDate === $yesterdayIso) {
+                $is40 = (int)($item['cont40Po'] ?? 0) > 0;
+                $size = $is40 ? '40' : '20';
+                $kho = ($item['khoNhanHangPo'] ?? '') ?: ($item['tenKhachPo'] ?? '');
+                $soXe = trim($item['soXePo'] ?? '');
+                $importConts[$soCont] = [
+                    'soCont'   => $soCont,
+                    'size'     => $size,
+                    'tripDate' => $tripDate,
+                    'kho'      => $kho,
+                    'soXe'     => $soXe,
+                    'khLabel'  => "KH $size'"
+                ];
+            }
+        }
+
         echo json_encode([
-            'ok'         => true,
-            'today'      => date('Y-m-d'),
-            'trips'      => $myTrips,
-            'driverInfo' => [
+            'ok'          => true,
+            'today'       => date('Y-m-d'),
+            'trips'       => $myTrips,
+            'importConts' => array_values($importConts),
+            'driverInfo'  => [
                 'name'   => $drvRow['driver_name'] ?? ($user['driverName'] ?? ''),
                 'plate'  => $user['plate'] ?? '',
                 'vendor' => $user['vendorName'] ?? '',
@@ -1500,7 +1529,7 @@ try {
         exit;
     }
 
-    // Tài xế cập nhật Cont/Seal/Cảng đến -> Đưa vào hàng đợi CHỜ ĐIỀU VẬN DUYỆT (Khóa nếu qua ngày)
+    // Tài xế cập nhật Cont/Seal/Cảng đến/Nơi lấy rỗng -> Đưa vào hàng đợi CHỜ ĐIỀU VẬN DUYỆT (Khóa nếu qua ngày)
     if ($route === 'driver/update-trip') {
         $idPo = $jsonBody['idPo'] ?? '';
         $codePo = $jsonBody['codePo'] ?? '';
@@ -1515,6 +1544,9 @@ try {
         }
         if (isset($jsonBody['soSeal'])) {
             $fieldsToQueue['soSealPo'] = trim($jsonBody['soSeal']);
+        }
+        if (isset($jsonBody['noiLayCont']) && trim($jsonBody['noiLayCont']) !== '') {
+            $fieldsToQueue['noiLayContPo'] = strtoupper(trim($jsonBody['noiLayCont']));
         }
         if (isset($jsonBody['portTime']) && trim($jsonBody['portTime']) !== '') {
             $fieldsToQueue['portTimePo'] = trim($jsonBody['portTime']);

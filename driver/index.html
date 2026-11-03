@@ -242,6 +242,64 @@
     }
     .form-control:focus { outline: none; border-color: var(--primary); }
 
+    /* AUTOCOMPLETE DROPDOWN CONT TRẢ NHẬP */
+    .cont-ac-dropdown {
+      position: absolute;
+      top: 100%; left: 0; right: 0;
+      background: #fff;
+      border: 1.5px solid #2563eb;
+      border-radius: 11px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.22);
+      z-index: 1000;
+      max-height: 230px;
+      overflow-y: auto;
+      margin-top: 4px;
+      display: none;
+    }
+    .cont-ac-dropdown.open { display: block; }
+    .cont-ac-item {
+      padding: 9px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .cont-ac-item:last-child { border-bottom: none; }
+    .cont-ac-item:active, .cont-ac-item:hover {
+      background: #eff6ff;
+    }
+    .pill-btn {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      padding: 6px 12px;
+      border-radius: 7px;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .pill-btn:active {
+      background: #e2e8f0;
+      transform: scale(0.96);
+    }
+    .pill-btn.active {
+      background: #1e40af;
+      color: #fff;
+      border-color: #1e40af;
+      box-shadow: 0 2px 6px rgba(30, 64, 175, 0.3);
+    }
+    .pill-btn.pill-kh {
+      background: #ecfdf5;
+      color: #047857;
+      border-color: #a7f3d0;
+    }
+    .pill-btn.pill-kh.active {
+      background: #059669;
+      color: #fff;
+      border-color: #059669;
+      box-shadow: 0 2px 6px rgba(5, 150, 105, 0.3);
+    }
+
     /* LOGIN OVERLAY */
     .login-overlay {
       position: fixed; inset: 0; background: #f8fafc; z-index: 200;
@@ -338,25 +396,85 @@
     </button>
   </nav>
 
-  <!-- MODAL: CẬP NHẬT HÀNG XUẤT (CHỈ NHẬP SỐ CONT & SỐ SEAL) -->
+  <!-- MODAL: CẬP NHẬT HÀNG XUẤT (NHẬP SỐ CONT, NƠI LẤY RỖNG & SỐ SEAL) -->
   <div class="modal-overlay" id="updateTripModal">
     <div class="modal-sheet">
-      <h3 style="margin:0 0 14px;font-size:17px;font-weight:800;color:#1e3a8a;">📝 Cập nhật Số Cont / Seal</h3>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 style="margin:0;font-size:16.5px;font-weight:800;color:#1e3a8a;">📝 Cập nhật Xuất cont</h3>
+        <button type="button" onclick="closeModal('updateTripModal')" style="background:none;border:none;font-size:22px;cursor:pointer;color:#64748b;line-height:1;">✕</button>
+      </div>
       <input type="hidden" id="modalPoId" />
       <input type="hidden" id="modalCodePo" />
       <input type="hidden" id="modalCangDen" />
       <input type="hidden" id="modalPortTime" />
-      <div class="form-group">
-        <label>Số Container (4 chữ + 7 số)</label>
-        <input type="text" id="modalSoCont" class="form-control" placeholder="VD: DRYU9969790" style="text-transform:uppercase;" />
+      <input type="hidden" id="modalBookingSize" />
+
+      <!-- SỐ CONTAINER VỚI GỢI Ý TỪ LIST HÀNG TRẢ NHẬP -->
+      <div class="form-group" style="position:relative;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <label style="margin:0;font-weight:700;font-size:13px;color:#1e3a8a;">Số Container (4 chữ + 7 số)</label>
+          <span id="contMatchBadge" style="display:none;font-size:11px;font-weight:800;color:#047857;background:#d1fae5;padding:2px 7px;border-radius:6px;">
+            ✨ Khớp vỏ trả nhập
+          </span>
+        </div>
+        <input
+          type="text"
+          id="modalSoCont"
+          class="form-control"
+          placeholder="Chạm để xem gợi ý cont trả nhập..."
+          style="text-transform:uppercase;font-weight:700;letter-spacing:0.5px;"
+          autocomplete="off"
+          onfocus="showContSuggestions(this.value)"
+          oninput="onContInput(this.value)"
+        />
+        <div class="cont-ac-dropdown" id="contAcDropdown"></div>
+        <div id="contHint" style="font-size:11.5px;color:#64748b;margin-top:4px;">
+          💡 Gõ hoặc chọn cont trả hàng nhập (hôm nay & hôm qua) để tự động nhảy nơi lấy rỗng KH 20'/40'.
+        </div>
       </div>
+
+      <!-- NƠI LẤY RỖNG: TỰ ĐỘNG ĐIỀN KH 20'/40' NẾU TRÙNG CONT NHẬP, HOẶC CHỌN BN, VS, VNL, HTN... -->
       <div class="form-group">
-        <label>Số Seal</label>
-        <input type="text" id="modalSoSeal" class="form-control" placeholder="VD: 678504" />
+        <label style="font-weight:700;font-size:13px;display:block;margin-bottom:4px;color:#1e3a8a;">Nơi lấy rỗng</label>
+        <input
+          type="text"
+          id="modalNoiLayCont"
+          class="form-control"
+          placeholder="Chọn nút bên dưới hoặc gõ nơi lấy rỗng..."
+          style="font-weight:800;color:#0f172a;text-transform:uppercase;"
+          list="listNoiLayCont"
+          oninput="highlightPill(this.value)"
+        />
+        <datalist id="listNoiLayCont">
+          <option value="BN">BN (Bến Nghé)</option>
+          <option value="VS">VS (Vietsun)</option>
+          <option value="VNL">VNL (Transimex / VNL)</option>
+          <option value="HTN">HTN (Hải Trình Nam)</option>
+          <option value="KH 20'">KH 20' (Khách Hàng 20')</option>
+          <option value="KH 40'">KH 40' (Khách Hàng 40')</option>
+        </datalist>
+
+        <!-- CÁC NÚT BẤM CHỌN NHANH NƠI LẤY RỖNG -->
+        <div style="font-size:11.5px;color:#64748b;margin-top:6px;font-weight:700;">Lựa chọn nhanh:</div>
+        <div class="pills-grid" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
+          <button type="button" class="pill-btn" onclick="selectNoiLayCont('BN')">BN</button>
+          <button type="button" class="pill-btn" onclick="selectNoiLayCont('VS')">VS</button>
+          <button type="button" class="pill-btn" onclick="selectNoiLayCont('VNL')">VNL</button>
+          <button type="button" class="pill-btn" onclick="selectNoiLayCont('HTN')">HTN</button>
+          <button type="button" class="pill-btn pill-kh" onclick="selectNoiLayCont('KH 20\'')">KH 20'</button>
+          <button type="button" class="pill-btn pill-kh" onclick="selectNoiLayCont('KH 40\'')">KH 40'</button>
+        </div>
       </div>
-      <div class="btn-row" style="margin-top:18px;">
-        <button class="btn" style="background:#e2e8f0;color:#334155;" onclick="closeModal('updateTripModal')">Đóng</button>
-        <button class="btn btn-update" onclick="saveTripUpdate()">⏳ LƯU CONT / SEAL</button>
+
+      <!-- SỐ SEAL -->
+      <div class="form-group">
+        <label style="font-weight:700;font-size:13px;margin-bottom:4px;display:block;">Số Seal</label>
+        <input type="text" id="modalSoSeal" class="form-control" placeholder="VD: 678504" style="font-weight:700;" />
+      </div>
+
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="btn" style="background:#e2e8f0;color:#334155;flex:1;" onclick="closeModal('updateTripModal')">Đóng</button>
+        <button class="btn btn-update" style="flex:2;" onclick="saveTripUpdate()">⏳ LƯU THÔNG TIN</button>
       </div>
     </div>
   </div>
@@ -415,6 +533,7 @@
 
   <script>
     let currentTrips = [];
+    let availableImportConts = [];
     let currentDriverInfo = {};
     let currentFilter = 'N'; // Mặc định ưu tiên Tab Nhập
     let currentDateMode = 'TODAY';
@@ -586,6 +705,7 @@
         const data = await res.json();
         if (data.ok) {
           currentTrips = data.trips || [];
+          availableImportConts = data.importConts || [];
           renderDriverHeader(data.driverInfo);
           renderTrips();
         }
@@ -811,7 +931,7 @@
                   🔒 Đã kết thúc ngày - Khóa chỉnh sửa
                 </div>
               ` : `
-                ${isXuat ? `<button class="btn btn-update" onclick="openUpdateModal('${t.idPo}', '${t.codePo || ''}', '${t.soContPo || ''}', '${t.soSealPo || ''}', '${t.tinhXuatHangPo || t.cangDenPo || ''}')">✏️ Nhập Cont/Seal</button>` : ''}
+                ${isXuat ? `<button class="btn btn-update" onclick="openUpdateModal('${t.idPo}', '${t.codePo || ''}', '${(t.soContPo || '').replace(/'/g, "\\'")}', '${(t.soSealPo || '').replace(/'/g, "\\'")}', '${(t.tinhXuatHangPo || t.cangDenPo || '').replace(/'/g, "\\'")}', '${(t.noiLayContPo || '').replace(/'/g, "\\'")}', '${is40 ? '40' : '20'}')">✏️ Nhập Cont/Seal</button>` : ''}
                 <button class="btn btn-expense" onclick="openExpenseModal('${t.idPo}')">💰 Báo chi phí</button>
               `}
             </div>
@@ -820,13 +940,142 @@
       }).join('');
     }
 
-    function openUpdateModal(idPo, codePo, soCont, soSeal, cangDen) {
+    function findMatchingImportCont(soCont) {
+      if (!soCont) return null;
+      const clean = soCont.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (clean.length < 4) return null;
+      return availableImportConts.find(c => {
+        const cClean = c.soCont.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        return cClean === clean;
+      });
+    }
+
+    function onContInput(val) {
+      val = val.toUpperCase();
+      document.getElementById('modalSoCont').value = val;
+      const clean = val.replace(/[^A-Z0-9]/g, '');
+      const matchBadge = document.getElementById('contMatchBadge');
+
+      const matched = findMatchingImportCont(clean);
+      if (matched) {
+        if (matchBadge) {
+          matchBadge.textContent = `✨ Khớp cont trả nhập (${matched.khLabel})`;
+          matchBadge.style.display = 'inline-block';
+        }
+        const inpNoiLay = document.getElementById('modalNoiLayCont');
+        inpNoiLay.value = matched.khLabel;
+        highlightPill(matched.khLabel);
+      } else {
+        if (matchBadge) matchBadge.style.display = 'none';
+      }
+
+      showContSuggestions(val);
+    }
+
+    function showContSuggestions(query) {
+      const dropEl = document.getElementById('contAcDropdown');
+      if (!dropEl) return;
+
+      const q = (query || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      let list = availableImportConts;
+      if (q) {
+        list = availableImportConts.filter(c => {
+          const cClean = c.soCont.toUpperCase().replace(/[^A-Z0-9]/g, '');
+          return cClean.includes(q);
+        });
+      }
+
+      if (!list || list.length === 0) {
+        if (q && q.length >= 3) {
+          dropEl.innerHTML = `
+            <div style="padding:11px 12px;font-size:12px;color:#64748b;text-align:center;line-height:1.4;">
+              Không có số cont trùng với hàng trả nhập hôm nay/hôm qua.
+              <br><span style="color:#1e40af;font-weight:700;">Vui lòng chọn nơi lấy rỗng bên dưới: BN, VS, VNL, HTN...</span>
+            </div>
+          `;
+          dropEl.classList.add('open');
+        } else {
+          dropEl.classList.remove('open');
+        }
+        return;
+      }
+
+      dropEl.innerHTML = `
+        <div style="padding:6px 12px;background:#eff6ff;font-size:11px;font-weight:800;color:#1e40af;border-bottom:1px solid #dbeafe;display:flex;justify-content:space-between;align-items:center;">
+          <span>📦 CONT TRẢ HÀNG NHẬP (HÔM NAY & HÔM QUA)</span>
+          <span style="background:#bfdbfe;color:#1e3a8a;padding:1px 6px;border-radius:4px;">${list.length}</span>
+        </div>
+      ` + list.map(c => `
+        <div class="cont-ac-item" onmousedown="selectSuggestedCont('${c.soCont}', '${c.khLabel}')">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:800;color:#1e3a8a;font-size:14px;letter-spacing:0.3px;">📦 ${c.soCont}</span>
+            <span style="background:#d1fae5;color:#047857;font-weight:800;font-size:11.5px;padding:2px 7px;border-radius:5px;">${c.khLabel}</span>
+          </div>
+          <div style="font-size:11.5px;color:#64748b;margin-top:2px;">
+            ${c.kho ? `Kho: <b>${c.kho}</b>` : ''}${c.soXe ? ` • Xe: <b>${c.soXe}</b>` : ''}${c.tripDate ? ` • Ngày: ${formatVNDate(c.tripDate)}` : ''}
+          </div>
+        </div>
+      `).join('');
+
+      dropEl.classList.add('open');
+    }
+
+    function selectSuggestedCont(soCont, khLabel) {
+      const inpSoCont = document.getElementById('modalSoCont');
+      const inpNoiLay = document.getElementById('modalNoiLayCont');
+      const dropEl = document.getElementById('contAcDropdown');
+      const matchBadge = document.getElementById('contMatchBadge');
+
+      if (inpSoCont) inpSoCont.value = soCont;
+      if (inpNoiLay) inpNoiLay.value = khLabel;
+      if (dropEl) dropEl.classList.remove('open');
+      if (matchBadge) {
+        matchBadge.textContent = `✨ Khớp cont trả nhập (${khLabel})`;
+        matchBadge.style.display = 'inline-block';
+      }
+      highlightPill(khLabel);
+    }
+
+    function selectNoiLayCont(val) {
+      const inp = document.getElementById('modalNoiLayCont');
+      if (inp) inp.value = val;
+      highlightPill(val);
+    }
+
+    function highlightPill(val) {
+      const cleanVal = (val || '').trim().toUpperCase();
+      document.querySelectorAll('.pill-btn').forEach(b => {
+        const txt = b.textContent.trim().toUpperCase();
+        b.classList.toggle('active', txt === cleanVal);
+      });
+    }
+
+    function openUpdateModal(idPo, codePo, soCont, soSeal, cangDen, noiLayCont, bookingSize) {
       document.getElementById('modalPoId').value = idPo;
       document.getElementById('modalCodePo').value = codePo;
-      document.getElementById('modalSoCont').value = soCont;
-      document.getElementById('modalSoSeal').value = soSeal;
-      document.getElementById('modalCangDen').value = cangDen;
+      document.getElementById('modalSoCont').value = soCont || '';
+      document.getElementById('modalSoSeal').value = soSeal || '';
+      document.getElementById('modalCangDen').value = cangDen || '';
       document.getElementById('modalPortTime').value = '';
+      document.getElementById('modalBookingSize').value = bookingSize || '20';
+      document.getElementById('modalNoiLayCont').value = noiLayCont || '';
+
+      const matchBadge = document.getElementById('contMatchBadge');
+      const matched = findMatchingImportCont(soCont);
+      if (matched) {
+        if (matchBadge) {
+          matchBadge.textContent = `✨ Khớp cont trả nhập (${matched.khLabel})`;
+          matchBadge.style.display = 'inline-block';
+        }
+        if (!noiLayCont || noiLayCont.startsWith('KH')) {
+          document.getElementById('modalNoiLayCont').value = matched.khLabel;
+          highlightPill(matched.khLabel);
+        }
+      } else {
+        if (matchBadge) matchBadge.style.display = 'none';
+        highlightPill(noiLayCont);
+      }
+
       document.getElementById('updateTripModal').classList.add('open');
     }
 
@@ -847,6 +1096,7 @@
       const codePo = document.getElementById('modalCodePo').value;
       const soCont = document.getElementById('modalSoCont').value.trim();
       const soSeal = document.getElementById('modalSoSeal').value.trim();
+      const noiLayCont = document.getElementById('modalNoiLayCont').value.trim();
       const cangDen = document.getElementById('modalCangDen').value.trim();
       const portTime = document.getElementById('modalPortTime').value.trim();
 
@@ -857,12 +1107,20 @@
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ idPo, codePo, soCont, soSeal, cangDen, portTime })
+          body: JSON.stringify({ idPo, codePo, soCont, soSeal, noiLayCont, cangDen, portTime })
         });
         const data = await res.json();
         if (data.ok) {
-          alert('⏳ Đã gửi thông tin Cont/Seal chờ Điều vận kiểm duyệt trước khi đẩy lên TMS!');
+          alert('⏳ Đã gửi thông tin Cont/Seal và Nơi lấy rỗng chờ Điều vận kiểm duyệt trước khi đẩy lên TMS!');
           closeModal('updateTripModal');
+          const trip = currentTrips.find(x => String(x.idPo) === String(idPo));
+          if (trip) {
+            trip.soContPo = soCont;
+            trip.soSealPo = soSeal;
+            if (noiLayCont) trip.noiLayContPo = noiLayCont;
+            trip._pendingApproval = { status: 'PENDING' };
+            renderTrips();
+          }
           loadDriverData(true);
         } else {
           alert('Lỗi: ' + (data.error || 'Không thể lưu!'));
@@ -871,6 +1129,14 @@
         alert('Lỗi kết nối máy chủ!');
       }
     }
+
+    document.addEventListener('click', function(e) {
+      const dropEl = document.getElementById('contAcDropdown');
+      const inpSoCont = document.getElementById('modalSoCont');
+      if (dropEl && inpSoCont && !dropEl.contains(e.target) && e.target !== inpSoCont) {
+        dropEl.classList.remove('open');
+      }
+    });
 
     async function saveExpense() {
       const token = localStorage.getItem('vs_driver_token');
