@@ -731,6 +731,14 @@
     </div>
   </div>
 
+  <!-- THƯ VIỆN EXCELJS XUẤT FILE .XLSX CÓ STYLE, MERGE VÀ ĐỊNH DẠNG SỐ TIỀN CHUẨN FORM -->
+  <script src="/vendor/js/exceljs.min.js"></script>
+  <script>
+    if (typeof ExcelJS === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"><\\/script>');
+    }
+  </script>
+
   <script>
     const API_BASE = '/api/index.php?route=';
     let allVendorTrips = [];
@@ -1734,7 +1742,7 @@
       return str.charAt(0).toUpperCase() + str.slice(1) + ' đồng';
     }
 
-    function exportExcel() {
+    async function exportExcel() {
       const fromDate = document.getElementById('reportFromDate').value;
       const toDate = document.getElementById('reportToDate').value;
       const plateFilter = document.getElementById('debitPlateFilter').value;
@@ -1763,11 +1771,373 @@
 
       const vInfo = JSON.parse(localStorage.getItem('vs_vendor_info') || '{}');
       const vendorName = (vInfo.name || vInfo.code || 'TÊN VENDOR').toUpperCase();
+      const vendorAddress = vInfo.address || '';
+      const vendorTax = vInfo.taxCode || vInfo.tax_code || '';
       const refDate = toDate || getLocalTodayISO(0);
       const refParts = refDate.split('-');
       const mmStr = refParts.length === 3 ? refParts[1] : String(new Date().getMonth() + 1).padStart(2, '0');
       const yyyyStr = refParts.length === 3 ? refParts[0] : String(new Date().getFullYear());
 
+      // Nếu có thư viện ExcelJS -> Xuất trực tiếp file .xlsx chuẩn 100% theo form
+      if (typeof ExcelJS !== 'undefined') {
+        try {
+          await exportToXlsx(exportTrips, {
+            vendorName,
+            vendorAddress,
+            vendorTax,
+            mmStr,
+            yyyyStr
+          });
+          return;
+        } catch (err) {
+          console.error('Lỗi khi xuất file ExcelJS .xlsx, chuyển sang CSV fallback:', err);
+        }
+      }
+
+      // Dự phòng trường hợp trình duyệt không tải được ExcelJS -> xuất file CSV
+      exportToCsvFallback(exportTrips, {
+        vendorName,
+        mmStr,
+        yyyyStr
+      });
+    }
+
+    async function exportToXlsx(exportTrips, meta) {
+      const { vendorName, vendorAddress, vendorTax, mmStr, yyyyStr } = meta;
+      const wb = new ExcelJS.Workbook();
+      wb.creator = 'Vietsun TMS';
+      wb.created = new Date();
+
+      const ws = wb.addWorksheet('Bang_Ke_Cuoc', {
+        pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
+      });
+
+      // 18 Cột chuẩn form mẫu
+      ws.columns = [
+        { key: 'stt', width: 6 },
+        { key: 'ngay', width: 14 },
+        { key: 'kho', width: 25 },
+        { key: 'diachi', width: 38 },
+        { key: 'socont', width: 16 },
+        { key: 'soseal', width: 14 },
+        { key: 'c20', width: 6 },
+        { key: 'c40', width: 6 },
+        { key: 'xn', width: 6 },
+        { key: 'soxe', width: 14 },
+        { key: 'kethop', width: 11 },
+        { key: 'bocxep', width: 14 },
+        { key: 'cuocchuavat', width: 16 },
+        { key: 'vat', width: 13 },
+        { key: 'cuocvc', width: 16 },
+        { key: 'cpkhac', width: 14 },
+        { key: 'vecauduong', width: 14 },
+        { key: 'ghichu', width: 22 }
+      ];
+
+      // Row 1: Thông tin Vendor & Kính gửi Nhật Việt
+      ws.mergeCells('A1:E1');
+      ws.mergeCells('F1:G1');
+      ws.mergeCells('H1:N1');
+      ws.getCell('A1').value = vendorName;
+      ws.getCell('A1').font = { name: 'Times New Roman', size: 11, bold: true };
+      ws.getCell('F1').value = 'Kính gửi';
+      ws.getCell('F1').font = { name: 'Times New Roman', size: 11 };
+      ws.getCell('H1').value = ': CÔNG TY CỔ PHẦN NHẬT VIỆT';
+      ws.getCell('H1').font = { name: 'Times New Roman', size: 11, bold: true };
+
+      // Row 2: Địa chỉ
+      ws.mergeCells('B2:E2');
+      ws.mergeCells('F2:G2');
+      ws.mergeCells('H2:N2');
+      ws.getCell('A2').value = 'Địa chỉ:';
+      ws.getCell('A2').font = { name: 'Times New Roman', size: 11 };
+      ws.getCell('B2').value = vendorAddress;
+      ws.getCell('B2').font = { name: 'Times New Roman', size: 11 };
+      ws.getCell('F2').value = 'Địa chỉ';
+      ws.getCell('F2').font = { name: 'Times New Roman', size: 11 };
+      ws.getCell('H2').value = ': 13-15 Đường B4, Phường An Khánh, Tp.HCM';
+      ws.getCell('H2').font = { name: 'Times New Roman', size: 11 };
+
+      // Row 3: MST
+      ws.mergeCells('B3:E3');
+      ws.mergeCells('F3:G3');
+      ws.mergeCells('H3:N3');
+      ws.getCell('A3').value = 'MST';
+      ws.getCell('A3').font = { name: 'Times New Roman', size: 11 };
+      ws.getCell('B3').value = vendorTax;
+      ws.getCell('B3').font = { name: 'Times New Roman', size: 11 };
+      ws.getCell('F3').value = 'MST';
+      ws.getCell('F3').font = { name: 'Times New Roman', size: 11 };
+      ws.getCell('H3').value = ': 0303582935';
+      ws.getCell('H3').font = { name: 'Times New Roman', size: 11 };
+
+      // Row 4: Tiêu đề BẢNG KÊ
+      ws.mergeCells('A4:R4');
+      const cTitle = ws.getCell('A4');
+      cTitle.value = `BẢNG KÊ THANH TOÁN CƯỚC VẬN CHUYỂN THÁNG ${mmStr}/${yyyyStr}`;
+      cTitle.font = { name: 'Times New Roman', size: 14, bold: true };
+      cTitle.alignment = { horizontal: 'center', vertical: 'middle' };
+      ws.getRow(4).height = 25;
+
+      // Row 5: Kèm theo Hóa Đơn...
+      ws.mergeCells('A5:R5');
+      const cSub = ws.getCell('A5');
+      cSub.value = `(Kèm theo Hóa Đơn số……….………ngày……..tháng……..năm ${yyyyStr})`;
+      cSub.font = { name: 'Times New Roman', size: 11, italic: true };
+      cSub.alignment = { horizontal: 'center', vertical: 'middle' };
+      ws.getRow(5).height = 20;
+
+      // Đường viền & màu nền tiêu đề bảng
+      const borderThin = {
+        top: { style: 'thin', color: { argb: 'FF999999' } },
+        left: { style: 'thin', color: { argb: 'FF999999' } },
+        bottom: { style: 'thin', color: { argb: 'FF999999' } },
+        right: { style: 'thin', color: { argb: 'FF999999' } }
+      };
+      const headerFill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFF2F4F7' }
+      };
+      const headerFont = { name: 'Times New Roman', size: 10, bold: true };
+      const centerAlign = { horizontal: 'center', vertical: 'middle', wrapText: true };
+
+      const headers = [
+        { col: 'A', title: 'STT' },
+        { col: 'B', title: 'NGÀY THỰC HIỆN' },
+        { col: 'C', title: 'KHO ĐÓNG-TRẢ' },
+        { col: 'D', title: 'ĐỊA CHỈ' },
+        { col: 'E', title: 'SỐ CONT' },
+        { col: 'F', title: 'SỐ SEAL' },
+        { col: 'I', title: 'X/N' },
+        { col: 'J', title: 'SỐ XE' },
+        { col: 'K', title: 'Kết hợp' },
+        { col: 'L', title: 'BỐC XẾP' },
+        { col: 'M', title: 'CƯỚC VC Chưa VAT' },
+        { col: 'N', title: 'VAT 8%' },
+        { col: 'O', title: 'Cước VC' },
+        { col: 'P', title: 'C.PHÍ PHÁT SINH KHÁC' },
+        { col: 'Q', title: 'Vé Cầu Đường' },
+        { col: 'R', title: 'GHI CHÚ' }
+      ];
+
+      headers.forEach(h => {
+        ws.mergeCells(`${h.col}6:${h.col}7`);
+        const c = ws.getCell(`${h.col}6`);
+        c.value = h.title;
+        c.font = headerFont;
+        c.alignment = centerAlign;
+        c.fill = headerFill;
+      });
+
+      ws.mergeCells('G6:H6');
+      const cSize = ws.getCell('G6');
+      cSize.value = 'SIZE';
+      cSize.font = headerFont;
+      cSize.alignment = centerAlign;
+      cSize.fill = headerFill;
+
+      ws.getCell('G7').value = '20';
+      ws.getCell('G7').font = headerFont;
+      ws.getCell('G7').alignment = centerAlign;
+      ws.getCell('G7').fill = headerFill;
+
+      ws.getCell('H7').value = '40';
+      ws.getCell('H7').font = headerFont;
+      ws.getCell('H7').alignment = centerAlign;
+      ws.getCell('H7').fill = headerFill;
+
+      for (let r = 6; r <= 7; r++) {
+        ws.getRow(r).height = 24;
+        for (let c = 1; c <= 18; c++) {
+          ws.getRow(r).getCell(c).border = borderThin;
+        }
+      }
+
+      // Render từng dòng dữ liệu chuyến
+      const startRow = 8;
+      let sumTotalPayment = 0;
+
+      exportTrips.forEach((t, idx) => {
+        const curRow = startRow + idx;
+        const r = ws.getRow(curRow);
+        r.height = 21;
+
+        const ngay = formatShortDateVN(getTripDateISO(t));
+        const kho = (t.khoNhanHangPo || t.tenKhachPo || '').trim();
+        const diaChi = [t.diaChiNhanPo, t.tinhNhanPo].filter(Boolean).join(' ').trim();
+        const soCont = (t.soContPo || '').trim();
+        const soSeal = (t.soSealPo || '').trim();
+        const is40 = Number(t.cont40Po) > 0;
+        const xn = t.xuatNhapPo === 'X' ? 'X' : 'N';
+        const soXe = (t.soXePo || '').trim();
+
+        let ketHop = (t._tyLeKetHop || t.hinhThucKHopPo || '').trim();
+        const mPct = ketHop.match(/^(\d+(?:\.\d+)?)\s*%$/);
+        if (mPct) ketHop = String(+(parseFloat(mPct[1]) / 100).toFixed(2));
+
+        const bocXep = Number(t._chiHoBocXep || 0);
+        const debitRate = Number(t._debitRate || 0);
+        const cuocChuaVat = debitRate > 0 ? Math.round(debitRate / 1.08) : 0;
+        const vat8 = cuocChuaVat > 0 ? +(cuocChuaVat * 0.08).toFixed(2) : 0;
+        const cuocVc = cuocChuaVat > 0 ? +(cuocChuaVat + vat8).toFixed(2) : 0;
+        const cpKhac = Number(t._cpKhac || 0);
+        const veCauDuong = Number(t._veCauDuong || 0);
+
+        sumTotalPayment += (cuocVc + bocXep + cpKhac + veCauDuong);
+
+        const ghiChu = [
+          (t.ghiChuPo && t.ghiChuPo !== '.') ? t.ghiChuPo : '',
+          t._expenseNote || ''
+        ].filter(Boolean).join('; ');
+
+        r.getCell(1).value = idx + 1;
+        r.getCell(2).value = ngay;
+        r.getCell(3).value = kho;
+        r.getCell(4).value = diaChi;
+        r.getCell(5).value = soCont;
+        r.getCell(6).value = soSeal;
+        r.getCell(7).value = is40 ? null : 1;
+        r.getCell(8).value = is40 ? 1 : null;
+        r.getCell(9).value = xn;
+        r.getCell(10).value = soXe;
+        r.getCell(11).value = ketHop;
+        r.getCell(12).value = bocXep > 0 ? bocXep : null;
+        r.getCell(13).value = cuocChuaVat > 0 ? cuocChuaVat : null;
+        r.getCell(14).value = vat8 > 0 ? vat8 : null;
+        r.getCell(15).value = cuocVc > 0 ? cuocVc : null;
+        r.getCell(16).value = cpKhac > 0 ? cpKhac : null;
+        r.getCell(17).value = veCauDuong > 0 ? veCauDuong : null;
+        r.getCell(18).value = ghiChu;
+
+        for (let c = 1; c <= 18; c++) {
+          const cell = r.getCell(c);
+          cell.border = borderThin;
+          cell.font = { name: 'Times New Roman', size: 10 };
+          if ([1, 2, 5, 6, 7, 8, 9, 10, 11].includes(c)) {
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          } else if ([12, 13, 14, 15, 16, 17].includes(c)) {
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+            cell.numFmt = '#,##0';
+          } else {
+            cell.alignment = { horizontal: 'left', vertical: 'middle' };
+          }
+        }
+      });
+
+      const endRow = startRow + exportTrips.length - 1;
+
+      // DÒNG TỔNG CỘNG
+      const totRow = endRow + 1;
+      ws.mergeCells(`A${totRow}:F${totRow}`);
+      const rTot = ws.getRow(totRow);
+      rTot.height = 22;
+      rTot.getCell(1).value = 'TỔNG CỘNG';
+      rTot.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+      rTot.getCell(7).value = { formula: `SUM(G${startRow}:G${endRow})` };
+      rTot.getCell(8).value = { formula: `SUM(H${startRow}:H${endRow})` };
+      rTot.getCell(12).value = { formula: `SUM(L${startRow}:L${endRow})` };
+      rTot.getCell(13).value = { formula: `SUM(M${startRow}:M${endRow})` };
+      rTot.getCell(14).value = { formula: `SUM(N${startRow}:N${endRow})` };
+      rTot.getCell(15).value = { formula: `SUM(O${startRow}:O${endRow})` };
+      rTot.getCell(16).value = { formula: `SUM(P${startRow}:P${endRow})` };
+      rTot.getCell(17).value = { formula: `SUM(Q${startRow}:Q${endRow})` };
+
+      for (let c = 1; c <= 18; c++) {
+        const cell = rTot.getCell(c);
+        cell.border = borderThin;
+        cell.font = { name: 'Times New Roman', size: 10, bold: true };
+        if ([7, 8].includes(c)) {
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        } else if (c >= 12 && c <= 17) {
+          cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          cell.numFmt = '#,##0';
+        }
+      }
+
+      // DÒNG TỔNG TIỀN THANH TOÁN
+      const payRow = totRow + 1;
+      ws.mergeCells(`A${payRow}:F${payRow}`);
+      ws.mergeCells(`M${payRow}:O${payRow}`);
+      const rPay = ws.getRow(payRow);
+      rPay.height = 22;
+      rPay.getCell(1).value = 'TỔNG TIỀN THANH TOÁN';
+      rPay.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+      rPay.getCell(13).value = { formula: `L${totRow}+O${totRow}+P${totRow}+Q${totRow}` };
+
+      for (let c = 1; c <= 18; c++) {
+        const cell = rPay.getCell(c);
+        cell.border = borderThin;
+        cell.font = { name: 'Times New Roman', size: 10, bold: true };
+        if (c >= 13 && c <= 15) {
+          cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          cell.numFmt = '#,##0';
+        }
+      }
+
+      // SỐ TIỀN THANH TOÁN
+      const moneyRow = payRow + 1;
+      ws.mergeCells(`A${moneyRow}:C${moneyRow}`);
+      ws.mergeCells(`E${moneyRow}:R${moneyRow}`);
+      const rMoney = ws.getRow(moneyRow);
+      rMoney.height = 20;
+      rMoney.getCell(1).value = 'Số tiền Thanh toán:';
+      rMoney.getCell(1).font = { name: 'Times New Roman', size: 11, bold: true };
+      rMoney.getCell(4).value = { formula: `M${payRow}` };
+      rMoney.getCell(4).font = { name: 'Times New Roman', size: 11, bold: true };
+      rMoney.getCell(4).numFmt = '#,##0';
+      rMoney.getCell(5).value = 'VNĐ (Đã Bao gồm VAT)';
+      rMoney.getCell(5).font = { name: 'Times New Roman', size: 11, italic: true };
+
+      // SỐ TIỀN BẰNG CHỮ
+      const textRow = moneyRow + 1;
+      ws.mergeCells(`A${textRow}:C${textRow}`);
+      ws.mergeCells(`D${textRow}:R${textRow}`);
+      const rText = ws.getRow(textRow);
+      rText.height = 20;
+      rText.getCell(1).value = 'Số tiền bằng chữ:';
+      rText.getCell(1).font = { name: 'Times New Roman', size: 11, bold: true, italic: true };
+      rText.getCell(4).value = docSoTienBangChu(Math.round(sumTotalPayment));
+      rText.getCell(4).font = { name: 'Times New Roman', size: 11, italic: true };
+
+      // KHUNG CHỮ KÝ
+      const sigTitleRow = textRow + 2;
+      ws.mergeCells(`A${sigTitleRow}:F${sigTitleRow}`);
+      ws.mergeCells(`G${sigTitleRow}:R${sigTitleRow}`);
+      const rSigTitle = ws.getRow(sigTitleRow);
+      rSigTitle.height = 22;
+      rSigTitle.getCell(1).value = 'XÁC NHẬN CỦA NHẬT VIỆT';
+      rSigTitle.getCell(1).font = { name: 'Times New Roman', size: 11, bold: true };
+      rSigTitle.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+      rSigTitle.getCell(7).value = vendorName;
+      rSigTitle.getCell(7).font = { name: 'Times New Roman', size: 11, bold: true };
+      rSigTitle.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' };
+
+      const sigNameRow = sigTitleRow + 5;
+      ws.mergeCells(`A${sigNameRow}:F${sigNameRow}`);
+      ws.mergeCells(`G${sigNameRow}:R${sigNameRow}`);
+      const rSigName = ws.getRow(sigNameRow);
+      rSigName.getCell(1).value = 'Nguyễn Ngọc Hoàng';
+      rSigName.getCell(1).font = { name: 'Times New Roman', size: 11, bold: true };
+      rSigName.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
+      rSigName.getCell(7).value = '(Ký, ghi rõ họ tên & đóng dấu)';
+      rSigName.getCell(7).font = { name: 'Times New Roman', size: 10, italic: true };
+      rSigName.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' };
+
+      // Xuất file .xlsx
+      const buffer = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Bang_Ke_Cuoc_${vendorName.replace(/\s+/g, '_')}_T${mmStr}_${yyyyStr}.xlsx`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      showToast('Đã xuất file Bảng kê Excel .xlsx thành công!');
+    }
+
+    function exportToCsvFallback(exportTrips, meta) {
+      const { vendorName, mmStr, yyyyStr } = meta;
       const lines = [];
       lines.push(`${csvCell(vendorName)},,,,,Kính gửi,,: CÔNG TY CỔ PHẦN NHẬT VIỆT,,,,,,,,,,`);
       lines.push(`Địa chỉ:,,,,,Địa chỉ,,": 13-15 Đường B4, Phường An Khánh, Tp.HCM",,,,,,,,,,`);
@@ -1803,9 +2173,7 @@
 
         let ketHop = (t._tyLeKetHop || t.hinhThucKHopPo || '').trim();
         const mPct = ketHop.match(/^(\d+(?:\.\d+)?)\s*%$/);
-        if (mPct) {
-          ketHop = String(+(parseFloat(mPct[1]) / 100).toFixed(2));
-        }
+        if (mPct) ketHop = String(+(parseFloat(mPct[1]) / 100).toFixed(2));
 
         const bocXep = Number(t._chiHoBocXep || 0);
         if (bocXep > 0) sumBocXep += bocXep;
