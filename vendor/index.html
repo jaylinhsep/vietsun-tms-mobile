@@ -1019,7 +1019,7 @@
                 ${phoneClean ? `<a href="tel:${phoneClean}" style="background:#dcfce7;color:#15803d;padding:4px 9px;border-radius:7px;font-weight:800;font-size:11.5px;text-decoration:none;">📞 Gọi</a>` : ''}
               </div>` : ''}
 
-              <!-- Ô NHẬP SỐ XE THAO TÁC NHANH (TỰ ĐỘNG LƯU CHỜ DUYỆT + NÚT SHARE ZALO) -->
+              <!-- Ô NHẬP SỐ XE THAO TÁC NHANH (TỰ ĐỘNG LƯU CHỜ DUYỆT + NÚT GỬI ĐIỀU ĐỘ) -->
               <div class="quick-truck-box">
                 <div class="quick-truck-row">
                   <span class="quick-truck-label">🚛 Số xe:</span>
@@ -1044,9 +1044,9 @@
                     type="button"
                     class="btn-save-truck"
                     id="btnZalo_${t.idPo}"
-                    style="background:#0068ff;display:${cleanPlate(t.soXePo) ? 'inline-flex' : 'none'};align-items:center;gap:4px;"
+                    style="background:#0068ff;display:inline-flex;align-items:center;gap:4px;"
                     onclick="shareTripToZalo('${t.idPo}')"
-                  >💬 Share Zalo</button>
+                  >💬 Gửi Điều Độ</button>
                 </div>
                 <div id="drvHint_${t.idPo}" style="font-size:11.5px;color:#475569;margin-top:4px;font-weight:600;">
                   ${t._driverName ? `👨‍✈️ Tài xế: ${t._driverName} ${t._driverPhone ? '• 📞 ' + t._driverPhone : ''}` : ''}
@@ -1107,7 +1107,7 @@
               ${phoneClean ? `<a href="tel:${phoneClean}" style="background:#dcfce7;color:#15803d;padding:4px 9px;border-radius:7px;font-weight:800;font-size:11.5px;text-decoration:none;">📞 Gọi</a>` : ''}
             </div>` : ''}
 
-            <!-- Ô NHẬP SỐ XE ĐỂ CHỦ VENDOR ĐIỀU XE HÀNG XUẤT (TỰ ĐỘNG LƯU CHỜ DUYỆT + NÚT SHARE ZALO) -->
+            <!-- Ô NHẬP SỐ XE ĐỂ CHỦ VENDOR ĐIỀU XE HÀNG XUẤT (TỰ ĐỘNG LƯU CHỜ DUYỆT + NÚT GỬI ĐIỀU ĐỘ) -->
             <div class="quick-truck-box">
               <div class="quick-truck-row">
                 <span class="quick-truck-label" style="color:#9a3412;">🚛 Điều xe:</span>
@@ -1132,9 +1132,9 @@
                   type="button"
                   class="btn-save-truck"
                   id="btnZalo_${t.idPo}"
-                  style="background:#0068ff;display:${cleanPlate(t.soXePo) ? 'inline-flex' : 'none'};align-items:center;gap:4px;"
+                  style="background:#0068ff;display:inline-flex;align-items:center;gap:4px;"
                   onclick="shareTripToZalo('${t.idPo}')"
-                >💬 Share Zalo</button>
+                >💬 Gửi Điều Độ</button>
               </div>
               <div id="drvHint_${t.idPo}" style="font-size:11.5px;color:#475569;margin-top:4px;font-weight:600;">
                 ${t._driverName ? `👨‍✈️ Tài xế: ${t._driverName} ${t._driverPhone ? '• 📞 ' + t._driverPhone : ''}` : ''}
@@ -1224,10 +1224,8 @@
         if (data.ok) {
           if (rawPlate) {
             inp.classList.add('saved-ok');
-            if (btnZalo) btnZalo.style.display = 'inline-flex';
-          } else {
-            if (btnZalo) btnZalo.style.display = 'none';
           }
+          if (btnZalo) btnZalo.style.display = 'inline-flex';
           const pendBadge = document.getElementById(`pendBadge_${idPo}`);
           if (pendBadge) pendBadge.style.display = 'inline-block';
           // Cập nhật vào bộ nhớ local
@@ -1253,43 +1251,81 @@
       }
     }
 
-    // Copy & Share qua ứng dụng Zalo theo đúng cấu trúc Hàng Nhập / Hàng Xuất
+    async function copyTextToClipboard(text) {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+          return true;
+        }
+      } catch (e) {}
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.top = '0';
+      ta.style.left = '0';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta);
+      return true;
+    }
+
+    // Gửi Điều Độ: Copy đầy đủ thông tin chuyến gửi Điều độ (format chuẩn giống /driver) và mở share Zalo
     async function shareTripToZalo(idPo) {
       const t = allVendorTrips.find(x => String(x.idPo) === String(idPo));
       if (!t) return;
 
       const inp = document.getElementById(`inpXe_${idPo}`);
-      const soXe = cleanPlate((inp ? inp.value : '') || t.soXePo || '');
-      const drv = myFleetList.find(d => cleanPlate(d.assigned_plate) === soXe);
-      const drvName = (drv ? (drv.full_name || drv.driver_name) : t._driverName) || '--';
-      const drvPhone = (drv ? drv.phone : t._driverPhone) || '';
-      const taiXeInfo = drvPhone ? `${drvName} - ${drvPhone}` : drvName;
+      const rawInp = inp ? inp.value.trim() : '';
+      const displayPlate = rawInp || (t.soXePo || '').trim();
+      const cPlate = cleanPlate(displayPlate);
 
-      const ngay = formatVNDate(getTripDateISO(t));
-      const tenKho = t.khoNhanHangPo || t.tenKhachPo || '--';
-      const soCont = t.soContPo || '--';
+      const drv = myFleetList.find(d => cleanPlate(d.assigned_plate) === cPlate);
+      const tenLaiXe = (drv ? (drv.full_name || drv.driver_name) : t._driverName) || '';
+      const sdtLaiXe = (drv ? drv.phone : t._driverPhone) || '';
+      const cccd = (drv ? drv.cccd : '') || '';
+      const gplx = (drv ? drv.gplx : '') || '';
+
+      const ngayGiao = formatVNDate(getTripDateISO(t));
       const isXuat = t.xuatNhapPo === 'X';
 
-      // Hàng Nhập: Nhập | Ngày trả | Tên Kho | Số Cont | Số Xe | Tài xế |
-      // Hàng Xuất: Xuất | Ngày đóng hàng | Tên Kho | Số Xe | Tài xế |
-      const textToCopy = isXuat
-        ? `Xuất | ${ngay} | ${tenKho} | ${soXe} | ${taiXeInfo} |`
-        : `Nhập | ${ngay} | ${tenKho} | ${soCont} | ${soXe} | ${taiXeInfo} |`;
+      let textToCopy = '';
+      if (isXuat) {
+        textToCopy = [
+          `THÔNG TIN ĐÓNG HÀNG:`,
+          `- Khách hàng: ${t.tenKhachPo || ''}`,
+          `- Kho ĐÓNG: ${t.khoNhanHangPo || ''}`,
+          `- Địa chỉ: ${t.diaChiNhanPo || ''}\t- Tỉnh: ${t.tinhNhanPo || ''}`,
+          `- Số cont: ${t.soContPo || ''}\t\t- Số seal: ${t.soSealPo || ''}`,
+          `- Ngày ĐÓNG: ${ngayGiao}`,
+          `- Nơi cấp rỗng: ${t.noiLayContPo || ''}`,
+          `- Thời gian dự kiến tới kho: `,
+          `- Liên hệ: ${t.lienHeNhanPo || ''}`,
+          `- Số xe: ${displayPlate}`,
+          `- Tên Lái Xe: ${tenLaiXe}`,
+          `- Số CMND: ${cccd}     Nơi cấp: Cục QLHC & TTXH`,
+          `- Số GPLX: ${gplx}           Nơi cấp:SỞ GTVT`,
+          `- SĐT: ${sdtLaiXe}`
+        ].join('\n');
+      } else {
+        textToCopy = [
+          `THÔNG TIN GIAO HÀNG:`,
+          `- Kho GIAO: ${t.khoNhanHangPo || ''}`,
+          `- Địa chỉ: ${t.diaChiNhanPo || ''}\t- Tỉnh: ${t.tinhNhanPo || ''}`,
+          `- Liên hệ: ${t.lienHeNhanPo || ''}`,
+          `- Số cont: ${t.soContPo || ''}\t\t- Số seal: ${t.soSealPo || ''}`,
+          `- Ngày GIAO: ${ngayGiao}`,
+          `- Số xe: ${displayPlate}`,
+          `- Tên Lái Xe: ${tenLaiXe}`,
+          `- SĐT: ${sdtLaiXe}`,
+          `- Thời gian tới kho: `
+        ].join('\n');
+      }
 
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(textToCopy);
-        } else {
-          const ta = document.createElement('textarea');
-          ta.value = textToCopy;
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand('copy');
-          document.body.removeChild(ta);
-        }
-      } catch (_) {}
-
-      showToast(`📋 Đã copy: ${textToCopy}`);
+      await copyTextToClipboard(textToCopy);
+      showToast('📋 Đã copy đầy đủ thông tin gửi Điều độ!');
 
       // Trên điện thoại hỗ trợ Web Share API -> bung bảng chọn mở ứng dụng Zalo ngay
       if (navigator.share && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
