@@ -1485,12 +1485,17 @@ try {
             }
         }
 
-        // Trích xuất danh sách tất cả cont trả hàng nhập (N) hôm nay hoặc hôm qua (day -1)
-        // để hỗ trợ tài xế gợi ý số cont và tự động nhảy nơi lấy rỗng KH 20'/40'
+        // Trích xuất danh sách cont trả hàng nhập (N) của CHÍNH TÀI XẾ ĐÓ hôm nay hoặc hôm qua (day -1)
+        // để hỗ trợ kết hợp vỏ đóng hàng xuất -> tự động nhảy nơi lấy rỗng KH 20'/40'
         $todayIso = date('Y-m-d');
         $yesterdayIso = date('Y-m-d', strtotime('-1 day'));
         $importConts = [];
         foreach ($all as $item) {
+            $itemPlate = to_clean_code($item['soXePo'] ?? '');
+            // Chỉ lấy các chuyến hàng nhập của chính xe tài xế này
+            if ($itemPlate === '' || ($itemPlate !== $plate && strpos($itemPlate, $plate) === false)) {
+                continue;
+            }
             $isNhap = ($item['xuatNhapPo'] ?? '') === 'N';
             if (!$isNhap) continue;
             $soCont = strtoupper(trim($item['soContPo'] ?? ''));
