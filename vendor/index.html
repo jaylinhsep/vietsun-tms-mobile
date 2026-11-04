@@ -448,6 +448,224 @@
     th { background: #f1f5f9; padding: 10px; font-weight: 700; border-bottom: 1px solid var(--border); white-space: nowrap; }
     td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 
+    /* DEBIT RECONCILIATION CARDS & DUAL VIEW MODE */
+    .view-mode-group {
+      display: inline-flex;
+      background: #e2e8f0;
+      border-radius: 9px;
+      padding: 3px;
+      gap: 3px;
+    }
+    .view-mode-btn {
+      border: none;
+      background: transparent;
+      padding: 6px 12px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .view-mode-btn.active {
+      background: #ffffff;
+      color: var(--primary-dark);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+    }
+    .btn-export-excel {
+      background: #10b981;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-weight: 700;
+      font-size: 12.5px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .btn-export-excel:hover {
+      background: #059669;
+    }
+
+    .debit-card {
+      background: #ffffff;
+      border-radius: 13px;
+      border: 1px solid #e2e8f0;
+      padding: 13px 14px;
+      margin-bottom: 11px;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+      position: relative;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+    }
+    .debit-card.card-nhap { border-left: 5px solid #2563eb; }
+    .debit-card.card-xuat { border-left: 5px solid #ea580c; background: #fffcf9; }
+
+    .debit-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 9px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+    .debit-badges-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    .debit-rate-wrap {
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .debit-rate-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 2px;
+    }
+    .debit-rate-pill {
+      font-size: 14.5px;
+      font-weight: 800;
+      color: #059669;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      padding: 3px 9px;
+      border-radius: 8px;
+      display: inline-block;
+      white-space: nowrap;
+    }
+    .debit-rate-none {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #94a3b8;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      padding: 3px 8px;
+      border-radius: 8px;
+      display: inline-block;
+      font-style: italic;
+    }
+
+    .debit-main-info {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      font-size: 13px;
+    }
+    @media (min-width: 600px) {
+      .debit-main-info {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    .debit-info-item {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      color: #334155;
+    }
+    .debit-info-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #64748b;
+      white-space: nowrap;
+      min-width: 70px;
+    }
+    .debit-info-val {
+      font-weight: 600;
+      color: #1e293b;
+      word-break: break-word;
+    }
+
+    /* COMPARISON BOX FOR TMS VS DRIVER */
+    .compare-box {
+      margin-top: 10px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      padding: 9px 12px;
+    }
+    .compare-box.has-diff {
+      border-color: #fdba74;
+      background: #fffaf0;
+    }
+    .compare-box.is-match {
+      border-color: #86efac;
+      background: #f0fdf4;
+    }
+    .compare-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 7px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      flex-wrap: wrap;
+    }
+    .compare-title {
+      font-size: 11px;
+      font-weight: 800;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .badge-diff-status {
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 99px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .badge-diff-status.match { background: #dcfce7; color: #15803d; }
+    .badge-diff-status.diff-more { background: #fee2e2; color: #b91c1c; }
+    .badge-diff-status.diff-less { background: #e0f2fe; color: #0369a1; }
+    .badge-diff-status.pending-tms { background: #fef3c7; color: #b45309; }
+    .badge-diff-status.no-driver { background: #f1f5f9; color: #64748b; }
+
+    .compare-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .compare-col {
+      background: #ffffff;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      padding: 7px 10px;
+    }
+    .compare-col-header {
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #64748b;
+      margin-bottom: 2px;
+    }
+    .compare-col-val {
+      font-size: 13.5px;
+      font-weight: 800;
+    }
+    .compare-col-detail {
+      font-size: 10.5px;
+      color: #64748b;
+      line-height: 1.3;
+      margin-top: 3px;
+    }
+
     /* LOGIN & MODALS */
     .login-overlay, .modal-overlay {
       position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85);
@@ -605,22 +823,43 @@
           <select id="debitPlateFilter" class="form-control" style="flex:1;" onchange="renderDebitTable()">
             <option value="ALL">🚛 Tất cả Số xe</option>
           </select>
-          <button onclick="exportExcel()" style="background:var(--success);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap;">📊 Xuất Excel</button>
+          <button onclick="exportExcel()" class="btn-export-excel" title="Xuất dữ liệu đối soát ra file Excel (.xlsx)">📊 Xuất Excel</button>
+        </div>
+
+        <!-- Filter Chips: Tất cả | Có cước | Có phát sinh | Lệch chi phí -->
+        <div class="date-chips" style="margin-top:8px;">
+          <button class="chip-btn active" id="chipDebitAll" onclick="setDebitFilter('ALL')">📋 Tất cả (<span id="countDebitAll">0</span>)</button>
+          <button class="chip-btn" id="chipDebitHasRate" onclick="setDebitFilter('HAS_RATE')">💰 Có cước (<span id="countDebitHasRate">0</span>)</button>
+          <button class="chip-btn" id="chipDebitHasExp" onclick="setDebitFilter('HAS_EXP')">💸 Có phát sinh (<span id="countDebitHasExp">0</span>)</button>
+          <button class="chip-btn" id="chipDebitDiff" onclick="setDebitFilter('DIFF')" style="color:#b91c1c;">⚠️ Lệch chi phí (<span id="countDebitDiff">0</span>)</button>
+        </div>
+
+        <!-- View Mode Switcher -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px dashed #cbd5e1;flex-wrap:wrap;gap:6px;">
+          <span style="font-size:11.5px;font-weight:700;color:#64748b;">Hiển thị:</span>
+          <div class="view-mode-group">
+            <button class="view-mode-btn active" id="btnModeCard" onclick="setDebitViewMode('cards')">📇 Thẻ trực quan</button>
+            <button class="view-mode-btn" id="btnModeTable" onclick="setDebitViewMode('table')">📊 Bảng chi tiết</button>
+          </div>
         </div>
       </div>
 
-      <div class="table-container">
+      <!-- DẠNG THẺ (MẶC ĐỊNH: TRỰC QUAN, RÕ RÀNG, ĐỐI SOÁT CHI TIẾT) -->
+      <div id="debitCardsContainer"></div>
+
+      <!-- DẠNG BẢNG (KHI CẦN XEM NHANH NHIỀU DÒNG TRÊN MÀN HÌNH LỚN) -->
+      <div id="debitTableWrap" class="table-container" style="display:none;">
         <table>
           <thead>
             <tr>
-              <th>Ngày</th>
-              <th>Loại</th>
-              <th>Số Xe</th>
-              <th>Kho / Khách</th>
-              <th>Số Cont</th>
-              <th style="text-align:right;">Phát sinh TMS</th>
-              <th style="text-align:right;color:#b45309;">Phát sinh thực tế</th>
-              <th style="text-align:right;">Cước Debit</th>
+              <th style="min-width:65px;">Ngày</th>
+              <th style="min-width:75px;">Loại</th>
+              <th style="min-width:95px;">Số Xe</th>
+              <th style="min-width:140px;">Kho / Khách</th>
+              <th style="min-width:120px;">Số Cont</th>
+              <th style="min-width:110px;text-align:right;">Phát sinh TMS</th>
+              <th style="min-width:130px;text-align:right;color:#b45309;">Phát sinh thực tế</th>
+              <th style="min-width:125px;text-align:right;">Cước Debit</th>
             </tr>
           </thead>
           <tbody id="vendorTripsBody">
@@ -755,6 +994,11 @@
     let planTypeFilter = 'N'; // 'N' | 'X' | 'WAIT' | 'ALL'
     let contSizeFilter = 'ALL'; // 'ALL' | '20' | '40'
 
+    // Trạng thái màn hình Đối soát: Mặc định dạng Thẻ ('cards') trực quan
+    let debitViewMode = localStorage.getItem('vs_debit_view_mode') || 'cards'; // 'cards' | 'table'
+    let debitExpFilter = 'ALL'; // 'ALL' | 'HAS_RATE' | 'HAS_EXP' | 'DIFF'
+    let lastDebitRevData = null;
+
     function showToast(msg) {
       const el = document.getElementById('toastMsg');
       el.textContent = msg;
@@ -817,6 +1061,9 @@
       const prevYyyy = now.getMonth() === 0 ? yyyy - 1 : yyyy;
       document.getElementById('reportFromDate').value = `${prevYyyy}-${prevMm}-26`;
       document.getElementById('reportToDate').value = `${yyyy}-${mm}-25`;
+
+      // Đồng bộ chế độ hiển thị thẻ / bảng
+      setDebitViewMode(debitViewMode, false);
     }
 
     // Header Dropdown Menu Switcher: Kế hoạch điều xe | Chuyến xe & đối soát | Đội xe của tôi
@@ -829,6 +1076,10 @@
       // Chỉ hiện thanh Bottom Nav & Nút lọc 20"/40" khi ở màn hình Kế hoạch điều xe
       document.getElementById('planBottomNav').style.display = view === 'PLAN' ? 'flex' : 'none';
       document.getElementById('floatingSizeDock').style.display = view === 'PLAN' ? 'flex' : 'none';
+
+      if (view === 'DEBIT') {
+        renderDebitTable();
+      }
     }
 
     function toggleSearchBox() {
@@ -1452,41 +1703,73 @@
       }
     }
 
+    function setDebitViewMode(mode, shouldRender = true) {
+      debitViewMode = mode;
+      try { localStorage.setItem('vs_debit_view_mode', mode); } catch (_) {}
+      const btnCard = document.getElementById('btnModeCard');
+      const btnTable = document.getElementById('btnModeTable');
+      if (btnCard) btnCard.classList.toggle('active', mode === 'cards');
+      if (btnTable) btnTable.classList.toggle('active', mode === 'table');
+
+      const cardsWrap = document.getElementById('debitCardsContainer');
+      const tableWrap = document.getElementById('debitTableWrap');
+      if (cardsWrap && tableWrap) {
+        cardsWrap.style.display = mode === 'cards' ? 'block' : 'none';
+        tableWrap.style.display = mode === 'table' ? 'block' : 'none';
+      }
+      if (shouldRender) renderDebitTable();
+    }
+
+    function setDebitFilter(filter) {
+      debitExpFilter = filter;
+      ['chipDebitAll', 'chipDebitHasRate', 'chipDebitHasExp', 'chipDebitDiff'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+      });
+      if (filter === 'ALL') document.getElementById('chipDebitAll')?.classList.add('active');
+      if (filter === 'HAS_RATE') document.getElementById('chipDebitHasRate')?.classList.add('active');
+      if (filter === 'HAS_EXP') document.getElementById('chipDebitHasExp')?.classList.add('active');
+      if (filter === 'DIFF') document.getElementById('chipDebitDiff')?.classList.add('active');
+      renderDebitTable();
+    }
+
     function renderDebitTable(revData = null) {
+      if (revData) lastDebitRevData = revData;
+      const rData = revData || lastDebitRevData;
+
       const fromDate = document.getElementById('reportFromDate').value;
       const toDate = document.getElementById('reportToDate').value;
       const plateFilter = document.getElementById('debitPlateFilter').value;
 
-      const filtered = allVendorTrips.filter(t => {
+      // 1. Lọc cơ bản theo ngày và biển số xe
+      const baseFiltered = allVendorTrips.filter(t => {
         const d = getTripDateISO(t);
         if (fromDate && toDate && d && (d < fromDate || d > toDate)) return false;
         if (plateFilter !== 'ALL' && cleanPlate(t.soXePo) !== plateFilter) return false;
         return true;
       });
 
-      // Chỉ cộng tổng doanh thu của các chuyến đã có giá cước Debit thực tế từ TMS (hoặc tính theo % kết hợp / R)
-      const totalDebitRevenue = filtered.reduce((sum, t) => {
+      // 2. Tính toán tổng hợp cho Thống kê & Số đếm Chips
+      const totalDebitRevenue = baseFiltered.reduce((sum, t) => {
         const rate = Number(t._debitRate || 0);
         return sum + (rate > 0 ? rate : 0);
       }, 0);
 
-      // Cộng tổng chi phí phát sinh TMS (Chi hộ bốc xếp + Chi phí khác + Vé cầu đường)
-      const tmsExpTotal = filtered.reduce((sum, t) => {
+      const tmsExpTotal = baseFiltered.reduce((sum, t) => {
         const bx = Number(t._tmsBocXep !== undefined ? t._tmsBocXep : (t._chiHoBocXep || 0));
         const khac = Number(t._tmsCpKhac !== undefined ? t._tmsCpKhac : (t._cpKhac || 0));
         const ve = Number(t._veCauDuong || 0);
         return sum + (bx > 0 ? bx : 0) + (khac > 0 ? khac : 0) + (ve > 0 ? ve : 0);
       }, 0);
 
-      // Cộng tổng chi phí phát sinh thực tế do Tài xế thực tế nhập qua /driver
-      const driverExpTotal = filtered.reduce((sum, t) => {
+      const driverExpTotal = baseFiltered.reduce((sum, t) => {
         const drv = Number(t._driverPhatSinh || 0);
         return sum + (drv > 0 ? drv : 0);
       }, 0);
 
-      const expTotal = tmsExpTotal > 0 ? tmsExpTotal : ((revData && revData.summary && revData.summary.totalExpenses) ? revData.summary.totalExpenses : 0);
+      const expTotal = tmsExpTotal > 0 ? tmsExpTotal : ((rData && rData.summary && rData.summary.totalExpenses) ? rData.summary.totalExpenses : 0);
 
-      document.getElementById('valTotalTrips').textContent = filtered.length;
+      document.getElementById('valTotalTrips').textContent = baseFiltered.length;
       document.getElementById('valRevenue').textContent = totalDebitRevenue > 0 ? totalDebitRevenue.toLocaleString('vi-VN') + ' đ' : '0 đ';
       document.getElementById('valExpenses').textContent = expTotal.toLocaleString('vi-VN') + ' đ';
       if (document.getElementById('valDriverExpenses')) {
@@ -1494,79 +1777,279 @@
       }
       document.getElementById('valNetTotal').textContent = (totalDebitRevenue + expTotal).toLocaleString('vi-VN') + ' đ';
 
-      const tbody = document.getElementById('vendorTripsBody');
-      if (!filtered.length) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted);">Không có chuyến xe nào trong kỳ đối soát này.</td></tr>';
-        return;
+      // Số lượng cho Filter Chips
+      let countHasRate = 0;
+      let countHasExp = 0;
+      let countDiff = 0;
+
+      baseFiltered.forEach(t => {
+        const rate = Number(t._debitRate || 0);
+        if (rate > 0) countHasRate++;
+
+        const bx = Number(t._tmsBocXep !== undefined ? t._tmsBocXep : (t._chiHoBocXep || 0));
+        const khac = Number(t._tmsCpKhac !== undefined ? t._tmsCpKhac : (t._cpKhac || 0));
+        const ve = Number(t._veCauDuong || 0);
+        const tmsThis = (bx > 0 ? bx : 0) + (khac > 0 ? khac : 0) + (ve > 0 ? ve : 0);
+        const drvThis = Number(t._driverPhatSinh || 0);
+
+        if (tmsThis > 0 || drvThis > 0) {
+          countHasExp++;
+          if (tmsThis !== drvThis) {
+            countDiff++;
+          }
+        }
+      });
+
+      if (document.getElementById('countDebitAll')) document.getElementById('countDebitAll').textContent = baseFiltered.length;
+      if (document.getElementById('countDebitHasRate')) document.getElementById('countDebitHasRate').textContent = countHasRate;
+      if (document.getElementById('countDebitHasExp')) document.getElementById('countDebitHasExp').textContent = countHasExp;
+      if (document.getElementById('countDebitDiff')) document.getElementById('countDebitDiff').textContent = countDiff;
+
+      // 3. Lọc danh sách theo Chip đã chọn
+      const filtered = baseFiltered.filter(t => {
+        if (debitExpFilter === 'HAS_RATE') {
+          return Number(t._debitRate || 0) > 0;
+        }
+        const bx = Number(t._tmsBocXep !== undefined ? t._tmsBocXep : (t._chiHoBocXep || 0));
+        const khac = Number(t._tmsCpKhac !== undefined ? t._tmsCpKhac : (t._cpKhac || 0));
+        const ve = Number(t._veCauDuong || 0);
+        const tmsThis = (bx > 0 ? bx : 0) + (khac > 0 ? khac : 0) + (ve > 0 ? ve : 0);
+        const drvThis = Number(t._driverPhatSinh || 0);
+
+        if (debitExpFilter === 'HAS_EXP') {
+          return tmsThis > 0 || drvThis > 0;
+        }
+        if (debitExpFilter === 'DIFF') {
+          return (tmsThis > 0 || drvThis > 0) && (tmsThis !== drvThis);
+        }
+        return true;
+      });
+
+      // 4. Render DẠNG THẺ (Cards View)
+      const cardsContainer = document.getElementById('debitCardsContainer');
+      if (cardsContainer) {
+        if (!filtered.length) {
+          cardsContainer.innerHTML = `
+            <div style="text-align:center;padding:34px 16px;background:#fff;border-radius:12px;border:1px dashed #cbd5e1;color:#64748b;margin-bottom:12px;">
+              <div style="font-size:32px;margin-bottom:8px;">🔍</div>
+              <div style="font-weight:700;font-size:14px;color:#1e293b;">Không tìm thấy chuyến xe phù hợp</div>
+              <div style="font-size:12px;margin-top:4px;">Thử chọn khoảng ngày khác hoặc chuyển sang lọc "Tất cả".</div>
+            </div>
+          `;
+        } else {
+          cardsContainer.innerHTML = filtered.map(t => {
+            const isXuat = t.xuatNhapPo === 'X';
+            const typeText = isXuat ? 'XUẤT' : 'NHẬP';
+            const typeClass = isXuat ? 'badge-xuat' : 'badge-nhap';
+            const cardBorderClass = isXuat ? 'card-xuat' : 'card-nhap';
+            const sizeVal = t.kichThuocContPo || (t.soContPo ? '20\'' : '');
+            const sizeBadge = sizeVal ? `<span class="badge ${sizeVal.includes('40') ? 'badge-40' : 'badge-20'}">${sizeVal}</span>` : '';
+            const tripDate = formatVNDate(getTripDateISO(t)).slice(0, 5);
+
+            const khBadge = t._tyLeKetHop
+              ? `<span style="font-size:10.5px;background:#ffedd5;color:#9a3412;padding:2px 6px;border-radius:5px;font-weight:800;">${isXuat ? 'KH: ' : ''}${t._tyLeKetHop}</span>`
+              : '';
+
+            // Cước Debit
+            const rateNum = Number(t._debitRate || 0);
+            let rateBadgeHtml = '';
+            if (rateNum > 0) {
+              rateBadgeHtml = `
+                <div class="debit-rate-wrap">
+                  <div class="debit-rate-title">Cước Debit</div>
+                  <div class="debit-rate-pill">${rateNum.toLocaleString('vi-VN')} đ</div>
+                  ${t._debitNote ? `<div style="font-size:10px;color:#64748b;margin-top:2px;">${t._debitNote}</div>` : ''}
+                </div>
+              `;
+            } else {
+              rateBadgeHtml = `
+                <div class="debit-rate-wrap">
+                  <div class="debit-rate-title">Cước Debit</div>
+                  <div class="debit-rate-none">Chờ TMS duyệt</div>
+                  ${t._debitNote ? `<div style="font-size:10px;color:#94a3b8;margin-top:1px;">${t._debitNote}</div>` : ''}
+                </div>
+              `;
+            }
+
+            // Chi phí TMS ghi nhận
+            const bocXepNum = Number(t._tmsBocXep !== undefined ? t._tmsBocXep : (t._chiHoBocXep || 0));
+            const cpKhacNum = Number(t._tmsCpKhac !== undefined ? t._tmsCpKhac : (t._cpKhac || 0));
+            const veNum = Number(t._veCauDuong || 0);
+            const tmsTotalThis = (bocXepNum > 0 ? bocXepNum : 0) + (cpKhacNum > 0 ? cpKhacNum : 0) + (veNum > 0 ? veNum : 0);
+
+            // Chi phí TX báo qua /driver
+            const drvExp = Number(t._driverPhatSinh || 0);
+            const hasExpense = (tmsTotalThis > 0 || drvExp > 0);
+
+            let compareHtml = '';
+            if (hasExpense) {
+              const diff = drvExp - tmsTotalThis;
+              let statusClass = 'match';
+              let statusLabel = '✅ Khớp 100%';
+
+              if (tmsTotalThis > 0 && drvExp > 0) {
+                if (diff > 0) {
+                  statusClass = 'diff-more';
+                  statusLabel = `⚠️ TX báo cao hơn (+${diff.toLocaleString('vi-VN')} đ)`;
+                } else if (diff < 0) {
+                  statusClass = 'diff-less';
+                  statusLabel = `⚠️ TX báo thấp hơn (${diff.toLocaleString('vi-VN')} đ)`;
+                } else {
+                  statusClass = 'match';
+                  statusLabel = `✅ Khớp 100%`;
+                }
+              } else if (tmsTotalThis === 0 && drvExp > 0) {
+                statusClass = 'pending-tms';
+                statusLabel = `⏳ TMS chưa ghi nhận (+${drvExp.toLocaleString('vi-VN')} đ)`;
+              } else if (tmsTotalThis > 0 && drvExp === 0) {
+                statusClass = 'no-driver';
+                statusLabel = `⏳ TX chưa báo chi phí`;
+              }
+
+              const tmsParts = [];
+              if (bocXepNum > 0) tmsParts.push(`Bốc xếp: ${bocXepNum.toLocaleString('vi-VN')} đ`);
+              if (cpKhacNum > 0) tmsParts.push(`Khác: ${cpKhacNum.toLocaleString('vi-VN')} đ`);
+              if (veNum > 0) tmsParts.push(`Vé CĐ: ${veNum.toLocaleString('vi-VN')} đ`);
+              const tmsDetailStr = tmsParts.length ? tmsParts.join(' • ') : 'Chưa có khoản chi';
+              const drvDetailStr = t._driverExpDetail ? t._driverExpDetail : (drvExp > 0 ? 'Chi phí chuyến xe' : 'Chưa nhập chi phí');
+
+              compareHtml = `
+                <div class="compare-box ${diff !== 0 && (tmsTotalThis > 0 || drvExp > 0) ? 'has-diff' : 'is-match'}">
+                  <div class="compare-title-row">
+                    <div class="compare-title">⚖️ Đối soát phát sinh</div>
+                    <span class="badge-diff-status ${statusClass}">${statusLabel}</span>
+                  </div>
+                  <div class="compare-cols">
+                    <div class="compare-col">
+                      <div class="compare-col-header">🏛️ TMS Vietsun</div>
+                      <div class="compare-col-val" style="color:#0284c7;">${tmsTotalThis > 0 ? tmsTotalThis.toLocaleString('vi-VN') + ' đ' : '--'}</div>
+                      <div class="compare-col-detail">${tmsDetailStr}</div>
+                    </div>
+                    <div class="compare-col">
+                      <div class="compare-col-header">👤 Tài xế báo</div>
+                      <div class="compare-col-val" style="color:#d97706;">${drvExp > 0 ? drvExp.toLocaleString('vi-VN') + ' đ' : '--'}</div>
+                      <div class="compare-col-detail">${drvDetailStr}</div>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }
+
+            const warehouseName = t.khoNhanHangPo || t.tenKhachPo || '--';
+            const truckPlate = t.soXePo || '--';
+            const contNo = t.soContPo || '--';
+            const sealNo = (t.soSealPo && t.soSealPo !== '--') ? t.soSealPo : '';
+
+            return `
+              <div class="debit-card ${cardBorderClass}">
+                <div class="debit-header">
+                  <div class="debit-badges-row">
+                    <span class="badge ${typeClass}">${typeText}</span>
+                    ${sizeBadge}
+                    <span class="badge badge-date">📅 ${tripDate}</span>
+                    ${khBadge}
+                  </div>
+                  ${rateBadgeHtml}
+                </div>
+
+                <div class="debit-main-info">
+                  <div class="debit-info-item">
+                    <span class="debit-info-label">🚛 Số xe:</span>
+                    <span class="debit-info-val" style="color:#1d4ed8;font-weight:800;font-size:14px;">${truckPlate}</span>
+                  </div>
+                  <div class="debit-info-item">
+                    <span class="debit-info-label">📦 Số Cont:</span>
+                    <span class="debit-info-val" style="font-family:monospace;font-weight:700;">${contNo} ${sealNo ? `<span style="color:#64748b;font-weight:600;">(Seal: ${sealNo})</span>` : ''}</span>
+                  </div>
+                  <div class="debit-info-item" style="grid-column: 1 / -1;">
+                    <span class="debit-info-label">🏢 Kho/Khách:</span>
+                    <span class="debit-info-val">${warehouseName}</span>
+                  </div>
+                </div>
+
+                ${compareHtml}
+              </div>
+            `;
+          }).join('');
+        }
       }
 
-      tbody.innerHTML = filtered.map(t => {
-        const isXuat = t.xuatNhapPo === 'X';
-        const khBadge = t._tyLeKetHop
-          ? `<div style="font-size:10px;background:#ffedd5;color:#9a3412;padding:1px 5px;border-radius:4px;font-weight:800;display:inline-block;margin-top:2px;">${isXuat ? 'KH: ' : ''}${t._tyLeKetHop}</div>`
-          : '';
-        const typeBadge = isXuat
-          ? `<span style="color:#ea580c;font-weight:800;">XUẤT</span><br>${khBadge}`
-          : `<span style="color:#2563eb;font-weight:800;">NHẬP</span>${khBadge ? '<br>' + khBadge : ''}`;
-        const tripDate = formatVNDate(getTripDateISO(t)).slice(0, 5);
-
-        // Chi phí TMS ghi nhận
-        const bocXepNum = Number(t._tmsBocXep !== undefined ? t._tmsBocXep : (t._chiHoBocXep || 0));
-        const cpKhacNum = Number(t._tmsCpKhac !== undefined ? t._tmsCpKhac : (t._cpKhac || 0));
-        const veNum = Number(t._veCauDuong || 0);
-        const tmsTotalThis = bocXepNum + cpKhacNum + veNum;
-        let tmsExpHtml = '<span style="color:#94a3b8;font-size:11px;">--</span>';
-        if (tmsTotalThis > 0) {
-          const parts = [];
-          if (bocXepNum > 0) parts.push(`Bốc xếp: ${bocXepNum.toLocaleString('vi-VN')} đ`);
-          if (cpKhacNum > 0) parts.push(`Khác: ${cpKhacNum.toLocaleString('vi-VN')} đ`);
-          if (veNum > 0) parts.push(`Vé CĐ: ${veNum.toLocaleString('vi-VN')} đ`);
-          tmsExpHtml = `<div style="font-weight:800;color:#0369a1;white-space:nowrap;">${tmsTotalThis.toLocaleString('vi-VN')} đ</div>` +
-            `<div style="font-size:10px;color:#64748b;line-height:1.2;margin-top:1px;">${parts.join('<br>')}</div>`;
+      // 5. Render DẠNG BẢNG (Table View)
+      const tbody = document.getElementById('vendorTripsBody');
+      if (tbody) {
+        if (!filtered.length) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:26px;color:var(--text-muted);">Không có chuyến xe nào phù hợp bộ lọc.</td></tr>';
+          return;
         }
 
-        // Phát sinh thực tế tài xế nhập qua /driver
-        const drvExp = Number(t._driverPhatSinh || 0);
-        let drvExpHtml = '<span style="font-size:11px;color:#94a3b8;font-style:italic;">--</span>';
-        if (drvExp > 0) {
-          const diff = drvExp - tmsTotalThis;
-          let diffBadge = '';
-          if (tmsTotalThis > 0 && diff !== 0) {
-            if (diff > 0) {
-              diffBadge = `<div style="font-size:10px;color:#dc2626;font-weight:700;">(Lệch +${diff.toLocaleString('vi-VN')} đ)</div>`;
-            } else {
-              diffBadge = `<div style="font-size:10px;color:#059669;font-weight:700;">(Lệch ${diff.toLocaleString('vi-VN')} đ)</div>`;
-            }
-          } else if (tmsTotalThis === 0) {
-            diffBadge = `<div style="font-size:10px;color:#d97706;font-weight:700;">(TMS chưa có)</div>`;
-          } else {
-            diffBadge = `<div style="font-size:10px;color:#059669;font-weight:700;">(Khớp TMS)</div>`;
+        tbody.innerHTML = filtered.map(t => {
+          const isXuat = t.xuatNhapPo === 'X';
+          const khBadge = t._tyLeKetHop
+            ? `<div style="font-size:10px;background:#ffedd5;color:#9a3412;padding:1px 5px;border-radius:4px;font-weight:800;display:inline-block;margin-top:2px;">${isXuat ? 'KH: ' : ''}${t._tyLeKetHop}</div>`
+            : '';
+          const typeBadge = isXuat
+            ? `<span style="color:#ea580c;font-weight:800;">XUẤT</span><br>${khBadge}`
+            : `<span style="color:#2563eb;font-weight:800;">NHẬP</span>${khBadge ? '<br>' + khBadge : ''}`;
+          const tripDate = formatVNDate(getTripDateISO(t)).slice(0, 5);
+
+          // Chi phí TMS ghi nhận
+          const bocXepNum = Number(t._tmsBocXep !== undefined ? t._tmsBocXep : (t._chiHoBocXep || 0));
+          const cpKhacNum = Number(t._tmsCpKhac !== undefined ? t._tmsCpKhac : (t._cpKhac || 0));
+          const veNum = Number(t._veCauDuong || 0);
+          const tmsTotalThis = (bocXepNum > 0 ? bocXepNum : 0) + (cpKhacNum > 0 ? cpKhacNum : 0) + (veNum > 0 ? veNum : 0);
+          let tmsExpHtml = '<span style="color:#cbd5e1;font-weight:600;">--</span>';
+          if (tmsTotalThis > 0) {
+            const parts = [];
+            if (bocXepNum > 0) parts.push(`Bốc xếp: ${bocXepNum.toLocaleString('vi-VN')} đ`);
+            if (cpKhacNum > 0) parts.push(`Khác: ${cpKhacNum.toLocaleString('vi-VN')} đ`);
+            if (veNum > 0) parts.push(`Vé CĐ: ${veNum.toLocaleString('vi-VN')} đ`);
+            tmsExpHtml = `<div style="font-weight:800;color:#0369a1;white-space:nowrap;">${tmsTotalThis.toLocaleString('vi-VN')} đ</div>` +
+              `<div style="font-size:10px;color:#64748b;line-height:1.2;margin-top:1px;">${parts.join('<br>')}</div>`;
           }
-          const detailStr = t._driverExpDetail ? `<div style="font-size:10px;color:#64748b;line-height:1.2;margin-top:2px;" title="${t._driverExpDetail}">${t._driverExpDetail}</div>` : '';
-          drvExpHtml = `<div style="font-weight:800;color:#b45309;white-space:nowrap;">${drvExp.toLocaleString('vi-VN')} đ</div>${diffBadge}${detailStr}`;
-        } else if (tmsTotalThis > 0) {
-          drvExpHtml = `<span style="font-size:11px;color:#94a3b8;font-style:italic;">TX chưa báo</span>`;
-        }
 
-        const rateNum = Number(t._debitRate || 0);
-        const rateHtml = rateNum > 0
-          ? `<div style="font-weight:800;color:#059669;white-space:nowrap;">${rateNum.toLocaleString('vi-VN')} đ</div>` +
-            (t._debitNote ? `<div style="font-size:10px;color:#64748b;">${t._debitNote}</div>` : '')
-          : (t._debitNote ? `<div style="font-size:10.5px;color:#94a3b8;font-style:italic;">${t._debitNote}</div>` : '');
+          // Phát sinh thực tế tài xế nhập qua /driver
+          const drvExp = Number(t._driverPhatSinh || 0);
+          let drvExpHtml = '<span style="color:#cbd5e1;font-weight:600;">--</span>';
+          if (drvExp > 0) {
+            const diff = drvExp - tmsTotalThis;
+            let diffBadge = '';
+            if (tmsTotalThis > 0 && diff !== 0) {
+              if (diff > 0) {
+                diffBadge = `<div style="font-size:10px;color:#dc2626;font-weight:700;">(Lệch +${diff.toLocaleString('vi-VN')} đ)</div>`;
+              } else {
+                diffBadge = `<div style="font-size:10px;color:#059669;font-weight:700;">(Lệch ${diff.toLocaleString('vi-VN')} đ)</div>`;
+              }
+            } else if (tmsTotalThis === 0) {
+              diffBadge = `<div style="font-size:10px;color:#d97706;font-weight:700;">(TMS chưa có)</div>`;
+            } else {
+              diffBadge = `<div style="font-size:10px;color:#059669;font-weight:700;">(Khớp TMS)</div>`;
+            }
+            const detailStr = t._driverExpDetail ? `<div style="font-size:10px;color:#64748b;line-height:1.2;margin-top:2px;" title="${t._driverExpDetail}">${t._driverExpDetail}</div>` : '';
+            drvExpHtml = `<div style="font-weight:800;color:#b45309;white-space:nowrap;">${drvExp.toLocaleString('vi-VN')} đ</div>${diffBadge}${detailStr}`;
+          } else if (tmsTotalThis > 0) {
+            drvExpHtml = `<span style="font-size:11px;color:#94a3b8;font-style:italic;">TX chưa báo</span>`;
+          }
 
-        return `
-          <tr>
-            <td>${tripDate}</td>
-            <td>${typeBadge}</td>
-            <td><b style="color:#1e40af;">${t.soXePo || '--'}</b></td>
-            <td>${t.khoNhanHangPo || t.tenKhachPo || '--'}</td>
-            <td><b>${t.soContPo || '--'}</b></td>
-            <td style="text-align:right;">${tmsExpHtml}</td>
-            <td style="text-align:right;">${drvExpHtml}</td>
-            <td style="text-align:right;">${rateHtml}</td>
-          </tr>
-        `;
-      }).join('');
+          const rateNum = Number(t._debitRate || 0);
+          const rateHtml = rateNum > 0
+            ? `<div style="font-weight:800;color:#059669;white-space:nowrap;font-size:13px;">${rateNum.toLocaleString('vi-VN')} đ</div>` +
+              (t._debitNote ? `<div style="font-size:10px;color:#64748b;">${t._debitNote}</div>` : '')
+            : (t._debitNote ? `<div style="font-size:10.5px;color:#94a3b8;font-style:italic;">${t._debitNote}</div>` : `<span style="color:#94a3b8;font-size:11px;font-style:italic;">Chờ TMS</span>`);
+
+          return `
+            <tr>
+              <td>${tripDate}</td>
+              <td>${typeBadge}</td>
+              <td><b style="color:#1e40af;font-size:13px;">${t.soXePo || '--'}</b></td>
+              <td><div style="max-width:200px;white-space:normal;line-height:1.25;font-weight:600;">${t.khoNhanHangPo || t.tenKhachPo || '--'}</div></td>
+              <td><b>${t.soContPo || '--'}</b>${t.soSealPo && t.soSealPo !== '--' ? `<br><span style="font-size:11px;color:#64748b;">Seal: ${t.soSealPo}</span>` : ''}</td>
+              <td style="text-align:right;">${tmsExpHtml}</td>
+              <td style="text-align:right;">${drvExpHtml}</td>
+              <td style="text-align:right;">${rateHtml}</td>
+            </tr>
+          `;
+        }).join('');
+      }
     }
 
     async function loadMyFleet() {
