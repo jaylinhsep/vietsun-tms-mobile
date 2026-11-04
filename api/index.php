@@ -679,6 +679,8 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false) {
     $drvBocXepMap = [];
     $drvCpKhacMap = [];
     $drvExpNoteMap = [];
+    $drvTotalExpMap = [];
+    $drvExpDetailsMap = [];
     try {
         $pdo = get_db();
         $stExp = $pdo->query("SELECT booking_id_po, expense_type, amount, note FROM trip_expenses ORDER BY id ASC");
@@ -694,6 +696,10 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false) {
                 } else {
                     $drvCpKhacMap[$pid] = ($drvCpKhacMap[$pid] ?? 0) + $amt;
                 }
+                $drvTotalExpMap[$pid] = ($drvTotalExpMap[$pid] ?? 0) + $amt;
+                $desc = ($etype ?: 'Chi phí') . ($amt > 0 ? (': ' . number_format($amt) . 'đ') : '') . ($enote ? " ($enote)" : '');
+                if (!isset($drvExpDetailsMap[$pid])) $drvExpDetailsMap[$pid] = [];
+                $drvExpDetailsMap[$pid][] = $desc;
                 if ($enote !== '') {
                     $drvExpNoteMap[$pid] = isset($drvExpNoteMap[$pid]) ? ($drvExpNoteMap[$pid] . '; ' . $enote) : $enote;
                 }
@@ -722,6 +728,8 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false) {
         // Chi hộ bốc xếp (TMS hoặc Tài xế báo)
         $tmsBocXep = max((int)($dInfo['bocXep2ChiHoPo'] ?? 0), (int)($dInfo['cpBocXepChiHoPo'] ?? 0));
         $drvBocXep = (int)($drvBocXepMap[(string)$idPo] ?? 0);
+        $item['_tmsBocXep'] = $tmsBocXep;
+        $item['_driverBocXep'] = $drvBocXep;
         $item['_chiHoBocXep'] = $tmsBocXep > 0 ? $tmsBocXep : $drvBocXep;
 
         // Chi phí phát sinh khác (Neo xe, đường cấm, nâng hạ, phí khác...)
@@ -731,10 +739,21 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false) {
             + (int)($dInfo['chiHoNangContPo'] ?? 0)
             + (int)($dInfo['chiHoHaContPo'] ?? 0);
         $drvCpKhac = (int)($drvCpKhacMap[(string)$idPo] ?? 0);
+        $item['_tmsCpKhac'] = $tmsCpKhac;
+        $item['_driverCpKhac'] = $drvCpKhac;
         $item['_cpKhac'] = $tmsCpKhac > 0 ? $tmsCpKhac : $drvCpKhac;
 
         // Vé cầu đường
-        $item['_veCauDuong'] = (int)($dInfo['veCauDuongPo'] ?? 0);
+        $tmsVeCauDuong = (int)($dInfo['veCauDuongPo'] ?? 0);
+        $item['_veCauDuong'] = $tmsVeCauDuong;
+
+        // Tổng phát sinh TMS vs Phát sinh thực tế tài xế nhập
+        $tmsTotalExp = $tmsBocXep + $tmsCpKhac + $tmsVeCauDuong;
+        $drvTotalExp = (int)($drvTotalExpMap[(string)$idPo] ?? 0);
+        $item['_tmsPhatSinh'] = $tmsTotalExp;
+        $item['_driverPhatSinh'] = $drvTotalExp;
+        $item['_chenhLechPhatSinh'] = $drvTotalExp - $tmsTotalExp;
+        $item['_driverExpDetail'] = implode('; ', $drvExpDetailsMap[(string)$idPo] ?? []);
         $item['_expenseNote'] = $drvExpNoteMap[(string)$idPo] ?? '';
 
         if (($item['xuatNhapPo'] ?? '') !== 'X') {

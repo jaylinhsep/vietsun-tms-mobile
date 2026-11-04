@@ -567,7 +567,7 @@
     <!-- VIEW 2: CHUYẾN XE & ĐỐI SOÁT CÔNG NỢ                               -->
     <!-- ================================================================== -->
     <div id="vendorViewDebit" style="display:none;">
-      <div class="stats-grid">
+      <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
         <div class="stat-card">
           <div class="stat-label">Tổng chuyến kỳ này</div>
           <div class="stat-value" id="valTotalTrips" style="color:var(--primary);">0</div>
@@ -577,8 +577,12 @@
           <div class="stat-value" id="valRevenue" style="color:var(--success);">0 đ</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Chi phí phát sinh</div>
-          <div class="stat-value" id="valExpenses" style="color:var(--warning);">0 đ</div>
+          <div class="stat-label">Phát sinh TMS</div>
+          <div class="stat-value" id="valExpenses" style="color:#0284c7;">0 đ</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">P.sinh Thực tế (TX)</div>
+          <div class="stat-value" id="valDriverExpenses" style="color:var(--warning);">0 đ</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Tổng thanh toán</div>
@@ -614,12 +618,13 @@
               <th>Số Xe</th>
               <th>Kho / Khách</th>
               <th>Số Cont</th>
-              <th style="text-align:right;">Chi hộ bốc xếp</th>
+              <th style="text-align:right;">Phát sinh TMS</th>
+              <th style="text-align:right;color:#b45309;">Phát sinh thực tế</th>
               <th style="text-align:right;">Cước Debit</th>
             </tr>
           </thead>
           <tbody id="vendorTripsBody">
-            <tr><td colspan="7" style="text-align:center;padding:24px;">Đang tải...</td></tr>
+            <tr><td colspan="8" style="text-align:center;padding:24px;">Đang tải...</td></tr>
           </tbody>
         </table>
       </div>
@@ -1465,23 +1470,33 @@
         return sum + (rate > 0 ? rate : 0);
       }, 0);
 
-      // Cộng tổng chi phí phát sinh (Chi hộ bốc xếp + Chi phí khác + Vé cầu đường) của các chuyến trong kỳ
-      const tripExpTotal = filtered.reduce((sum, t) => {
-        const bx = Number(t._chiHoBocXep || 0);
-        const khac = Number(t._cpKhac || 0);
+      // Cộng tổng chi phí phát sinh TMS (Chi hộ bốc xếp + Chi phí khác + Vé cầu đường)
+      const tmsExpTotal = filtered.reduce((sum, t) => {
+        const bx = Number(t._tmsBocXep !== undefined ? t._tmsBocXep : (t._chiHoBocXep || 0));
+        const khac = Number(t._tmsCpKhac !== undefined ? t._tmsCpKhac : (t._cpKhac || 0));
         const ve = Number(t._veCauDuong || 0);
         return sum + (bx > 0 ? bx : 0) + (khac > 0 ? khac : 0) + (ve > 0 ? ve : 0);
       }, 0);
-      const expTotal = tripExpTotal > 0 ? tripExpTotal : ((revData && revData.summary && revData.summary.totalExpenses) ? revData.summary.totalExpenses : 0);
+
+      // Cộng tổng chi phí phát sinh thực tế do Tài xế thực tế nhập qua /driver
+      const driverExpTotal = filtered.reduce((sum, t) => {
+        const drv = Number(t._driverPhatSinh || 0);
+        return sum + (drv > 0 ? drv : 0);
+      }, 0);
+
+      const expTotal = tmsExpTotal > 0 ? tmsExpTotal : ((revData && revData.summary && revData.summary.totalExpenses) ? revData.summary.totalExpenses : 0);
 
       document.getElementById('valTotalTrips').textContent = filtered.length;
       document.getElementById('valRevenue').textContent = totalDebitRevenue > 0 ? totalDebitRevenue.toLocaleString('vi-VN') + ' đ' : '0 đ';
       document.getElementById('valExpenses').textContent = expTotal.toLocaleString('vi-VN') + ' đ';
+      if (document.getElementById('valDriverExpenses')) {
+        document.getElementById('valDriverExpenses').textContent = driverExpTotal.toLocaleString('vi-VN') + ' đ';
+      }
       document.getElementById('valNetTotal').textContent = (totalDebitRevenue + expTotal).toLocaleString('vi-VN') + ' đ';
 
       const tbody = document.getElementById('vendorTripsBody');
       if (!filtered.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">Không có chuyến xe nào trong kỳ đối soát này.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--text-muted);">Không có chuyến xe nào trong kỳ đối soát này.</td></tr>';
         return;
       }
 
@@ -1495,12 +1510,43 @@
           : `<span style="color:#2563eb;font-weight:800;">NHẬP</span>${khBadge ? '<br>' + khBadge : ''}`;
         const tripDate = formatVNDate(getTripDateISO(t)).slice(0, 5);
 
-        const bocXepNum = Number(t._chiHoBocXep || 0);
-        const cpKhacNum = Number(t._cpKhac || 0);
-        const bocXepHtml = bocXepNum > 0
-          ? `<div style="font-weight:800;color:#b45309;white-space:nowrap;">${bocXepNum.toLocaleString('vi-VN')} đ</div>` +
-            (cpKhacNum > 0 ? `<div style="font-size:10px;color:#64748b;">+Khác: ${cpKhacNum.toLocaleString('vi-VN')} đ</div>` : '')
-          : (cpKhacNum > 0 ? `<div style="font-size:10.5px;color:#b45309;font-weight:700;">Khác: ${cpKhacNum.toLocaleString('vi-VN')} đ</div>` : '');
+        // Chi phí TMS ghi nhận
+        const bocXepNum = Number(t._tmsBocXep !== undefined ? t._tmsBocXep : (t._chiHoBocXep || 0));
+        const cpKhacNum = Number(t._tmsCpKhac !== undefined ? t._tmsCpKhac : (t._cpKhac || 0));
+        const veNum = Number(t._veCauDuong || 0);
+        const tmsTotalThis = bocXepNum + cpKhacNum + veNum;
+        let tmsExpHtml = '<span style="color:#94a3b8;font-size:11px;">--</span>';
+        if (tmsTotalThis > 0) {
+          const parts = [];
+          if (bocXepNum > 0) parts.push(`Bốc xếp: ${bocXepNum.toLocaleString('vi-VN')} đ`);
+          if (cpKhacNum > 0) parts.push(`Khác: ${cpKhacNum.toLocaleString('vi-VN')} đ`);
+          if (veNum > 0) parts.push(`Vé CĐ: ${veNum.toLocaleString('vi-VN')} đ`);
+          tmsExpHtml = `<div style="font-weight:800;color:#0369a1;white-space:nowrap;">${tmsTotalThis.toLocaleString('vi-VN')} đ</div>` +
+            `<div style="font-size:10px;color:#64748b;line-height:1.2;margin-top:1px;">${parts.join('<br>')}</div>`;
+        }
+
+        // Phát sinh thực tế tài xế nhập qua /driver
+        const drvExp = Number(t._driverPhatSinh || 0);
+        let drvExpHtml = '<span style="font-size:11px;color:#94a3b8;font-style:italic;">--</span>';
+        if (drvExp > 0) {
+          const diff = drvExp - tmsTotalThis;
+          let diffBadge = '';
+          if (tmsTotalThis > 0 && diff !== 0) {
+            if (diff > 0) {
+              diffBadge = `<div style="font-size:10px;color:#dc2626;font-weight:700;">(Lệch +${diff.toLocaleString('vi-VN')} đ)</div>`;
+            } else {
+              diffBadge = `<div style="font-size:10px;color:#059669;font-weight:700;">(Lệch ${diff.toLocaleString('vi-VN')} đ)</div>`;
+            }
+          } else if (tmsTotalThis === 0) {
+            diffBadge = `<div style="font-size:10px;color:#d97706;font-weight:700;">(TMS chưa có)</div>`;
+          } else {
+            diffBadge = `<div style="font-size:10px;color:#059669;font-weight:700;">(Khớp TMS)</div>`;
+          }
+          const detailStr = t._driverExpDetail ? `<div style="font-size:10px;color:#64748b;line-height:1.2;margin-top:2px;" title="${t._driverExpDetail}">${t._driverExpDetail}</div>` : '';
+          drvExpHtml = `<div style="font-weight:800;color:#b45309;white-space:nowrap;">${drvExp.toLocaleString('vi-VN')} đ</div>${diffBadge}${detailStr}`;
+        } else if (tmsTotalThis > 0) {
+          drvExpHtml = `<span style="font-size:11px;color:#94a3b8;font-style:italic;">TX chưa báo</span>`;
+        }
 
         const rateNum = Number(t._debitRate || 0);
         const rateHtml = rateNum > 0
@@ -1515,7 +1561,8 @@
             <td><b style="color:#1e40af;">${t.soXePo || '--'}</b></td>
             <td>${t.khoNhanHangPo || t.tenKhachPo || '--'}</td>
             <td><b>${t.soContPo || '--'}</b></td>
-            <td style="text-align:right;">${bocXepHtml}</td>
+            <td style="text-align:right;">${tmsExpHtml}</td>
+            <td style="text-align:right;">${drvExpHtml}</td>
             <td style="text-align:right;">${rateHtml}</td>
           </tr>
         `;
@@ -1812,7 +1859,7 @@
         pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
       });
 
-      // 18 Cột chuẩn form mẫu
+      // 20 Cột chuẩn form mẫu (bao gồm Phát sinh thực tế & Chênh lệch đối chiếu)
       ws.columns = [
         { key: 'stt', width: 6 },
         { key: 'ngay', width: 14 },
@@ -1831,13 +1878,15 @@
         { key: 'cuocvc', width: 16 },
         { key: 'cpkhac', width: 14 },
         { key: 'vecauduong', width: 14 },
-        { key: 'ghichu', width: 22 }
+        { key: 'drvexp', width: 18 },
+        { key: 'chenhlech', width: 18 },
+        { key: 'ghichu', width: 26 }
       ];
 
       // Row 1: Thông tin Vendor & Kính gửi Nhật Việt
       ws.mergeCells('A1:E1');
       ws.mergeCells('F1:G1');
-      ws.mergeCells('H1:N1');
+      ws.mergeCells('H1:P1');
       ws.getCell('A1').value = vendorName;
       ws.getCell('A1').font = { name: 'Times New Roman', size: 11, bold: true };
       ws.getCell('F1').value = 'Kính gửi';
@@ -1848,7 +1897,7 @@
       // Row 2: Địa chỉ
       ws.mergeCells('B2:E2');
       ws.mergeCells('F2:G2');
-      ws.mergeCells('H2:N2');
+      ws.mergeCells('H2:P2');
       ws.getCell('A2').value = 'Địa chỉ:';
       ws.getCell('A2').font = { name: 'Times New Roman', size: 11 };
       ws.getCell('B2').value = vendorAddress;
@@ -1861,7 +1910,7 @@
       // Row 3: MST
       ws.mergeCells('B3:E3');
       ws.mergeCells('F3:G3');
-      ws.mergeCells('H3:N3');
+      ws.mergeCells('H3:P3');
       ws.getCell('A3').value = 'MST';
       ws.getCell('A3').font = { name: 'Times New Roman', size: 11 };
       ws.getCell('B3').value = vendorTax;
@@ -1872,7 +1921,7 @@
       ws.getCell('H3').font = { name: 'Times New Roman', size: 11 };
 
       // Row 4: Tiêu đề BẢNG KÊ
-      ws.mergeCells('A4:R4');
+      ws.mergeCells('A4:T4');
       const cTitle = ws.getCell('A4');
       cTitle.value = `BẢNG KÊ THANH TOÁN CƯỚC VẬN CHUYỂN THÁNG ${mmStr}/${yyyyStr}`;
       cTitle.font = { name: 'Times New Roman', size: 14, bold: true };
@@ -1880,7 +1929,7 @@
       ws.getRow(4).height = 25;
 
       // Row 5: Kèm theo Hóa Đơn...
-      ws.mergeCells('A5:R5');
+      ws.mergeCells('A5:T5');
       const cSub = ws.getCell('A5');
       cSub.value = `(Kèm theo Hóa Đơn số……….………ngày……..tháng……..năm ${yyyyStr})`;
       cSub.font = { name: 'Times New Roman', size: 11, italic: true };
@@ -1918,7 +1967,9 @@
         { col: 'O', title: 'Cước VC' },
         { col: 'P', title: 'C.PHÍ PHÁT SINH KHÁC' },
         { col: 'Q', title: 'Vé Cầu Đường' },
-        { col: 'R', title: 'GHI CHÚ' }
+        { col: 'R', title: 'PHÁT SINH THỰC TẾ' },
+        { col: 'S', title: 'CHÊNH LỆCH (TX - TMS)' },
+        { col: 'T', title: 'GHI CHÚ' }
       ];
 
       headers.forEach(h => {
@@ -1949,7 +2000,7 @@
 
       for (let r = 6; r <= 7; r++) {
         ws.getRow(r).height = 24;
-        for (let c = 1; c <= 18; c++) {
+        for (let c = 1; c <= 20; c++) {
           ws.getRow(r).getCell(c).border = borderThin;
         }
       }
@@ -1976,20 +2027,22 @@
         const mPct = ketHop.match(/^(\d+(?:\.\d+)?)\s*%$/);
         if (mPct) ketHop = String(+(parseFloat(mPct[1]) / 100).toFixed(2));
 
-        const bocXep = Number(t._chiHoBocXep || 0);
+        const bocXep = Number(t._tmsBocXep !== undefined ? t._tmsBocXep : (t._chiHoBocXep || 0));
         const debitRate = Number(t._debitRate || 0);
         const cuocChuaVat = debitRate > 0 ? Math.round(debitRate / 1.08) : 0;
         const vat8 = cuocChuaVat > 0 ? +(cuocChuaVat * 0.08).toFixed(2) : 0;
         const cuocVc = cuocChuaVat > 0 ? +(cuocChuaVat + vat8).toFixed(2) : 0;
-        const cpKhac = Number(t._cpKhac || 0);
+        const cpKhac = Number(t._tmsCpKhac !== undefined ? t._tmsCpKhac : (t._cpKhac || 0));
         const veCauDuong = Number(t._veCauDuong || 0);
+        const drvExp = Number(t._driverPhatSinh || 0);
 
         sumTotalPayment += (cuocVc + bocXep + cpKhac + veCauDuong);
 
-        const ghiChu = [
-          (t.ghiChuPo && t.ghiChuPo !== '.') ? t.ghiChuPo : '',
-          t._expenseNote || ''
-        ].filter(Boolean).join('; ');
+        const ghiChuParts = [];
+        if (t.ghiChuPo && t.ghiChuPo !== '.') ghiChuParts.push(t.ghiChuPo);
+        if (t._expenseNote) ghiChuParts.push(t._expenseNote);
+        if (t._driverExpDetail) ghiChuParts.push(`[TX báo: ${t._driverExpDetail}]`);
+        const ghiChu = ghiChuParts.join('; ');
 
         r.getCell(1).value = idx + 1;
         r.getCell(2).value = ngay;
@@ -2008,15 +2061,17 @@
         r.getCell(15).value = cuocVc > 0 ? cuocVc : null;
         r.getCell(16).value = cpKhac > 0 ? cpKhac : null;
         r.getCell(17).value = veCauDuong > 0 ? veCauDuong : null;
-        r.getCell(18).value = ghiChu;
+        r.getCell(18).value = drvExp > 0 ? drvExp : null;
+        r.getCell(19).value = { formula: `IF(R${curRow}>0, R${curRow}-(L${curRow}+P${curRow}+Q${curRow}), 0)` };
+        r.getCell(20).value = ghiChu;
 
-        for (let c = 1; c <= 18; c++) {
+        for (let c = 1; c <= 20; c++) {
           const cell = r.getCell(c);
           cell.border = borderThin;
           cell.font = { name: 'Times New Roman', size: 10 };
           if ([1, 2, 5, 6, 7, 8, 9, 10, 11].includes(c)) {
             cell.alignment = { horizontal: 'center', vertical: 'middle' };
-          } else if ([12, 13, 14, 15, 16, 17].includes(c)) {
+          } else if ([12, 13, 14, 15, 16, 17, 18, 19].includes(c)) {
             cell.alignment = { horizontal: 'right', vertical: 'middle' };
             cell.numFmt = '#,##0';
           } else {
@@ -2042,14 +2097,16 @@
       rTot.getCell(15).value = { formula: `SUM(O${startRow}:O${endRow})` };
       rTot.getCell(16).value = { formula: `SUM(P${startRow}:P${endRow})` };
       rTot.getCell(17).value = { formula: `SUM(Q${startRow}:Q${endRow})` };
+      rTot.getCell(18).value = { formula: `SUM(R${startRow}:R${endRow})` };
+      rTot.getCell(19).value = { formula: `SUM(S${startRow}:S${endRow})` };
 
-      for (let c = 1; c <= 18; c++) {
+      for (let c = 1; c <= 20; c++) {
         const cell = rTot.getCell(c);
         cell.border = borderThin;
         cell.font = { name: 'Times New Roman', size: 10, bold: true };
         if ([7, 8].includes(c)) {
           cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        } else if (c >= 12 && c <= 17) {
+        } else if (c >= 12 && c <= 19) {
           cell.alignment = { horizontal: 'right', vertical: 'middle' };
           cell.numFmt = '#,##0';
         }
@@ -2065,7 +2122,7 @@
       rPay.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
       rPay.getCell(13).value = { formula: `L${totRow}+O${totRow}+P${totRow}+Q${totRow}` };
 
-      for (let c = 1; c <= 18; c++) {
+      for (let c = 1; c <= 20; c++) {
         const cell = rPay.getCell(c);
         cell.border = borderThin;
         cell.font = { name: 'Times New Roman', size: 10, bold: true };
@@ -2078,7 +2135,7 @@
       // SỐ TIỀN THANH TOÁN
       const moneyRow = payRow + 1;
       ws.mergeCells(`A${moneyRow}:C${moneyRow}`);
-      ws.mergeCells(`E${moneyRow}:R${moneyRow}`);
+      ws.mergeCells(`E${moneyRow}:T${moneyRow}`);
       const rMoney = ws.getRow(moneyRow);
       rMoney.height = 20;
       rMoney.getCell(1).value = 'Số tiền Thanh toán:';
@@ -2092,7 +2149,7 @@
       // SỐ TIỀN BẰNG CHỮ
       const textRow = moneyRow + 1;
       ws.mergeCells(`A${textRow}:C${textRow}`);
-      ws.mergeCells(`D${textRow}:R${textRow}`);
+      ws.mergeCells(`D${textRow}:T${textRow}`);
       const rText = ws.getRow(textRow);
       rText.height = 20;
       rText.getCell(1).value = 'Số tiền bằng chữ:';
@@ -2103,7 +2160,7 @@
       // KHUNG CHỮ KÝ
       const sigTitleRow = textRow + 2;
       ws.mergeCells(`A${sigTitleRow}:F${sigTitleRow}`);
-      ws.mergeCells(`G${sigTitleRow}:R${sigTitleRow}`);
+      ws.mergeCells(`G${sigTitleRow}:T${sigTitleRow}`);
       const rSigTitle = ws.getRow(sigTitleRow);
       rSigTitle.height = 22;
       rSigTitle.getCell(1).value = 'XÁC NHẬN CỦA NHẬT VIỆT';
@@ -2115,7 +2172,7 @@
 
       const sigNameRow = sigTitleRow + 5;
       ws.mergeCells(`A${sigNameRow}:F${sigNameRow}`);
-      ws.mergeCells(`G${sigNameRow}:R${sigNameRow}`);
+      ws.mergeCells(`G${sigNameRow}:T${sigNameRow}`);
       const rSigName = ws.getRow(sigNameRow);
       rSigName.getCell(1).value = 'Nguyễn Ngọc Hoàng';
       rSigName.getCell(1).font = { name: 'Times New Roman', size: 11, bold: true };
@@ -2139,13 +2196,13 @@
     function exportToCsvFallback(exportTrips, meta) {
       const { vendorName, mmStr, yyyyStr } = meta;
       const lines = [];
-      lines.push(`${csvCell(vendorName)},,,,,Kính gửi,,: CÔNG TY CỔ PHẦN NHẬT VIỆT,,,,,,,,,,`);
-      lines.push(`Địa chỉ:,,,,,Địa chỉ,,": 13-15 Đường B4, Phường An Khánh, Tp.HCM",,,,,,,,,,`);
-      lines.push(`MST,,,,,MST,,: 0303582935,,,,,,,,,,`);
-      lines.push(`BẢNG KÊ THANH TOÁN CƯỚC VẬN CHUYỂN THÁNG ${mmStr}/${yyyyStr} ,,,,,,,,,,,,,,,,,`);
-      lines.push(`(Kèm theo Hóa Đơn số……….………ngày……..tháng……..năm ${yyyyStr}),,,,,,,,,,,,,,,,,`);
-      lines.push(`STT,NGÀY THỰC HIỆN,KHO ĐÓNG-TRẢ,ĐỊA CHỈ,SỐ CONT,SỐ SEAL,SIZE,,X/N,SỐ XE,Kết hợp,BỐC XẾP,CƯỚC VC Chưa VAT,VAT 8%,Cước VC,C.PHÍ PHÁT SINH KHÁC,Vé Cầu Đường,GHI CHÚ`);
-      lines.push(`,,,,,,20,40,,,,,,,,,,`);
+      lines.push(`${csvCell(vendorName)},,,,,Kính gửi,,: CÔNG TY CỔ PHẦN NHẬT VIỆT,,,,,,,,,,,,`);
+      lines.push(`Địa chỉ:,,,,,Địa chỉ,,": 13-15 Đường B4, Phường An Khánh, Tp.HCM",,,,,,,,,,,,`);
+      lines.push(`MST,,,,,MST,,: 0303582935,,,,,,,,,,,,`);
+      lines.push(`BẢNG KÊ THANH TOÁN CƯỚC VẬN CHUYỂN THÁNG ${mmStr}/${yyyyStr} ,,,,,,,,,,,,,,,,,,,`);
+      lines.push(`(Kèm theo Hóa Đơn số……….………ngày……..tháng……..năm ${yyyyStr}),,,,,,,,,,,,,,,,,,,`);
+      lines.push(`STT,NGÀY THỰC HIỆN,KHO ĐÓNG-TRẢ,ĐỊA CHỈ,SỐ CONT,SỐ SEAL,SIZE,,X/N,SỐ XE,Kết hợp,BỐC XẾP,CƯỚC VC Chưa VAT,VAT 8%,Cước VC,C.PHÍ PHÁT SINH KHÁC,Vé Cầu Đường,PHÁT SINH THỰC TẾ (TX),CHÊNH LỆCH,GHI CHÚ`);
+      lines.push(`,,,,,,20,40,,,,,,,,,,,,`);
 
       let sum20 = 0;
       let sum40 = 0;
@@ -2155,6 +2212,7 @@
       let sumCuocVc = 0;
       let sumCpKhac = 0;
       let sumVeCauDuong = 0;
+      let sumDrvExp = 0;
 
       exportTrips.forEach((t, idx) => {
         const stt = idx + 1;
@@ -2175,7 +2233,7 @@
         const mPct = ketHop.match(/^(\d+(?:\.\d+)?)\s*%$/);
         if (mPct) ketHop = String(+(parseFloat(mPct[1]) / 100).toFixed(2));
 
-        const bocXep = Number(t._chiHoBocXep || 0);
+        const bocXep = Number(t._tmsBocXep !== undefined ? t._tmsBocXep : (t._chiHoBocXep || 0));
         if (bocXep > 0) sumBocXep += bocXep;
 
         const debitRate = Number(t._debitRate || 0);
@@ -2188,16 +2246,23 @@
           sumCuocVc += cuocVc;
         }
 
-        const cpKhac = Number(t._cpKhac || 0);
+        const cpKhac = Number(t._tmsCpKhac !== undefined ? t._tmsCpKhac : (t._cpKhac || 0));
         if (cpKhac > 0) sumCpKhac += cpKhac;
 
         const veCauDuong = Number(t._veCauDuong || 0);
         if (veCauDuong > 0) sumVeCauDuong += veCauDuong;
 
-        const ghiChu = [
-          (t.ghiChuPo && t.ghiChuPo !== '.') ? t.ghiChuPo : '',
-          t._expenseNote || ''
-        ].filter(Boolean).join('; ');
+        const drvExp = Number(t._driverPhatSinh || 0);
+        if (drvExp > 0) sumDrvExp += drvExp;
+
+        const tmsTotalExp = bocXep + cpKhac + veCauDuong;
+        const diff = drvExp > 0 ? (drvExp - tmsTotalExp) : '';
+
+        const ghiChuParts = [];
+        if (t.ghiChuPo && t.ghiChuPo !== '.') ghiChuParts.push(t.ghiChuPo);
+        if (t._expenseNote) ghiChuParts.push(t._expenseNote);
+        if (t._driverExpDetail) ghiChuParts.push(`[TX báo: ${t._driverExpDetail}]`);
+        const ghiChu = ghiChuParts.join('; ');
 
         const row = [
           stt,
@@ -2217,6 +2282,8 @@
           cuocVc > 0 ? cuocVc : '',
           cpKhac > 0 ? cpKhac : '',
           veCauDuong > 0 ? veCauDuong : '',
+          drvExp > 0 ? drvExp : '',
+          diff,
           csvCell(ghiChu)
         ];
         lines.push(row.join(','));
@@ -2236,19 +2303,21 @@
         sumCuocVc > 0 ? +sumCuocVc.toFixed(2) : '',
         sumCpKhac > 0 ? sumCpKhac : '',
         sumVeCauDuong > 0 ? sumVeCauDuong : '',
+        sumDrvExp > 0 ? sumDrvExp : '',
+        sumDrvExp > 0 ? (sumDrvExp - (sumBocXep + sumCpKhac + sumVeCauDuong)) : '',
         ''
       ].join(','));
 
-      lines.push(`TỔNG TIỀN THANH TOÁN,,,,,,,,,,,,${totalPayment > 0 ? totalPayment : 0},,,,,`);
-      lines.push(`Số tiền Thanh toán:,,,${totalPayment > 0 ? totalPayment : 0},VNĐ (Đã Bao gồm VAT),,,,,,,,,,,,,`);
-      lines.push(`Số tiền bằng chữ:,,,${csvCell(bangChu)},,,,,,,,,,,,,,`);
-      lines.push(`,,,,,,,,,,,,,,,,,`);
-      lines.push(`XÁC NHẬN CỦA NHẬT VIỆT,,,,,,${csvCell(vendorName)},,,,,,,,,,,`);
-      lines.push(`,,,,,,,,,,,,,,,,,`);
-      lines.push(`,,,,,,,,,,,,,,,,,`);
-      lines.push(`,,,,,,,,,,,,,,,,,`);
-      lines.push(`,,,,,,,,,,,,,,,,,`);
-      lines.push(`,,                                                           Nguyễn Ngọc Hoàng,,,,,,,,                    ,,,,,,,`);
+      lines.push(`TỔNG TIỀN THANH TOÁN,,,,,,,,,,,,${totalPayment > 0 ? totalPayment : 0},,,,,,,`);
+      lines.push(`Số tiền Thanh toán:,,,${totalPayment > 0 ? totalPayment : 0},VNĐ (Đã Bao gồm VAT),,,,,,,,,,,,,,`);
+      lines.push(`Số tiền bằng chữ:,,,${csvCell(bangChu)},,,,,,,,,,,,,,,`);
+      lines.push(`,,,,,,,,,,,,,,,,,,,`);
+      lines.push(`XÁC NHẬN CỦA NHẬT VIỆT,,,,,,${csvCell(vendorName)},,,,,,,,,,,,,`);
+      lines.push(`,,,,,,,,,,,,,,,,,,,`);
+      lines.push(`,,,,,,,,,,,,,,,,,,,`);
+      lines.push(`,,,,,,,,,,,,,,,,,,,`);
+      lines.push(`,,,,,,,,,,,,,,,,,,,`);
+      lines.push(`,,                                                           Nguyễn Ngọc Hoàng,,,,,,,,                    ,,,,,,,,,`);
 
       const csv = '\uFEFF' + lines.join('\r\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
