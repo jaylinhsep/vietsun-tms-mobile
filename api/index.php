@@ -382,6 +382,16 @@ function normalize_shipment_item($item) {
             $item[$f] = html_entity_decode($item[$f], ENT_QUOTES | ENT_HTML5, 'UTF-8');
         }
     }
+
+    // Nếu thông tin kho đóng / trả rỗng hoặc chỉ là dấu chấm/gạch ngang -> mặc nhiên lấy tên công ty / khách hàng
+    $rawKho = trim((string)($item['khoNhanHangPo'] ?? ''));
+    $rawKhach = trim((string)($item['tenKhachPo'] ?? ''));
+    if ($rawKho === '' || preg_match('/^[\.\-\s,]+$/u', $rawKho)) {
+        if ($rawKhach !== '' && !preg_match('/^[\.\-\s,]+$/u', $rawKhach)) {
+            $item['khoNhanHangPo'] = $rawKhach;
+        }
+    }
+
     return $item;
 }
 

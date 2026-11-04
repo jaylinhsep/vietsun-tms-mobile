@@ -574,6 +574,20 @@
       return '';
     }
 
+    // Lấy tên Kho đóng/trả chuẩn: Nếu kho rỗng hoặc chỉ là dấu chấm/gạch ngang -> mặc nhiên lấy tên công ty/khách hàng
+    function getCleanWarehouseName(t) {
+      if (!t) return '';
+      const rawKho = (t.khoNhanHangPo || '').trim();
+      if (rawKho && !/^[\.\-\s,]+$/.test(rawKho)) {
+        return rawKho;
+      }
+      const rawKhach = (t.tenKhachPo || '').trim();
+      if (rawKhach && !/^[\.\-\s,]+$/.test(rawKhach)) {
+        return rawKhach;
+      }
+      return '';
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('driverDateInput').value = selectedDateISO;
       const token = localStorage.getItem('vs_driver_token');
@@ -733,11 +747,12 @@
       const cccd = (currentDriverInfo.cccd || '').trim();
       const gplx = (currentDriverInfo.gplx || '').trim();
 
+      const cleanKho = getCleanWarehouseName(t);
       if (isXuat) {
         return [
           `THÔNG TIN ĐÓNG HÀNG:`,
           `- Khách hàng: ${t.tenKhachPo || ''}`,
-          `- Kho ĐÓNG: ${t.khoNhanHangPo || ''}`,
+          `- Kho ĐÓNG: ${cleanKho || ''}`,
           `- Địa chỉ: ${t.diaChiNhanPo || ''}\t- Tỉnh: ${t.tinhNhanPo || ''}`,
           `- Số cont: ${t.soContPo || ''}\t\t- Số seal: ${t.soSealPo || ''}`,
           `- Ngày ĐÓNG: ${ngayGiao}`,
@@ -753,7 +768,7 @@
       } else {
         return [
           `THÔNG TIN GIAO HÀNG:`,
-          `- Kho GIAO: ${t.khoNhanHangPo || ''}`,
+          `- Kho GIAO: ${cleanKho || ''}`,
           `- Địa chỉ: ${t.diaChiNhanPo || ''}\t- Tỉnh: ${t.tinhNhanPo || ''}`,
           `- Liên hệ: ${t.lienHeNhanPo || ''}`,
           `- Số cont: ${t.soContPo || ''}\t\t- Số seal: ${t.soSealPo || ''}`,
@@ -878,7 +893,7 @@
         const statusBadge = isLocked
           ? '<span class="badge" style="background:#fee2e2;color:#b91c1c;">🔒 Đã khóa sổ</span>'
           : (isPending ? '<span class="badge" style="background:#fef3c7;color:#b45309;">⏳ Chờ duyệt TMS</span>' : '');
-        const warehouseTitle = (t.khoNhanHangPo || t.tenKhachPo || 'Chưa rõ tên kho').trim();
+        const warehouseTitle = getCleanWarehouseName(t) || 'Chưa rõ tên kho';
         const addrText = [t.diaChiNhanPo, t.tinhNhanPo ? `(${t.tinhNhanPo})` : ''].filter(Boolean).join(' ');
 
         return `
@@ -892,10 +907,11 @@
 
             ${isXuat ? `
             <div style="background:#ffedd5;border:1.5px solid #fdba74;border-radius:10px;padding:9px 11px;margin:6px 0;">
-              <div style="font-size:10.5px;font-weight:800;color:#9a3412;text-transform:uppercase;letter-spacing:0.3px;">🏭 KHO ĐÓNG HÀNG</div>
+              <div style="font-size:10.5px;font-weight:800;color:#9a3412;text-transform:uppercase;letter-spacing:0.3px;">
+                🏭 KHO ĐÓNG HÀNG ${(t.tenKhachPo || '').trim() && (t.tenKhachPo || '').trim() !== warehouseTitle ? `• ${(t.tenKhachPo || '').trim()}` : ''}
+              </div>
               <div style="font-size:15.5px;font-weight:900;color:#c2410c;margin-top:2px;line-height:1.25;">📍 ${warehouseTitle}</div>
               ${addrText ? `<div style="font-size:12.5px;color:#7c2d12;font-weight:600;margin-top:3px;">${addrText}</div>` : ''}
-              ${t.tenKhachPo && t.tenKhachPo !== warehouseTitle ? `<div style="font-size:11.5px;color:#9a3412;margin-top:2px;">👤 KH: ${t.tenKhachPo}</div>` : ''}
             </div>
             ` : `
             <div style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:10px;padding:9px 11px;margin:6px 0;">
