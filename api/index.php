@@ -850,8 +850,9 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false, $inc
                 $item['_debitNote'] = '';
             }
         }
-        unset($item);
-    } // end if ($includeDebit)
+    }
+    unset($item);
+} // end if ($includeDebit)
 
     // Khóa chỉnh sửa nếu ngày của chuyến đã qua (tripDate < hôm nay)
     $todayIso = date('Y-m-d');
