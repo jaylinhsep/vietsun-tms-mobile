@@ -101,133 +101,74 @@ function to_clean_code($str) {
 // - Nhiều xe có thể dùng chung SĐT tài xế
 // - Lưu thêm CCCD, GPLX
 function ensure_schema($pdo) {
-    $flagFile = sys_get_temp_dir() . '/vietsun_schema_v3.flag';
-    if (file_exists($flagFile)) return;
+    $flagFile = sys_get_temp_dir() . '/vietsun_schema_v5.flag';
+    if (!file_exists($flagFile)) {
+        try { $pdo->exec("ALTER TABLE `drivers` DROP INDEX `phone`"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE `drivers` MODIFY `phone` VARCHAR(30) NULL"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE `drivers` MODIFY `pin_code` VARCHAR(100) NOT NULL DEFAULT '123456'"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE `drivers` ADD COLUMN `cccd` VARCHAR(100) NULL"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE `drivers` ADD COLUMN `gplx` VARCHAR(100) NULL"); } catch (Exception $e) {}
+        try { $pdo->exec("ALTER TABLE `drivers` ADD UNIQUE INDEX `idx_assigned_plate` (`assigned_plate`)"); } catch (Exception $e) {}
 
-    try { $pdo->exec("ALTER TABLE `drivers` DROP INDEX `phone`"); } catch (Exception $e) {}
-    try { $pdo->exec("ALTER TABLE `drivers` MODIFY `phone` VARCHAR(30) NULL"); } catch (Exception $e) {}
-    try { $pdo->exec("ALTER TABLE `drivers` MODIFY `pin_code` VARCHAR(100) NOT NULL DEFAULT '123456'"); } catch (Exception $e) {}
-    try { $pdo->exec("ALTER TABLE `drivers` ADD COLUMN `cccd` VARCHAR(100) NULL"); } catch (Exception $e) {}
-    try { $pdo->exec("ALTER TABLE `drivers` ADD COLUMN `gplx` VARCHAR(100) NULL"); } catch (Exception $e) {}
-    try { $pdo->exec("ALTER TABLE `drivers` ADD UNIQUE INDEX `idx_assigned_plate` (`assigned_plate`)"); } catch (Exception $e) {}
+        // Bảng lưu yêu cầu cập nhật từ Vendor & Tài xế chờ Điều vận duyệt trước khi đẩy lên TMS Vietsun
+        try {
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS `tms_pending_approvals` (
+                    `id` INT AUTO_INCREMENT PRIMARY KEY,
+                    `id_po` VARCHAR(32) NOT NULL,
+                    `code_po` VARCHAR(64) NOT NULL DEFAULT '',
+                    `trip_date` VARCHAR(20) NOT NULL DEFAULT '',
+                    `xuat_nhap` VARCHAR(10) NOT NULL DEFAULT '',
+                    `khach_kho` VARCHAR(255) NOT NULL DEFAULT '',
+                    `actor_role` VARCHAR(20) NOT NULL,
+                    `actor_name` VARCHAR(120) NOT NULL,
+                    `vendor_name` VARCHAR(120) NOT NULL DEFAULT '',
+                    `changes_json` TEXT NOT NULL,
+                    `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+                    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    `reviewed_at` DATETIME NULL,
+                    INDEX `idx_po_status` (`id_po`, `status`),
+                    INDEX `idx_status_created` (`status`, `created_at`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            ");
+        } catch (Exception $e) {}
 
-    // Bảng lưu yêu cầu cập nhật từ Vendor & Tài xế chờ Điều vận duyệt trước khi đẩy lên TMS Vietsun
+        // Xóa các dòng demo cũ bị lệch mã (HLP -> HOANGLONGPHAT)
+        try {
+            $pdo->exec("DELETE FROM `vendors` WHERE `vendor_code` = 'HLP'");
+            $pdo->exec("UPDATE `vendors` SET `password_hash` = '123456' WHERE `password_hash` IN ('hlp@123', 'tranco@123', 'vp@123')");
+        } catch (Exception $e) {}
+
+        @file_put_contents($flagFile, time());
+    }
+
+    // Luôn luôn dọn sạch vendor và xe nhà VIETSUN nếu còn sót trong DB (chỉ giữ Vendor ngoài)
     try {
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS `tms_pending_approvals` (
-                `id` INT AUTO_INCREMENT PRIMARY KEY,
-                `id_po` VARCHAR(32) NOT NULL,
-                `code_po` VARCHAR(64) NOT NULL DEFAULT '',
-                `trip_date` VARCHAR(20) NOT NULL DEFAULT '',
-                `xuat_nhap` VARCHAR(10) NOT NULL DEFAULT '',
-                `khach_kho` VARCHAR(255) NOT NULL DEFAULT '',
-                `actor_role` VARCHAR(20) NOT NULL,
-                `actor_name` VARCHAR(120) NOT NULL,
-                `vendor_name` VARCHAR(120) NOT NULL DEFAULT '',
-                `changes_json` TEXT NOT NULL,
-                `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                `reviewed_at` DATETIME NULL,
-                INDEX `idx_po_status` (`id_po`, `status`),
-                INDEX `idx_status_created` (`status`, `created_at`)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        ");
+        $stFindVietsun = $pdo->query("SELECT id FROM vendors WHERE vendor_code = 'VIETSUN'")->fetchAll(PDO::FETCH_COLUMN);
+        if (!empty($stFindVietsun)) {
+            $inClause = implode(',', array_map('intval', $stFindVietsun));
+            $pdo->exec("DELETE FROM drivers WHERE vendor_id IN ($inClause)");
+            $pdo->exec("DELETE FROM vendors WHERE id IN ($inClause)");
+        }
     } catch (Exception $e) {}
-
-    // Xóa các dòng demo cũ bị lệch mã (HLP -> HOANGLONGPHAT)
-    try {
-        $pdo->exec("DELETE FROM `vendors` WHERE `vendor_code` = 'HLP'");
-        $pdo->exec("UPDATE `vendors` SET `password_hash` = '123456' WHERE `password_hash` IN ('hlp@123', 'tranco@123', 'vietsun@123', 'vp@123')");
-    } catch (Exception $e) {}
-
-    @file_put_contents($flagFile, time());
 }
 
-// Đồng bộ trực tiếp từ Google Sheet Đội xe Vendor & Đội xe Vietsun
+// Đồng bộ trực tiếp từ Google Sheet Đội xe Vendor (loại trừ xe nhà VIETSUN)
 function sync_from_google_sheet($pdo) {
     global $SHEET_CSV_URL;
     ensure_schema($pdo);
 
-    // Dữ liệu đội xe Vietsun mặc định
-    $vietsunList = [
-        ["VIETSUN","50H91309","HUỲNH THANH TÙNG","0356601380","079097000590","790152274557"],
-        ["VIETSUN","50H67772","NGUYỄN VĂN PHƯƠNG","0931249725","075082015319","740113002170"],
-        ["VIETSUN","50H91554","NGUYỄN VĂN TUẤN","0378857982","044082006183","790105007335"],
-        ["VIETSUN","50E52975","NGUYỄN TRỌNG TRƯỜNG","0974533635","038085016388","790152206084"],
-        ["VIETSUN","50H10121","PHAN VĂN HUYNH","0987437351","037089000509","790144799134"],
-        ["VIETSUN","50H76073","NGUYỄN VĂN THANH","0914210965","075092005970","790219058674"],
-        ["VIETSUN","50H10152","QUẢN VĂN NGỌC","0975075027","017084008865","310162850107"],
-        ["VIETSUN","50H05689","NGÔ MINH TRỌNG","0985955580","094086003131","740114002180"],
-        ["VIETSUN","50H10035","TRẦN TRÍ TÀI","0919480367","075089026187","750130023874"],
-        ["VIETSUN","50H05455","NGUYỄN THÁI CƠ","0986192693","035074010129","790146894437"],
-        ["VIETSUN","50H68309","LÊ VĂN NGOAN","0795884070","094085000613","790133745151"],
-        ["VIETSUN","50E14550","LÊ HOÀNG ÂN","0966464917","080093000650","790159130760"],
-        ["VIETSUN","50E14009","NGUYỄN MINH TRIẾT","0364334382","087201009730","790206185040"],
-        ["VIETSUN","50E53597","NGUYỄN VĂN TÀI","0335946252","077089005508","790110015510"],
-        ["VIETSUN","50E52920","ĐỖ MINH PHỤNG","0967799542","080093006093","790160094374"],
-        ["VIETSUN","50H10017","NGUYỄN VƯƠNG QUỐC","0936736236","080081000387","790156088701"],
-        ["VIETSUN","50H68333","HOÀNG VĂN LỰC","0902856068","038085020371","790159210491"],
-        ["VIETSUN","50H10011","PHAN HOÀNG HÙNG","0707231297","079201021731","790204030139"],
-        ["VIETSUN","50E15217","HUỲNH THANH TÂM","0937373731","080074000416","790966004092"],
-        ["VIETSUN","50H76816","PHAN VĂN TÚ","0904334484","079078002279","790152151977"],
-        ["VIETSUN","50H90600","DƯƠNG HIẾU HÒA","0796449644","079074022039","790009228687"],
-        ["VIETSUN","51D03966","TRANG MINH HẬU","0979577801","075082009103","750053003841"],
-        ["VIETSUN","50H68200","NGUYỄN VIẾT XUÂN","0979483434","042080010369","790106009000"],
-        ["VIETSUN","50H90144","PHẠM VĂN BÌNH","0909092471","075091024017","790171923030"],
-        ["VIETSUN","50H10208","NGUYỄN ĐỨC TRIỆU","0938025734","030062009674","750100001394"],
-        ["VIETSUN","50H91424","ĐỖ THÀNH HƯNG","0916597944","079077005704","790135410947"],
-        ["VIETSUN","50E48301","NGUYỄN HỮU TƯỜNG","0933943550","084083014543","790101006837"],
-        ["VIETSUN","50H05535","LÂM TỬ TY","0961191339","054088010647","540111812711"],
-        ["VIETSUN","50E14112","NGUYỄN VĂN XUÂN","0964337309","074078009227","740044000054"],
-        ["VIETSUN","50H10224","NGUYỄN VĂN HẬU","0938234301","093098001120","790163115562"],
-        ["VIETSUN","50H76406","ĐỖ VĂN TUẤN","0906534154","038082023809","740086003914"],
-        ["VIETSUN","50E54493","NGUYỄN TUẤN ANH","0979222556","075090016892","790137778023"],
-        ["VIETSUN","50H91213","HUỲNH VĂN SỬ","0908727855","091085002627","790102029798"],
-        ["VIETSUN","50H91917","TRẦN DUY BÌNH","0973607075","040086020171","750087003158"],
-        ["VIETSUN","50E54092","PHAN THẾ MINH SƠN","0889243552","046083015082","790107001117"],
-        ["VIETSUN","50E52617","HUỲNH VĂN TẤN ĐẠT","0974891088","084096005671","840164002355"],
-        ["VIETSUN","50H05658","HOÀNG HỮU LONG","0971772771","042090011523","310176002813"],
-        ["VIETSUN","50E14029","HÀ VĂN LUẬT","0961535776","038081001711","790168165517"],
-        ["VIETSUN","50H05808","NGUYỄN THÀNH TRUNG","0973029550","040081035050","420098000382"],
-        ["VIETSUN","50H76226","ĐOÀN TÍN THÀNH","0903379977","079089006263","790115230930"],
-        ["VIETSUN","50H76364","LÊ MINH HIỂN","0902484393","094085015886","310150041834"],
-        ["VIETSUN","50E54447","LÊ TRỌNG NHŨ","0985468603","052088013362","790148929197"],
-        ["VIETSUN","50H76548","HUỲNH VĂN CHÍ NGUYỆN","0327348324","084093004347","790185182027"],
-        ["VIETSUN","50H67574","HUỲNH VĂN TÂM","0934044395","087084012933","790135004317"],
-        ["VIETSUN","50E13972","TRƯƠNG HOÀNG TÂM","0933436783","084083011298","790154124087"],
-        ["VIETSUN","50H76100","NGUYỄN VĂN TUẤN","0932636166","038087010115","790111019706"],
-        ["VIETSUN","50H75037","HÀ VĂN HUỲNH","0962595828","038090000713","790159083060"],
-        ["VIETSUN","50H91136","NGUYỄN VĂN LÂM","0907451526","075084012309","740103000597"],
-        ["VIETSUN","50H91077","NGUYỄN VĂN VINH","0939534848","084078005598","790133026546"],
-        ["VIETSUN","50H75631","PHẠM VĂN HOÀI","0987130446","040094035935","790158168344"],
-        ["VIETSUN","50H76822","ĐOÀN VĂN KHÔI","07074042920","092068002539","740100001386"],
-        ["VIETSUN","50H91025","LÊ CHÍ BÉ","0949325326","096085012314","960104002204"],
-        ["VIETSUN","50H91065","LÊ VĂN LỌ","0931781902","084087008097","790120002234"],
-        ["VIETSUN","50H90495","HÀ VĂN NAM","0962156417","038087003353","790135394702"],
-        ["VIETSUN","50H76011","BÙI QUỐC BẢO","0984771750","052086008837","520098005953"],
-        ["VIETSUN","50E53813","BÙI THẾ PHONG","0919412472","070090005753","700140007614"],
-        ["VIETSUN","50H75942","HÀ VĂN QUÂN","0968858255","038079021380","790156178864"],
-        ["VIETSUN","50H10039","TRẦN QUỐC THANH","0344275975","046086012096","460070000841"],
-        ["VIETSUN","50H67809","ĐẶNG VĂN GIANG","0986779164","019064000138","740109000223"],
-        ["VIETSUN","50H10106","ĐOÀN TRUNG ĐIỆP","0966469601","051093007367","790144963131"],
-        ["VIETSUN","50H75270","TRẦN VĂN CHIẾN","0908491943","051086015636","790116256113"],
-        ["VIETSUN","50H05806","NGUYỄN VĂN HÀ","0976404108","042072019464","740138003479"],
-        ["VIETSUN","50H10056","LÊ BẢO QUỐC","0946070660","080084015762","800072000197"],
-        ["VIETSUN","50H05545","NGUYỄN VĂN QUANG","0919960266","040086034549","400138010216"],
-        ["VIETSUN","50E52957","NGUYỄN VĂN CHIẾN","0933893216","084080010693","790118015806"],
-        ["VIETSUN","50H75167","NGUYỄN VĂN KHOA","0937773854","084088003267","790121231718"],
-        ["VIETSUN","50H76863","PHẠM TUẤN KHANH","0832385658","093094003991","930172002271"],
-        ["VIETSUN","50H90045","HỒ NGỌC THANH","0908067972","079072041145","790109010227"],
-        ["VIETSUN","50E53620","TRƯƠNG NGỌC ĐÔNG","0707200832","086094004600","790140976232"],
-        ["VIETSUN","50H76757","NGUYỄN VĂN GIÀU","0943998978","096079008895","790101005351"],
-        ["VIETSUN","50H91113","NGUYỄN KIM TƯ","0933989655","093091008061","790161177742"],
-        ["VIETSUN","50H90944","ĐỖ HỒNG TUYẾN","0918569137","044073008800","740107007134"],
-        ["VIETSUN","50H91272","VŨ QUANG TUÂN","0937823360","038078006397","790106000982"],
-        ["VIETSUN","50H10031","NGUYỄN VĨNH PHƯỚC","0939454501","087078013673","790064018256"],
-        ["VIETSUN","50H68711","NGUYỄN VƯƠNG QUỐC","0936736236","",""]
-    ];
+    // Xóa vendor VIETSUN và đội xe nhà VIETSUN nếu có
+    try {
+        $stFindVietsun = $pdo->query("SELECT id FROM vendors WHERE vendor_code = 'VIETSUN'")->fetchAll(PDO::FETCH_COLUMN);
+        if (!empty($stFindVietsun)) {
+            $inClause = implode(',', array_map('intval', $stFindVietsun));
+            $pdo->exec("DELETE FROM drivers WHERE vendor_id IN ($inClause)");
+            $pdo->exec("DELETE FROM vendors WHERE id IN ($inClause)");
+        }
+    } catch (Exception $e) {}
 
-    $rows = $vietsunList;
+    $rows = [];
 
     // Kéo trực tiếp CSV từ Google Sheet
     $ch = curl_init($SHEET_CSV_URL);
@@ -252,6 +193,9 @@ function sync_from_google_sheet($pdo) {
             $vName = strtoupper(trim($cols[0] ?? ''));
             $plate = to_clean_code($cols[1] ?? '');
             if (!$vName || !$plate) continue;
+            $vCode = to_clean_code($vName);
+            // Bỏ qua xe VIETSUN (xe nhà, không phải Vendor)
+            if ($vCode === 'VIETSUN') continue;
             $dName = trim($cols[2] ?? '');
             $phone = trim($cols[3] ?? '');
             $cccd  = trim($cols[4] ?? '');
@@ -1210,7 +1154,7 @@ try {
             SELECT d.assigned_plate AS plate, d.driver_name AS name, d.phone, d.cccd, d.gplx, v.vendor_name AS vendor
             FROM drivers d
             JOIN vendors v ON d.vendor_id = v.id
-            WHERE d.is_active = 1
+            WHERE d.is_active = 1 AND v.vendor_code != 'VIETSUN'
             ORDER BY v.vendor_name ASC, d.assigned_plate ASC
         ")->fetchAll();
         echo json_encode(['ok' => true, 'vendors' => $drivers, 'total' => count($drivers)]);
@@ -1258,6 +1202,7 @@ try {
                    (SELECT COUNT(*) FROM drivers d WHERE d.vendor_id = v.id) AS driver_count,
                    (SELECT COUNT(*) FROM drivers d WHERE d.vendor_id = v.id) AS truck_count
             FROM vendors v
+            WHERE v.vendor_code != 'VIETSUN'
             ORDER BY v.vendor_name ASC
         ")->fetchAll();
 
@@ -1265,6 +1210,7 @@ try {
             SELECT d.*, d.driver_name AS full_name, v.vendor_name, v.vendor_code
             FROM drivers d
             JOIN vendors v ON d.vendor_id = v.id
+            WHERE v.vendor_code != 'VIETSUN'
             ORDER BY v.vendor_name ASC, d.assigned_plate ASC
         ")->fetchAll();
 

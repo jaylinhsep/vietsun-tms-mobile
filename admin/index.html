@@ -497,8 +497,8 @@
         }
         const data = await res.json();
         if (data.ok) {
-          allVendors = data.vendors || [];
-          allDrivers = data.drivers || [];
+          allVendors = (data.vendors || []).filter(v => (v.vendor_code || '').toUpperCase() !== 'VIETSUN');
+          allDrivers = (data.drivers || []).filter(d => (d.vendor_code || '').toUpperCase() !== 'VIETSUN');
           allApprovals = data.pendingApprovals || [];
           const pCount = Number(data.pendingCount || 0);
           document.getElementById('statPendingCount').textContent = pCount;
