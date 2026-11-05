@@ -1197,8 +1197,10 @@
         document.getElementById('vendorLoginView').style.display = 'none';
         initDates();
         loadMyFleet();
-        loadVendorTrips();
-        loadDebitReport();
+        // Ưu tiên tải kế hoạch chuyến xe trước để giao diện hiện tức thì, sau đó mới tải ngầm báo cáo đối soát
+        loadVendorTrips().then(() => {
+          setTimeout(loadDebitReport, 300);
+        });
       }
       // Đóng dropdown gợi ý xe & gợi ý cont khi chạm ra ngoài
       document.addEventListener('click', (e) => {
@@ -1316,8 +1318,9 @@
         document.getElementById('vendorLoginView').style.display = 'none';
         initDates();
         loadMyFleet();
-        loadVendorTrips();
-        loadDebitReport();
+        loadVendorTrips().then(() => {
+          setTimeout(loadDebitReport, 300);
+        });
       } catch (err) {
         errBox.textContent = 'Lỗi kết nối máy chủ!';
         errBox.style.display = 'block';
@@ -1336,6 +1339,20 @@
       const token = localStorage.getItem('vs_vendor_token');
       const vInfo = JSON.parse(localStorage.getItem('vs_vendor_info') || '{}');
       document.getElementById('navVendorCode').textContent = vInfo.code || vInfo.name || 'VENDOR';
+
+      // ⚡ TỨC THÌ (Stale-While-Revalidate): Hiện ngay kế hoạch chuyến xe đã lưu gần nhất trong 0.01 giây
+      const cacheKey = `vs_vendor_cache_${planSelectedDate}`;
+      if (!forceRefresh && allVendorTrips.length === 0) {
+        try {
+          const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+          if (cached && Array.isArray(cached.trips) && cached.trips.length > 0) {
+            allVendorTrips = cached.trips;
+            availableVendorImportConts = cached.importConts || [];
+            populatePlateFilters();
+            renderPlanCards();
+          }
+        } catch (_) {}
+      }
 
       try {
         const url = `${API_BASE}/vendor/trips&date=${encodeURIComponent(planSelectedDate)}${forceRefresh ? '&refresh=1' : ''}`;
@@ -1358,6 +1375,9 @@
           populatePlateFilters();
           renderPlanCards();
           renderDebitTable();
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify({ trips: allVendorTrips, importConts: availableVendorImportConts }));
+          } catch (_) {}
           if (forceRefresh) showToast('✅ Đã đồng bộ dữ liệu mới nhất từ TMS!');
         }
       } catch (err) {

@@ -343,7 +343,8 @@ function fetch_single_cycle($cycleDate, $forceRefresh = false) {
     global $REMOTE_BASE, $COOKIE_FILE;
     $safeCycle = preg_replace('/[^0-9\-]/', '', $cycleDate);
     $cacheFile = sys_get_temp_dir() . '/vietsun_cycle_' . $safeCycle . '.json';
-    if (!$forceRefresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 60)) {
+    // Nâng TTL cache chu kỳ từ 60s lên 300s (5 phút) để tránh gọi cURL liên tục làm chậm web
+    if (!$forceRefresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
         $cached = json_decode(file_get_contents($cacheFile), true);
         if (is_array($cached) && count($cached) > 0) return $cached;
     }
@@ -462,7 +463,8 @@ function fetch_tms_debit_map($startDate, $endDate, $forceRefresh = false) {
     global $COOKIE_FILE;
     $safeKey = preg_replace('/[^0-9\-]/', '', $startDate . '_' . $endDate);
     $cacheFile = sys_get_temp_dir() . '/vietsun_debit_map_v3_' . $safeKey . '.json';
-    if (!$forceRefresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 120)) {
+    // Nâng TTL cache bảng cước Debit từ 120s lên 900s (15 phút) vì giá đối soát ít biến động theo từng phút
+    if (!$forceRefresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 900)) {
         $cached = json_decode(file_get_contents($cacheFile), true);
         if (is_array($cached) && count($cached) > 0) return $cached;
     }
@@ -607,34 +609,56 @@ function get_shipment_date_iso($item) {
     return '';
 }
 
-function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false) {
+function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false, $includeDebit = true) {
     $baseTs = $targetDate ? strtotime($targetDate) : time();
     if (!$baseTs) $baseTs = time();
 
-    $cycles = array_unique([
-        get_billing_cycle_param(date('Y-m-d', $baseTs - 20 * 86400)),
-        get_billing_cycle_param(date('Y-m-d', $baseTs)),
-        get_billing_cycle_param(date('Y-m-d', $baseTs + 15 * 86400))
-    ]);
+    // Cache cấp cao cho toàn bộ danh sách chuyến đã xử lý (3 phút cho vendor có debit, 5 phút cho driver không debit)
+    $cacheType = $includeDebit ? 'full' : 'nodbt';
+    $cacheDateKey = date('Y-m-d', $baseTs);
+    $cacheFile = sys_get_temp_dir() . "/vietsun_shipments_{$cacheType}_{$cacheDateKey}.json";
+    $cacheTtl = $includeDebit ? 180 : 300;
 
-    $merged = [];
-    foreach ($cycles as $c) {
-        $arr = fetch_single_cycle($c, $forceRefresh);
-        if (is_array($arr)) {
-            foreach ($arr as $item) {
+    $merged = null;
+    if (!$forceRefresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTtl)) {
+        $cached = json_decode(file_get_contents($cacheFile), true);
+        if (is_array($cached) && count($cached) > 0) {
+            $merged = [];
+            foreach ($cached as $item) {
                 if (isset($item['idPo'])) {
-                    $merged[$item['idPo']] = normalize_shipment_item($item);
+                    $merged[$item['idPo']] = $item;
                 }
             }
         }
     }
 
-    // Lấy chi phí phát sinh do Tài xế báo trên App (/driver) để gộp vào cột Chi hộ bốc xếp & Chi phí khác
-    $drvBocXepMap = [];
-    $drvCpKhacMap = [];
-    $drvExpNoteMap = [];
-    $drvTotalExpMap = [];
-    $drvExpDetailsMap = [];
+    if ($merged === null) {
+        $cycles = array_unique([
+            get_billing_cycle_param(date('Y-m-d', $baseTs - 20 * 86400)),
+            get_billing_cycle_param(date('Y-m-d', $baseTs)),
+            get_billing_cycle_param(date('Y-m-d', $baseTs + 15 * 86400))
+        ]);
+
+        $merged = [];
+        foreach ($cycles as $c) {
+            $arr = fetch_single_cycle($c, $forceRefresh);
+            if (is_array($arr)) {
+                foreach ($arr as $item) {
+                    if (isset($item['idPo'])) {
+                        $merged[$item['idPo']] = normalize_shipment_item($item);
+                    }
+                }
+            }
+        }
+
+        // Nếu includeDebit = true (dành cho /vendor hoặc admin đối soát), mới lấy cước Debit và chi phí phát sinh
+        if ($includeDebit) {
+            // Lấy chi phí phát sinh do Tài xế báo trên App (/driver) để gộp vào cột Chi hộ bốc xếp & Chi phí khác
+            $drvBocXepMap = [];
+            $drvCpKhacMap = [];
+            $drvExpNoteMap = [];
+            $drvTotalExpMap = [];
+            $drvExpDetailsMap = [];
     try {
         $pdo = get_db();
         $stExp = $pdo->query("SELECT booking_id_po, expense_type, amount, note FROM trip_expenses ORDER BY id ASC");
@@ -826,14 +850,24 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false) {
                 $item['_debitNote'] = '';
             }
         }
+        unset($item);
+    } // end if ($includeDebit)
 
-        // Khóa chỉnh sửa nếu ngày của chuyến đã qua (tripDate < hôm nay)
+    // Khóa chỉnh sửa nếu ngày của chuyến đã qua (tripDate < hôm nay)
+    $todayIso = date('Y-m-d');
+    foreach ($merged as $idPo => &$item) {
         $tripDateIso = get_shipment_date_iso($item);
         $item['_tripDateIso'] = $tripDateIso;
-        $item['_isLocked']    = ($tripDateIso !== '' && $tripDateIso < date('Y-m-d'));
+        $item['_isLocked']    = ($tripDateIso !== '' && $tripDateIso < $todayIso);
         $item['_pendingApproval'] = null;
     }
     unset($item);
+
+    // Lưu vào cache tổng hợp (file cache) nếu vừa crawl mới
+    if (count($merged) > 0) {
+        @file_put_contents($cacheFile, json_encode(array_values($merged)));
+    }
+} // end if ($merged === null)
 
     // Ghép các thay đổi đang CHỜ DUYỆT (status = 'PENDING') từ bảng tms_pending_approvals
     // để Vendor & Tài xế vẫn thấy thông tin họ vừa nhập kèm trạng thái "Chờ Điều vận duyệt"
@@ -1451,7 +1485,8 @@ try {
         $stDrv->execute([$plate]);
         $drvRow = $stDrv->fetch() ?: [];
 
-        $all = fetch_vietsun_shipments($targetDate, $forceRefresh);
+        // Tài xế chỉ xem chuyến chạy, bỏ qua bảng cước Debit đối soát để tải tức thì
+        $all = fetch_vietsun_shipments($targetDate, $forceRefresh, false);
         $myTrips = [];
         foreach ($all as $item) {
             $itemPlate = to_clean_code($item['soXePo'] ?? '');
@@ -1631,7 +1666,8 @@ try {
             }
         }
 
-        $all = fetch_vietsun_shipments($targetDate, $forceRefresh);
+        // Vendor cần cước Debit để xem tab Chuyến xe & Đối soát
+        $all = fetch_vietsun_shipments($targetDate, $forceRefresh, true);
         $vendorTrips = [];
         foreach ($all as $item) {
             $itemVendor = strtoupper(trim($item['donViVcPo'] ?? ''));

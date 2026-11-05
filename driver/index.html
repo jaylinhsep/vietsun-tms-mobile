@@ -706,6 +706,20 @@
 
     async function loadDriverData(forceRefresh = false) {
       const token = localStorage.getItem('vs_driver_token');
+
+      // ⚡ TỨC THÌ (Stale-While-Revalidate): Hiện ngay dữ liệu đã lưu gần nhất trong 0.01 giây
+      const cacheKey = `vs_driver_cache_${selectedDateISO}`;
+      if (!forceRefresh && currentTrips.length === 0) {
+        try {
+          const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+          if (cached && Array.isArray(cached.trips) && cached.trips.length > 0) {
+            currentTrips = cached.trips;
+            availableImportConts = cached.importConts || [];
+            renderTrips();
+          }
+        } catch (_) {}
+      }
+
       try {
         const url = `${API_BASE}/driver/my-trips&date=${encodeURIComponent(selectedDateISO)}${forceRefresh ? '&refresh=1' : ''}`;
         const res = await fetch(url, {
@@ -722,6 +736,9 @@
           availableImportConts = data.importConts || [];
           renderDriverHeader(data.driverInfo);
           renderTrips();
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify({ trips: currentTrips, importConts: availableImportConts }));
+          } catch (_) {}
         }
       } catch (err) {
         console.error('Fetch error:', err);
