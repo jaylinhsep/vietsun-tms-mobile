@@ -32,7 +32,8 @@ cd "$WEB_ROOT/server" && nohup node server.js > /tmp/vietsun_node.log 2>&1 &
 
 echo "===================================================="
 echo "✅ HOÀN TẤT 100%! HỆ THỐNG ĐÃ SẴN SÀNG:"
-echo "👉 Trang điều hành: https://vs.huuhoa.net"
-echo "👉 App Tài xế:      https://vs.huuhoa.net/driver"
-echo "👉 Cổng Vendor:     https://vs.huuhoa.net/vendor"
+echo "👉 Trang điều hành: https://vietsun.site"
+echo "👉 App Tài xế:      https://vietsun.site/driver"
+echo "👉 Cổng Vendor:     https://vietsun.site/vendor"
+echo "👉 Admin quản trị:  https://vietsun.site/admin"
 echo "===================================================="
