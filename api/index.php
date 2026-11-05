@@ -1509,8 +1509,8 @@ try {
         exit;
     }
 
-    // Tài xế cập nhật Cont/Seal/Cảng đến/Nơi lấy rỗng -> Đưa vào hàng đợi CHỜ ĐIỀU VẬN DUYỆT (Khóa nếu qua ngày)
-    if ($route === 'driver/update-trip') {
+    // Tài xế hoặc Chủ Vendor cập nhật Cont/Seal/Cảng đến/Nơi lấy rỗng -> Đưa vào hàng đợi CHỜ ĐIỀU VẬN DUYỆT (Khóa nếu qua ngày)
+    if ($route === 'driver/update-trip' || $route === 'vendor/update-trip') {
         $idPo = $jsonBody['idPo'] ?? '';
         $codePo = $jsonBody['codePo'] ?? '';
         if (!$idPo) {
@@ -1535,9 +1535,10 @@ try {
             $fieldsToQueue['tinhXuatHangPo'] = strtoupper(trim($jsonBody['cangDen']));
         }
 
-        $actorName = trim(($user['plate'] ?? '') . ' - ' . ($user['driverName'] ?? ''));
+        $actorRole = ($user['role'] ?? '') === 'vendor' ? 'VENDOR' : 'DRIVER';
+        $actorName = $actorRole === 'VENDOR' ? ($user['vendorName'] ?? 'Vendor') : trim(($user['plate'] ?? '') . ' - ' . ($user['driverName'] ?? ''));
         $vendorName = strtoupper(trim($user['vendorName'] ?? ''));
-        $qRes = queue_pending_tms_approval($pdo, $idPo, $codePo, 'DRIVER', $actorName, $vendorName, $fieldsToQueue);
+        $qRes = queue_pending_tms_approval($pdo, $idPo, $codePo, $actorRole, $actorName, $vendorName, $fieldsToQueue);
         if (!$qRes['ok']) {
             http_response_code(403);
             echo json_encode($qRes);
@@ -1648,12 +1649,39 @@ try {
                 $vendorTrips[] = $item;
             }
         }
+        $todayIso = date('Y-m-d');
+        $yesterdayIso = date('Y-m-d', strtotime('-1 day'));
+        $importConts = [];
+        foreach ($vendorTrips as $item) {
+            $isNhap = ($item['xuatNhapPo'] ?? '') === 'N';
+            if (!$isNhap) continue;
+            $soCont = strtoupper(trim($item['soContPo'] ?? ''));
+            if ($soCont === '' || $soCont === '--' || strpos($soCont, 'CHỜ') !== false) continue;
+            $tripDate = get_shipment_date_iso($item);
+            if ($tripDate === $todayIso || $tripDate === $yesterdayIso) {
+                $is40 = (int)($item['cont40Po'] ?? 0) > 0;
+                $size = $is40 ? '40' : '20';
+                $kho = ($item['khoNhanHangPo'] ?? '') ?: ($item['tenKhachPo'] ?? '');
+                $soXe = trim($item['soXePo'] ?? '');
+                $importConts[$soCont] = [
+                    'soCont'     => $soCont,
+                    'size'       => $size,
+                    'tripDate'   => $tripDate,
+                    'kho'        => $kho,
+                    'soXe'       => $soXe,
+                    'cleanPlate' => to_clean_code($soXe),
+                    'khLabel'    => "KH $size'"
+                ];
+            }
+        }
+
         echo json_encode([
             'ok'          => true,
             'today'       => date('Y-m-d'),
             'total'       => count($vendorTrips),
             'fleetPlates' => array_values($fleetMap),
-            'trips'       => $vendorTrips
+            'trips'       => $vendorTrips,
+            'importConts' => array_values($importConts)
         ]);
         exit;
     }
