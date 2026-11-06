@@ -96,6 +96,39 @@ function to_clean_code($str) {
     return strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $str));
 }
 
+// Chuẩn hóa tên ĐVVT / Vendor để tránh xung đột giữa viết liền và có dấu cách (VD: PHUCTRUONGAN -> PHUC TRUONG AN)
+function normalize_vendor_name($name) {
+    $clean = trim((string)$name);
+    if ($clean === '') return '';
+    $code = to_clean_code($clean);
+
+    static $map = [
+        'PHUCTRUONGAN' => 'PHUC TRUONG AN',
+        'PHUCAN'       => 'PHUC AN',
+        'TUANHUNG'     => 'TUAN HUNG',
+        'VUONGPHAT'    => 'VUONG PHAT',
+        'NHATSON'      => 'NHAT SON',
+        'NGOCSANG'     => 'NGOC SANG',
+        'GIAKHANG'     => 'GIA KHANG',
+        'DUCANH'       => 'ANH DUC',
+        'HOANGLONGPHAT'=> 'HOANG LONG PHAT',
+        'DAILONGPHAT'  => 'DAI LONG PHAT',
+        'BAONAMPHAT'   => 'BAO NAM PHAT',
+        'ANTHANHPHAT'  => 'AN THANH PHAT',
+        'DUYLINHPHAT'  => 'DUY LINH PHAT',
+        'NHANBAOPHAT'  => 'NHAN BAO PHAT',
+        'THIENPHUCPHAT'=> 'THIEN PHUC PHAT',
+        'TANHOANGQUANG'=> 'TAN HOANG QUANG',
+        'MAINHATANH'   => 'MAI NHAT ANH',
+        'DUONGNGUYEN'  => 'DUONG NGUYEN',
+        'GIABAO'       => 'GIA BAO',
+        'DUCHAI'       => 'DUC HAI',
+        'DANGHUNG'     => 'DANG HUNG',
+        'TRUCANH'      => 'TRUC ANH'
+    ];
+    return $map[$code] ?? $clean;
+}
+
 // Tự động nâng cấp cấu trúc bảng để hỗ trợ:
 // - Số xe (assigned_plate) là UNIQUE
 // - Nhiều xe có thể dùng chung SĐT tài xế
@@ -150,6 +183,9 @@ function ensure_schema($pdo) {
             $pdo->exec("DELETE FROM drivers WHERE vendor_id IN ($inClause)");
             $pdo->exec("DELETE FROM vendors WHERE id IN ($inClause)");
         }
+        // Chuẩn hóa thống nhất tên vendor trong DB để không bị xung đột (VD: PHUCTRUONGAN -> PHUC TRUONG AN)
+        $pdo->exec("UPDATE `vendors` SET `vendor_name` = 'PHUC TRUONG AN' WHERE `vendor_code` = 'PHUCTRUONGAN'");
+        $pdo->exec("UPDATE `tms_pending_approvals` SET `vendor_name` = 'PHUC TRUONG AN' WHERE `vendor_name` = 'PHUCTRUONGAN'");
     } catch (Exception $e) {}
 }
 
@@ -241,6 +277,11 @@ function sync_from_google_sheet($pdo) {
             }
             $vendorMap[$vCode] = $vid;
             $vendorCount++;
+        } else {
+            // Luôn cập nhật vendor_name theo tên chuẩn mới nhất từ Google Sheet
+            $vid = $vendorMap[$vCode];
+            $stUpdateVName = $pdo->prepare("UPDATE vendors SET vendor_name = ? WHERE id = ?");
+            $stUpdateVName->execute([$vName, $vid]);
         }
 
         $vid = $vendorMap[$vCode];
@@ -334,6 +375,11 @@ function normalize_shipment_item($item) {
         if ($rawKhach !== '' && !preg_match('/^[\.\-\s,]+$/u', $rawKhach)) {
             $item['khoNhanHangPo'] = $rawKhach;
         }
+    }
+
+    // Chuẩn hóa tên ĐVVT (Đơn vị vận chuyển) để không bao giờ bị lệch hay trùng tên viết liền
+    if (!empty($item['donViVcPo'])) {
+        $item['donViVcPo'] = normalize_vendor_name($item['donViVcPo']);
     }
 
     return $item;

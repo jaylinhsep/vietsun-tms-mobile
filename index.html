@@ -2290,7 +2290,21 @@
       VUONGPHAT: "VUONG PHAT",
       PHUCTRUONGAN: "PHUC TRUONG AN",
       GIAKHANG: "GIA KHANG",
-      DUCANH: "ANH DUC"
+      DUCANH: "ANH DUC",
+      HOANGLONGPHAT: "HOANG LONG PHAT",
+      DAILONGPHAT: "DAI LONG PHAT",
+      BAONAMPHAT: "BAO NAM PHAT",
+      ANTHANHPHAT: "AN THANH PHAT",
+      DUYLINHPHAT: "DUY LINH PHAT",
+      NHANBAOPHAT: "NHAN BAO PHAT",
+      THIENPHUCPHAT: "THIEN PHUC PHAT",
+      TANHOANGQUANG: "TAN HOANG QUANG",
+      MAINHATANH: "MAI NHAT ANH",
+      DUONGNGUYEN: "DUONG NGUYEN",
+      GIABAO: "GIA BAO",
+      DUCHAI: "DUC HAI",
+      DANGHUNG: "DANG HUNG",
+      TRUCANH: "TRUC ANH"
     };
 
     function normalizeVendorNameClient(raw) {
@@ -2861,7 +2875,7 @@
 
       allShipments.forEach(s => {
         const rawXe = (s.soXePo || "").toUpperCase().replace(/\s+/g, "").trim();
-        const rawDv = (s.donViVcPo || "").toUpperCase().trim();
+        const rawDv = normalizeVendorNameClient(s.donViVcPo || "");
         if (rawXe) {
           xeSet.add(rawXe);
           const existing = knownTruckMap.get(rawXe);
@@ -2920,7 +2934,7 @@
 
       const baseDateAndSearch = allShipments.filter(item => {
         if (!matchesDateFilter(item)) return false;
-        if (state.vendor !== "ALL" && (item.donViVcPo || "").toUpperCase() !== state.vendor) return false;
+        if (state.vendor !== "ALL" && normalizeVendorNameClient(item.donViVcPo) !== state.vendor) return false;
         if (state.province !== "ALL" && (item.tinhNhanPo || "").toUpperCase() !== state.province) return false;
         if (state.truckStatus === "NO_TRUCK" && item.soXePo) return false;
         if (state.truckStatus === "HAS_TRUCK" && !item.soXePo) return false;
