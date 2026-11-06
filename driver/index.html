@@ -938,12 +938,27 @@
             </div>
             `}
 
-            <div style="margin-top:8px;padding:8px 10px;background:rgba(241,245,249,0.7);border-radius:9px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12.5px;">
-              <div><b>Số Cont:</b> <span style="color:#1e40af;font-weight:800;">${t.soContPo || '(Chưa có)'}</span></div>
-              <div><b>Số Seal:</b> <span style="color:#0f172a;font-weight:700;">${t.soSealPo || '(Chưa có)'}</span></div>
+            <!-- KHUNG SỐ CONT & SỐ SEAL NỔI BẬT TO RÕ CHO TÀI XẾ -->
+            <div style="margin-top:8px;padding:9px 12px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:10px;">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;padding-bottom:6px;${isXuat ? 'border-bottom:1px dashed #cbd5e1;' : ''}">
+                <div>
+                  <span style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">📦 Số Cont:</span>
+                  <div style="font-size:17.5px;font-weight:900;color:#1e40af;letter-spacing:0.5px;font-family:'Inter',monospace;line-height:1.2;margin-top:2px;">
+                    ${t.soContPo || '<span style="font-size:13px;color:#94a3b8;font-weight:600;">(Chưa có)</span>'}
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <span style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;">🔒 Số Seal:</span>
+                  <div style="font-size:16px;font-weight:900;color:#0f172a;letter-spacing:0.4px;font-family:'Inter',monospace;line-height:1.2;margin-top:2px;">
+                    ${t.soSealPo || '<span style="font-size:13px;color:#94a3b8;font-weight:600;">(Chưa có)</span>'}
+                  </div>
+                </div>
+              </div>
               ${isXuat ? `
-                <div><b>Lấy rỗng:</b> ${t.noiLayContPo || '--'}</div>
-                <div><b>Cảng đến:</b> <span style="color:#c2410c;font-weight:700;">${t.tinhXuatHangPo || t.cangDenPo || '--'}</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12px;color:#475569;font-weight:700;flex-wrap:wrap;gap:4px;">
+                  <div>Lấy rỗng: <b style="color:#0f172a;">${t.noiLayContPo || '--'}</b></div>
+                  <div>Hạ cảng: <b style="color:#c2410c;">${t.cangDiPo || '--'} → ${t.tinhXuatHangPo || t.cangDenPo || '--'}</b></div>
+                </div>
               ` : ''}
             </div>
 
