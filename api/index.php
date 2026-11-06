@@ -616,7 +616,7 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false, $inc
     // Cache cấp cao cho toàn bộ danh sách chuyến đã xử lý (3 phút cho vendor có debit, 5 phút cho driver không debit)
     $cacheType = $includeDebit ? 'full' : 'nodbt';
     $cacheDateKey = date('Y-m-d', $baseTs);
-    $cacheFile = sys_get_temp_dir() . "/vietsun_shipments_{$cacheType}_{$cacheDateKey}.json";
+    $cacheFile = sys_get_temp_dir() . "/vietsun_shipments_v4_{$cacheType}_{$cacheDateKey}.json";
     $cacheTtl = $includeDebit ? 180 : 300;
 
     $merged = null;
@@ -736,7 +736,10 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false, $inc
 
         if (($item['xuatNhapPo'] ?? '') !== 'X') {
             $contClean = strtoupper(trim($item['soContPo'] ?? ''));
-            $nhapDebit = $item['donGiaDebitPo'] ?: $item['donGia1ThucTraChoxePo'];
+            // Cước đối soát của cont Nhập: Ưu tiên Đơn giá Vendor trước, nếu không có mới fallback donGiaDebitPo
+            $nhapDebit = !empty($item['donGia1ThucTraChoxePo']) && $item['donGia1ThucTraChoxePo'] > 0
+                ? (int)$item['donGia1ThucTraChoxePo']
+                : (!empty($item['donGiaDebitPo']) && $item['donGiaDebitPo'] > 0 ? (int)$item['donGiaDebitPo'] : 0);
             if ($contClean !== '') {
                 if (!isset($nhapByCont[$contClean])) $nhapByCont[$contClean] = [];
                 $nhapByCont[$contClean][] = [
@@ -749,18 +752,31 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false, $inc
     }
     unset($item);
 
-    // Tính giá cước Debit (_debitRate) theo quy tắc Hàng Nhập / Hàng Xuất Kết Hợp
+    // Tính giá cước Debit (_debitRate) theo "Đơn giá Vendor" từ TMS Vietsun (áp dụng cho cả Nhập và Xuất)
     foreach ($merged as $idPo => &$item) {
         $isXuat = ($item['xuatNhapPo'] ?? '') === 'X';
-        if (!$isXuat) {
-            // Hàng Nhập: lấy thẳng giá cước Debit ở TMS Vietsun (hoặc đơn giá thực trả xe nếu cột Debit trống), nếu chưa có thì để trống (null)
-            $item['_tyLeKetHop'] = trim($item['hinhThucKHopPo'] ?? '');
-            $nhapRate = !empty($item['donGiaDebitPo']) && $item['donGiaDebitPo'] > 0
-                ? (int)$item['donGiaDebitPo']
-                : (!empty($item['donGia1ThucTraChoxePo']) && $item['donGia1ThucTraChoxePo'] > 0 ? (int)$item['donGia1ThucTraChoxePo'] : 0);
 
-            if ($nhapRate > 0) {
-                $item['_debitRate'] = $nhapRate;
+        // 1. Tỷ lệ kết hợp (nếu có ghi nhận ở cột hinhThucKHopPo hoặc trong ghiChuPo)
+        $kh = trim($item['hinhThucKHopPo'] ?? '');
+        $gc = trim($item['ghiChuPo'] ?? '');
+        if ($kh === '' && preg_match('/(\d+(?:\.\d+)?\s*%|\bR\b)/i', $gc, $mGc)) {
+            $kh = strtoupper(str_replace(' ', '', $mGc[1]));
+        }
+        $item['_tyLeKetHop'] = $kh;
+
+        // 2. NGUYÊN TẮC CHÍNH: Cả Nhập và Xuất đều ưu tiên lấy "Đơn giá Vendor" (donGia1ThucTraChoxePo) từ TMS Vietsun
+        if (!empty($item['donGia1ThucTraChoxePo']) && $item['donGia1ThucTraChoxePo'] > 0) {
+            $item['_debitRate'] = (int)$item['donGia1ThucTraChoxePo'];
+            $item['_debitType'] = $isXuat ? 'XUAT_VENDOR' : 'NHAP_VENDOR';
+            $item['_debitNote'] = 'Đơn giá Vendor';
+            continue;
+        }
+
+        // 3. Nếu TMS Vietsun chưa nhập trực tiếp "Đơn giá Vendor" (donGia1ThucTraChoxePo):
+        if (!$isXuat) {
+            // Hàng Nhập: fallback sang donGiaDebitPo nếu có
+            if (!empty($item['donGiaDebitPo']) && $item['donGiaDebitPo'] > 0) {
+                $item['_debitRate'] = (int)$item['donGiaDebitPo'];
                 $item['_debitType'] = 'NHAP';
                 $item['_debitNote'] = 'Debit TMS';
             } else {
@@ -769,14 +785,7 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false, $inc
                 $item['_debitNote'] = '';
             }
         } else {
-            // Hàng Xuất: kiểm tra TỶ LỆ KẾT HỢP (hinhThucKHopPo hoặc ghiChuPo dạng 80%, 0.8, R)
-            $kh = trim($item['hinhThucKHopPo'] ?? '');
-            $gc = trim($item['ghiChuPo'] ?? '');
-            if ($kh === '' && preg_match('/(\d+(?:\.\d+)?\s*%|\bR\b)/i', $gc, $mGc)) {
-                $kh = strtoupper(str_replace(' ', '', $mGc[1]));
-            }
-            $item['_tyLeKetHop'] = $kh;
-
+            // Hàng Xuất: kiểm tra TỶ LỆ KẾT HỢP (% hoặc R) ghép cont Nhập
             $pct = 0;
             if ($kh !== '' && preg_match('/^(\d+(?:\.\d+)?)\s*%$/', $kh, $mPct)) {
                 $pct = (float)$mPct[1];
@@ -816,10 +825,6 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false, $inc
                     $item['_debitRate'] = (int)round($matchedNhap['donGiaDebitPo'] * ($pct / 100.0));
                     $item['_debitType'] = 'KH_PCT';
                     $item['_debitNote'] = "{$pct}% cont Nhập";
-                } elseif (!empty($item['donGia1ThucTraChoxePo']) && $item['donGia1ThucTraChoxePo'] > 0) {
-                    $item['_debitRate'] = (int)$item['donGia1ThucTraChoxePo'];
-                    $item['_debitType'] = 'KH_PCT';
-                    $item['_debitNote'] = "{$pct}% Debit TMS";
                 } elseif (!empty($item['donGiaDebitPo']) && $item['donGiaDebitPo'] > 0) {
                     $item['_debitRate'] = (int)round($item['donGiaDebitPo'] * ($pct / 100.0));
                     $item['_debitType'] = 'KH_PCT';
@@ -831,11 +836,8 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false, $inc
                 }
             } elseif (strtoupper($kh) === 'R') {
                 // Nếu TỶ LỆ KẾT HỢP: R -> lấy full (100%) giá Debit mà TMS Vietsun có
-                $rRate = !empty($item['donGiaDebitPo']) && $item['donGiaDebitPo'] > 0
-                    ? (int)$item['donGiaDebitPo']
-                    : (!empty($item['donGia1ThucTraChoxePo']) && $item['donGia1ThucTraChoxePo'] > 0 ? (int)$item['donGia1ThucTraChoxePo'] : 0);
-                if ($rRate > 0) {
-                    $item['_debitRate'] = $rRate;
+                if (!empty($item['donGiaDebitPo']) && $item['donGiaDebitPo'] > 0) {
+                    $item['_debitRate'] = (int)$item['donGiaDebitPo'];
                     $item['_debitType'] = 'KH_R';
                     $item['_debitNote'] = 'R (100% Debit TMS)';
                 } else {
@@ -843,6 +845,11 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false, $inc
                     $item['_debitType'] = 'EMPTY';
                     $item['_debitNote'] = 'R (Chờ giá TMS)';
                 }
+            } elseif (!empty($item['donGiaDebitPo']) && $item['donGiaDebitPo'] > 0) {
+                // Nếu xuất chưa ghi tỷ lệ kết hợp nhưng TMS có giá Debit
+                $item['_debitRate'] = (int)$item['donGiaDebitPo'];
+                $item['_debitType'] = 'XUAT_DEBIT';
+                $item['_debitNote'] = 'Debit TMS';
             } else {
                 // Hàng xuất chưa có tỷ lệ kết hợp -> để trống
                 $item['_debitRate'] = null;
