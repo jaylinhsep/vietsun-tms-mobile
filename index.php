@@ -4725,11 +4725,11 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
             `- Khách hàng: ${khach}\n` +
             `- Kho ĐÓNG: ${kho}\n` +
             `- Địa chỉ: ${diachi}\t- Tỉnh: ${tinh}\n` +
+            `- Liên hệ: ${lienhe}\n` +
             `- Số cont: ${soCont}\t\t- Số seal: ${soSeal}\n` +
             `- Ngày ĐÓNG: ${ngayGiao}\n` +
             `- Nơi cấp rỗng: ${noiCapRong}\n` +
             `- Thời gian dự kiến tới kho: \n` +
-            `- Liên hệ: ${lienhe}\n` +
             `- Số xe: ${soXe}\n` +
             `- Tên Lái Xe: ${tenLaiXe}\n` +
             `- Số CMND: ${cccdLaiXe}\n` +

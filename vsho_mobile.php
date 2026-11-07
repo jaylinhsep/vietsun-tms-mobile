@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // VSHO Mobile Standalone Proxy + App
 if (isset($_GET['ajax_proxy'])) {
     header('Content-Type: application/json; charset=utf-8');
@@ -4683,11 +4683,11 @@ if (isset($_GET['ajax_proxy'])) {
             `- Khách hàng: ${khach}\n` +
             `- Kho ĐÓNG: ${kho}\n` +
             `- Địa chỉ: ${diachi}\t- Tỉnh: ${tinh}\n` +
+            `- Liên hệ: ${lienhe}\n` +
             `- Số cont: ${soCont}\t\t- Số seal: ${soSeal}\n` +
             `- Ngày ĐÓNG: ${ngayGiao}\n` +
             `- Nơi cấp rỗng: ${noiCapRong}\n` +
             `- Thời gian dự kiến tới kho: \n` +
-            `- Liên hệ: ${lienhe}\n` +
             `- Số xe: ${soXe}\n` +
             `- Tên Lái Xe: ${tenLaiXe}\n` +
             `- Số CMND: ${cccdLaiXe}\n` +
