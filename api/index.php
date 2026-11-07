@@ -389,8 +389,8 @@ function fetch_single_cycle($cycleDate, $forceRefresh = false) {
     global $REMOTE_BASE, $COOKIE_FILE;
     $safeCycle = preg_replace('/[^0-9\-]/', '', $cycleDate);
     $cacheFile = sys_get_temp_dir() . '/vietsun_cycle_' . $safeCycle . '.json';
-    // Nâng TTL cache chu kỳ từ 60s lên 300s (5 phút) để tránh gọi cURL liên tục làm chậm web
-    if (!$forceRefresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 300)) {
+    // TTL cache chu kỳ 60 giây để cập nhật chuyến xe nhanh chóng
+    if (!$forceRefresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 60)) {
         $cached = json_decode(file_get_contents($cacheFile), true);
         if (is_array($cached) && count($cached) > 0) return $cached;
     }
@@ -659,11 +659,11 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false, $inc
     $baseTs = $targetDate ? strtotime($targetDate) : time();
     if (!$baseTs) $baseTs = time();
 
-    // Cache cấp cao cho toàn bộ danh sách chuyến đã xử lý (48h/2 ngày cho vendor có debit để cực nhẹ tải, 5 phút cho driver không debit)
+    // Cache danh sách chuyến: 60s để nhận chuyến mới/xe mới nhanh chóng (giá cước vẫn giữ cache 48h riêng biệt bên dưới)
     $cacheType = $includeDebit ? 'full' : 'nodbt';
     $cacheDateKey = date('Y-m-d', $baseTs);
     $cacheFile = sys_get_temp_dir() . "/vietsun_shipments_v5_{$cacheType}_{$cacheDateKey}.json";
-    $cacheTtl = $includeDebit ? 172800 : 300;
+    $cacheTtl = 60;
 
     $merged = null;
     if (!$forceRefresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTtl)) {
@@ -952,6 +952,9 @@ function push_vietsun_crud($params) {
         @unlink($cf);
     }
     foreach (glob(sys_get_temp_dir() . '/vietsun_debit_map_*.json') as $cf) {
+        @unlink($cf);
+    }
+    foreach (glob(sys_get_temp_dir() . '/vietsun_shipments_*.json') as $cf) {
         @unlink($cf);
     }
     return $res;

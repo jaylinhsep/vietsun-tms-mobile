@@ -1124,6 +1124,9 @@
   </script>
 
   <script>
+    if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      location.href = location.href.replace('http:', 'https:');
+    }
     const API_BASE = '/api/index.php?route=';
     let allVendorTrips = [];
     let myFleetList = [];
@@ -1210,6 +1213,23 @@
         if (!e.target.closest('#vendorUpdateTripModal .form-group')) {
           const vDrop = document.getElementById('vContAcDropdown');
           if (vDrop) vDrop.classList.remove('open');
+        }
+      });
+
+      // Tự động làm mới dữ liệu chuyến xe Vendor mỗi 30 giây khi không mở modal thao tác
+      setInterval(() => {
+        const token = localStorage.getItem('vs_vendor_token');
+        const modalOpen = document.querySelector('.modal-overlay.open');
+        if (token && !document.hidden && !modalOpen) {
+          loadVendorTrips(false);
+        }
+      }, 30000);
+
+      // Tự động làm mới khi Vendor mở lại ứng dụng / sáng màn hình
+      document.addEventListener('visibilitychange', () => {
+        const token = localStorage.getItem('vs_vendor_token');
+        if (!document.hidden && token) {
+          loadVendorTrips(false);
         }
       });
     });
@@ -1299,20 +1319,30 @@
       const code = document.getElementById('vCode').value.trim();
       const password = document.getElementById('vPass').value.trim();
       const errBox = document.getElementById('vLoginErr');
+      errBox.style.display = 'none';
 
+      let res, data;
       try {
-        const res = await fetch(`${API_BASE}/auth/vendor-login`, {
+        res = await fetch(`${API_BASE}/auth/vendor-login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code, password })
         });
-        const data = await res.json();
-        if (!res.ok || !data.ok) {
-          errBox.textContent = data.error || 'Sai mã nhà xe hoặc mật khẩu!';
-          errBox.style.display = 'block';
-          return;
-        }
+        data = await res.json();
+      } catch (err) {
+        console.error('Vendor login network error:', err);
+        errBox.textContent = 'Lỗi kết nối máy chủ! Vui lòng kiểm tra 4G/Wifi hoặc link https://vietsun.site';
+        errBox.style.display = 'block';
+        return;
+      }
 
+      if (!res.ok || !data.ok) {
+        errBox.textContent = data.error || 'Sai mã nhà xe hoặc mật khẩu!';
+        errBox.style.display = 'block';
+        return;
+      }
+
+      try {
         localStorage.setItem('vs_vendor_token', data.token);
         localStorage.setItem('vs_vendor_info', JSON.stringify(data.vendor));
         document.getElementById('vendorLoginView').style.display = 'none';
@@ -1322,8 +1352,7 @@
           setTimeout(loadDebitReport, 300);
         });
       } catch (err) {
-        errBox.textContent = 'Lỗi kết nối máy chủ!';
-        errBox.style.display = 'block';
+        console.error('Post-login render error:', err);
       }
     }
 

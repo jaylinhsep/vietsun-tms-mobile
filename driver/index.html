@@ -532,6 +532,10 @@
   <div id="driverToast" style="display:none;position:fixed;bottom:85px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:800;box-shadow:0 8px 25px rgba(0,0,0,0.3);z-index:9999;white-space:nowrap;">✅ Đã copy thông tin!</div>
 
   <script>
+    if (location.protocol === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      location.href = location.href.replace('http:', 'https:');
+    }
+
     let currentTrips = [];
     let availableImportConts = [];
     let currentDriverInfo = {};
@@ -597,6 +601,23 @@
         if (savedInfo) renderDriverHeader(savedInfo);
         loadDriverData();
       }
+
+      // Tự động làm mới dữ liệu chuyến xe mỗi 30 giây khi không mở modal thao tác
+      setInterval(() => {
+        const t = localStorage.getItem('vs_driver_token');
+        const modalOpen = document.querySelector('.modal-overlay.open');
+        if (t && !document.hidden && !modalOpen) {
+          loadDriverData(false);
+        }
+      }, 30000);
+
+      // Tự động làm mới khi tài xế mở lại ứng dụng / sáng màn hình
+      document.addEventListener('visibilitychange', () => {
+        const t = localStorage.getItem('vs_driver_token');
+        if (!document.hidden && t) {
+          loadDriverData(false);
+        }
+      });
     });
 
     function toggleContSize(size) {
@@ -639,28 +660,37 @@
       const plate = document.getElementById('loginPlate').value.trim().toUpperCase();
       const pin = document.getElementById('loginPin').value.trim();
       const errBox = document.getElementById('loginError');
+      errBox.style.display = 'none';
 
+      let res, data;
       try {
-        const res = await fetch(`${API_BASE}/auth/driver-login`, {
+        res = await fetch(`${API_BASE}/auth/driver-login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ plate, username: plate, phone: plate, password: pin, pin })
         });
-        const data = await res.json();
-        if (!res.ok || !data.ok) {
-          errBox.textContent = data.error || 'Đăng nhập thất bại!';
-          errBox.style.display = 'block';
-          return;
-        }
+        data = await res.json();
+      } catch (err) {
+        console.error('Driver login network error:', err);
+        errBox.textContent = 'Lỗi kết nối máy chủ! Vui lòng kiểm tra 4G/Wifi hoặc link https://vietsun.site';
+        errBox.style.display = 'block';
+        return;
+      }
 
+      if (!res.ok || !data.ok) {
+        errBox.textContent = data.error || 'Biển số xe hoặc Mật khẩu không đúng!';
+        errBox.style.display = 'block';
+        return;
+      }
+
+      try {
         localStorage.setItem('vs_driver_token', data.token);
         localStorage.setItem('vs_driver_info', JSON.stringify(data.driver));
         document.getElementById('driverLoginView').style.display = 'none';
         renderDriverHeader(data.driver);
         loadDriverData();
       } catch (err) {
-        errBox.textContent = 'Lỗi kết nối máy chủ!';
-        errBox.style.display = 'block';
+        console.error('Post-login render error:', err);
       }
     }
 
