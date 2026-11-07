@@ -1430,6 +1430,10 @@ try {
     // Lấy danh sách chuyến của Tài xế
     if ($route === 'driver/my-trips') {
         $plate = to_clean_code($user['plate'] ?? '');
+        if (!$plate) {
+            echo json_encode(['ok' => true, 'trips' => [], 'importConts' => [], 'driverInfo' => []]);
+            exit;
+        }
         $targetDate = $_GET['date'] ?? null;
         $fromDate = $_GET['fromDate'] ?? null;
         $toDate = $_GET['toDate'] ?? null;

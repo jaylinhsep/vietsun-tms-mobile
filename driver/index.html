@@ -823,6 +823,15 @@
       }
     }
 
+    function toCleanPlate(p) {
+      return (p || '').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    }
+
+    function getMyDriverPlate() {
+      const p = (currentDriverInfo && currentDriverInfo.plate) || (JSON.parse(localStorage.getItem('vs_driver_info') || '{}').plate || '');
+      return toCleanPlate(p);
+    }
+
     async function loadAllTabTrips(forceRefresh = false) {
       const token = localStorage.getItem('vs_driver_token');
       if (!token) return;
@@ -843,9 +852,11 @@
         if (res.ok) {
           const data = await res.json();
           if (data.ok && Array.isArray(data.trips)) {
+            const plateNow = getMyDriverPlate();
+            const incoming = data.trips.filter(t => !plateNow || toCleanPlate(t.soXePo).includes(plateNow));
             const tripMap = {};
-            currentTrips.forEach(t => { if (t.idPo) tripMap[t.idPo] = t; });
-            data.trips.forEach(t => { if (t.idPo) tripMap[t.idPo] = t; });
+            currentTrips.forEach(t => { if (t.idPo && (!plateNow || toCleanPlate(t.soXePo).includes(plateNow))) tripMap[t.idPo] = t; });
+            incoming.forEach(t => { if (t.idPo) tripMap[t.idPo] = t; });
             currentTrips = Object.values(tripMap);
             renderTrips();
           }
@@ -1006,11 +1017,12 @@
       }
 
       try {
+        currentTrips = []; // Reset dữ liệu chuyến xe cũ khi đăng nhập tài xế mới
         localStorage.setItem('vs_driver_token', data.token);
         localStorage.setItem('vs_driver_info', JSON.stringify(data.driver));
         document.getElementById('driverLoginView').style.display = 'none';
         renderDriverHeader(data.driver);
-        loadDriverData();
+        loadDriverData(true);
       } catch (err) {
         console.error('Post-login render error:', err);
       }
@@ -1050,22 +1062,25 @@
 
     function handleLogout() {
       if (confirm('Bạn có muốn đăng xuất tài khoản?')) {
-        localStorage.removeItem('vs_driver_token');
-        localStorage.removeItem('vs_driver_info');
+        Object.keys(localStorage).forEach(k => {
+          if (k.startsWith('vs_driver_')) localStorage.removeItem(k);
+        });
+        currentTrips = [];
         location.reload();
       }
     }
 
     async function loadDriverData(forceRefresh = false) {
       const token = localStorage.getItem('vs_driver_token');
+      const myPlate = getMyDriverPlate();
+      const cacheKey = `vs_driver_cache_${myPlate}_${selectedDateISO}`;
 
       // ⚡ TỨC THÌ (Stale-While-Revalidate): Hiện ngay dữ liệu đã lưu gần nhất trong 0.01 giây
-      const cacheKey = `vs_driver_cache_${selectedDateISO}`;
       if (!forceRefresh && currentTrips.length === 0) {
         try {
           const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
           if (cached && Array.isArray(cached.trips) && cached.trips.length > 0) {
-            currentTrips = cached.trips;
+            currentTrips = cached.trips.filter(t => !myPlate || toCleanPlate(t.soXePo).includes(myPlate));
             availableImportConts = cached.importConts || [];
             renderTrips();
           }
@@ -1084,10 +1099,9 @@
         }
         const data = await res.json();
         if (data.ok) {
-          const tripMap = {};
-          currentTrips.forEach(t => { if (t.idPo) tripMap[t.idPo] = t; });
-          (data.trips || []).forEach(t => { if (t.idPo) tripMap[t.idPo] = t; });
-          currentTrips = Object.values(tripMap);
+          const plateNow = getMyDriverPlate();
+          const incoming = (data.trips || []).filter(t => !plateNow || toCleanPlate(t.soXePo).includes(plateNow));
+          currentTrips = incoming;
           availableImportConts = data.importConts || [];
           renderDriverHeader(data.driverInfo);
           renderTrips();
@@ -1215,6 +1229,14 @@
     }
 
     function renderTrips() {
+      const myPlate = getMyDriverPlate();
+      // BẢO MẬT TUYỆT ĐỐI: Bắt buộc CHỈ lấy các chuyến xe thuộc đúng biển số xe tài xế đang đăng nhập
+      const myTripsOnly = currentTrips.filter(t => {
+        if (!myPlate) return true;
+        const p = toCleanPlate(t.soXePo);
+        return p && (p === myPlate || p.includes(myPlate));
+      });
+
       let dateFiltered = [];
 
       if (currentFilter === 'ALL') {
@@ -1224,7 +1246,7 @@
           allTabToISO = initRange.toISO;
         }
 
-        dateFiltered = currentTrips.filter(t => {
+        dateFiltered = myTripsOnly.filter(t => {
           const d = getTripDateISO(t);
           if (!d) return false;
           return d >= allTabFromISO && d <= allTabToISO;
@@ -1266,16 +1288,23 @@
         const elXuatSub = document.getElementById('statXuatSub');
         if (elXuatSub) elXuatSub.textContent = `20": ${xuat20} • 40": ${xuat40}`;
       } else {
-        dateFiltered = currentTrips.filter(t => {
+        dateFiltered = myTripsOnly.filter(t => {
           if (currentDateMode === 'ALL') return true;
           const d = getTripDateISO(t);
           return d === selectedDateISO;
         });
       }
 
-      const cntAll = (currentFilter === 'ALL') ? dateFiltered.length : currentTrips.length;
-      const cntN = (currentFilter === 'ALL' ? dateFiltered : currentTrips).filter(t => t.xuatNhapPo === 'N').length;
-      const cntX = (currentFilter === 'ALL' ? dateFiltered : currentTrips).filter(t => t.xuatNhapPo === 'X').length;
+      // Đếm số chuyến theo ngày đang xem cho Tab Nhập và Xuất
+      const dateForDaily = myTripsOnly.filter(t => {
+        if (currentDateMode === 'ALL') return true;
+        const d = getTripDateISO(t);
+        return d === selectedDateISO;
+      });
+
+      const cntAll = dateFiltered.length;
+      const cntN = (currentFilter === 'ALL' ? dateFiltered : dateForDaily).filter(t => t.xuatNhapPo === 'N').length;
+      const cntX = (currentFilter === 'ALL' ? dateFiltered : dateForDaily).filter(t => t.xuatNhapPo === 'X').length;
 
       document.getElementById('cntN').textContent = cntN;
       document.getElementById('cntX').textContent = cntX;
