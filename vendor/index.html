@@ -428,7 +428,7 @@
     .nav-item .nav-icon { font-size: 16px; }
     .nav-item.active-nhap { background: #eff6ff; color: #1d4ed8; font-weight: 800; }
     .nav-item.active-xuat { background: #fff7ed; color: #c2410c; font-weight: 800; }
-    .nav-item.active-all  { background: #f1f5f9; color: #0f172a; font-weight: 800; }
+    .nav-item.active-all  { background: #eff6ff; color: #1e3a8a; font-weight: 800; border-top: 2.5px solid #1e3a8a; }
     .nav-item.active-wait { background: #fef3c7; color: #b45309; font-weight: 800; }
 
     /* STATS & TABLES FOR DEBIT / FLEET VIEWS */
@@ -956,9 +956,13 @@
     </button>
   </div>
 
-  <!-- BOTTOM NAVIGATION (ƯU TIÊN TAB NHẬP ĐẦU TIÊN, SAU ĐÓ TAB XUẤT - GIỐNG VS.HUUHOA.NET) -->
+  <!-- BOTTOM NAVIGATION: TẤT CẢ (ĐẦU TIÊN) -> HÀNG NHẬP -> HÀNG XUẤT -> CHỜ GÁN XE -->
   <nav class="bottom-nav" id="planBottomNav">
-    <button class="nav-item active-nhap" id="bnavN" onclick="setPlanType('N')">
+    <button class="nav-item active-all" id="bnavAll" onclick="setPlanType('ALL')">
+      <span class="nav-icon">📋</span>
+      <span>Tất cả (<span id="cntPlanAll">0</span>)</span>
+    </button>
+    <button class="nav-item" id="bnavN" onclick="setPlanType('N')">
       <span class="nav-icon">📥</span>
       <span>Hàng Nhập (<span id="cntPlanN">0</span>)</span>
     </button>
@@ -969,10 +973,6 @@
     <button class="nav-item" id="bnavWait" onclick="setPlanType('WAIT')">
       <span class="nav-icon">🚛</span>
       <span>Chờ gán xe (<span id="cntPlanWait">0</span>)</span>
-    </button>
-    <button class="nav-item" id="bnavAll" onclick="setPlanType('ALL')">
-      <span class="nav-icon">📋</span>
-      <span>Tất cả (<span id="cntPlanAll">0</span>)</span>
     </button>
   </nav>
 
@@ -1132,10 +1132,10 @@
     let myFleetList = [];
     let availableVendorImportConts = [];
 
-    // Mặc định: Kế hoạch HÔM NAY + ưu tiên Tab HÀNG NHẬP ('N')
+    // Mặc định: Kế hoạch HÔM NAY + hiển thị TẤT CẢ các chuyến ('ALL')
     let planDateMode = 'TODAY';
     let planSelectedDate = getLocalTodayISO(0);
-    let planTypeFilter = 'N'; // 'N' | 'X' | 'WAIT' | 'ALL'
+    let planTypeFilter = 'ALL'; // 'ALL' | 'N' | 'X' | 'WAIT'
     let contSizeFilter = 'ALL'; // 'ALL' | '20' | '40'
 
     // Trạng thái màn hình Đối soát: Mặc định dạng Thẻ ('cards') trực quan

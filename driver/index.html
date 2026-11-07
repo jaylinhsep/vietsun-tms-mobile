@@ -220,7 +220,7 @@
     .nav-item .nav-icon { font-size: 17px; }
     .nav-item.active-nhap { background: #eff6ff; color: #1d4ed8; font-weight: 800; }
     .nav-item.active-xuat { background: #fff7ed; color: #c2410c; font-weight: 800; }
-    .nav-item.active-all  { background: #f1f5f9; color: #0f172a; font-weight: 800; }
+    .nav-item.active-all  { background: #eff6ff; color: #1e3a8a; font-weight: 800; border-top: 2.5px solid #1e3a8a; }
 
     /* TAB TẤT CẢ: BỘ ĐẾM SỐ CHUYẾN THEO KỲ & KHOẢNG THỜI GIAN */
     .all-tab-stats-panel {
@@ -563,19 +563,19 @@
     </button>
   </div>
 
-  <!-- BOTTOM NAVIGATION: ƯU TIÊN TAB NHẬP TRƯỚC, TAB XUẤT SAU -->
+  <!-- BOTTOM NAVIGATION: TẤT CẢ (ĐẦU TIÊN) -> HÀNG NHẬP -> HÀNG XUẤT -->
   <nav class="bottom-nav">
-    <button class="nav-item active-nhap" id="tabN" onclick="switchTab('N')">
+    <button class="nav-item active-all" id="tabAll" onclick="switchTab('ALL')">
+      <span class="nav-icon">📋</span>
+      <span>Tất cả (<span id="cntAll">0</span>)</span>
+    </button>
+    <button class="nav-item" id="tabN" onclick="switchTab('N')">
       <span class="nav-icon">📥</span>
       <span>Hàng Nhập (<span id="cntN">0</span>)</span>
     </button>
     <button class="nav-item" id="tabX" onclick="switchTab('X')">
       <span class="nav-icon">📤</span>
       <span>Hàng Xuất (<span id="cntX">0</span>)</span>
-    </button>
-    <button class="nav-item" id="tabAll" onclick="switchTab('ALL')">
-      <span class="nav-icon">📋</span>
-      <span>Tất cả (<span id="cntAll">0</span>)</span>
     </button>
   </nav>
 
@@ -722,7 +722,7 @@
     let currentTrips = [];
     let availableImportConts = [];
     let currentDriverInfo = {};
-    let currentFilter = 'N'; // Mặc định ưu tiên Tab Nhập
+    let currentFilter = 'ALL'; // Mặc định xem Tất cả các chuyến trong ngày
     let currentDateMode = 'TODAY';
     let selectedDateISO = getLocalTodayISO();
     let contSizeFilter = 'ALL'; // 'ALL' | '20' | '40'
@@ -1330,6 +1330,12 @@
         if (contSizeFilter === '20') return Number(t.cont40Po) === 0;
         if (contSizeFilter === '40') return Number(t.cont40Po) > 0;
         return true;
+      });
+
+      // Ưu tiên xếp Hàng Nhập lên trước, sau đó là Hàng Xuất
+      filtered.sort((a, b) => {
+        if (a.xuatNhapPo !== b.xuatNhapPo) return a.xuatNhapPo === 'N' ? -1 : 1;
+        return Number(b.idPo || 0) - Number(a.idPo || 0);
       });
 
       const container = document.getElementById('tripsContainer');
