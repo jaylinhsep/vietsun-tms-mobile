@@ -222,6 +222,120 @@
     .nav-item.active-xuat { background: #fff7ed; color: #c2410c; font-weight: 800; }
     .nav-item.active-all  { background: #f1f5f9; color: #0f172a; font-weight: 800; }
 
+    /* TAB TẤT CẢ: BỘ ĐẾM SỐ CHUYẾN THEO KỲ & KHOẢNG THỜI GIAN */
+    .all-tab-stats-panel {
+      background: #ffffff;
+      border-bottom: 2px solid #e2e8f0;
+      padding: 10px 12px 14px;
+      position: sticky;
+      top: 56px;
+      z-index: 80;
+      box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+    }
+    .stats-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+    .mode-toggle-group {
+      display: flex;
+      background: #f1f5f9;
+      padding: 3px;
+      border-radius: 8px;
+      gap: 2px;
+    }
+    .mode-toggle-btn {
+      border: none;
+      background: transparent;
+      padding: 5px 9px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .mode-toggle-btn.active {
+      background: #1d4ed8;
+      color: #ffffff;
+      box-shadow: 0 1px 4px rgba(29, 78, 216, 0.25);
+    }
+    .ky-quick-pills {
+      display: flex;
+      gap: 6px;
+    }
+    .ky-pill {
+      flex: 1;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      padding: 6px 4px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #334155;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .ky-pill.active {
+      background: #eff6ff;
+      border-color: #2563eb;
+      color: #1d4ed8;
+      font-weight: 800;
+    }
+    .stats-counter-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr 1fr;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .counter-box {
+      border-radius: 10px;
+      padding: 8px 6px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .box-total {
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(30, 58, 138, 0.2);
+    }
+    .box-total .counter-lbl { color: #bfdbfe; }
+    .box-total .counter-sub { color: #dbeafe; }
+    .box-nhap {
+      background: #eff6ff;
+      border: 1.5px solid #bfdbfe;
+      color: #1d4ed8;
+    }
+    .box-nhap .counter-lbl { color: #1e40af; }
+    .box-nhap .counter-sub { color: #3b82f6; }
+    .box-xuat {
+      background: #fff7ed;
+      border: 1.5px solid #fed7aa;
+      color: #c2410c;
+    }
+    .box-xuat .counter-lbl { color: #9a3412; }
+    .box-xuat .counter-sub { color: #ea580c; }
+    .counter-num {
+      font-size: 21px;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+    .counter-lbl {
+      font-size: 10.5px;
+      font-weight: 800;
+      margin-top: 2px;
+      letter-spacing: 0.2px;
+    }
+    .counter-sub {
+      font-size: 10px;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+
     /* MODAL */
     .modal-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,0.6);
@@ -346,8 +460,8 @@
     </div>
   </header>
 
-  <!-- BỘ LỌC NGÀY -->
-  <div class="date-bar">
+  <!-- BỘ LỌC NGÀY (DÀNH CHO TAB HÀNG NHẬP & HÀNG XUẤT) -->
+  <div class="date-bar" id="driverDateBar">
     <div class="date-chips">
       <button class="date-chip active" id="chipToday" onclick="setDateMode('TODAY')">📅 Hôm nay</button>
       <button class="date-chip" id="chipYesterday" onclick="setDateMode('YESTERDAY')">⏪ Hôm qua</button>
@@ -358,6 +472,75 @@
       <span style="font-size:12px;font-weight:700;color:#475569;">Ngày chạy:</span>
       <input type="date" id="driverDateInput" class="date-input" onchange="onCustomDateChange(this.value)" />
       <button onclick="loadDriverData(true)" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:6px 10px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;">🔄 Tải lại</button>
+    </div>
+  </div>
+
+  <!-- BỘ ĐẾM SỐ CHUYẾN THEO KỲ & KHOẢNG THỜI GIAN (DÀNH CHO TAB TẤT CẢ) -->
+  <div class="all-tab-stats-panel" id="allTabStatsPanel" style="display:none;">
+    <div class="stats-top-bar">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="font-size:16px;">📊</span>
+        <span style="font-size:13px;font-weight:800;color:#1e3a8a;text-transform:uppercase;letter-spacing:0.3px;">Đếm Chuyến Theo Kỳ</span>
+      </div>
+      <div class="mode-toggle-group">
+        <button type="button" class="mode-toggle-btn active" id="btnModeKy" onclick="setAllTabFilterMode('KY')">Theo Kỳ (26➜25)</button>
+        <button type="button" class="mode-toggle-btn" id="btnModeCustom" onclick="setAllTabFilterMode('CUSTOM')">Tự chọn ngày</button>
+      </div>
+    </div>
+
+    <!-- 1. CHỌN THEO KỲ (26 THÁNG NÀY ĐẾN 25 THÁNG SAU) -->
+    <div id="panelKyControls" style="margin-top:10px;">
+      <div class="ky-quick-pills">
+        <button type="button" class="ky-pill" id="kyPillPrev" onclick="changePresetKy(-1)">⏪ Kỳ trước</button>
+        <button type="button" class="ky-pill active" id="kyPillCurrent" onclick="changePresetKy(0)">📍 Kỳ hiện tại</button>
+        <button type="button" class="ky-pill" id="kyPillNext" onclick="changePresetKy(1)">⏩ Kỳ sau</button>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;background:#f8fafc;padding:6px 10px;border-radius:8px;border:1px solid #e2e8f0;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:11.5px;font-weight:700;color:#64748b;">Thời gian kỳ:</span>
+          <span id="kyDisplayLabel" style="font-size:12.5px;font-weight:800;color:#1d4ed8;">26/10/2026 ➔ 25/11/2026</span>
+        </div>
+        <button type="button" onclick="loadAllTabTrips(true)" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:4px 8px;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer;">🔄 Tải lại</button>
+      </div>
+    </div>
+
+    <!-- 2. KHOẢNG THỜI GIAN TỰ CHỌN (TỪ NGÀY ... ĐẾN NGÀY ...) -->
+    <div id="panelCustomControls" style="display:none;margin-top:10px;">
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <div style="flex:1;">
+          <label style="display:block;font-size:11px;font-weight:700;color:#64748b;margin-bottom:3px;">Từ ngày:</label>
+          <input type="date" id="allCustomFromDate" class="date-input" style="width:100%;padding:6px 8px;font-size:13px;font-weight:700;" onchange="onCustomRangeChange()" />
+        </div>
+        <div style="flex:1;">
+          <label style="display:block;font-size:11px;font-weight:700;color:#64748b;margin-bottom:3px;">Đến ngày:</label>
+          <input type="date" id="allCustomToDate" class="date-input" style="width:100%;padding:6px 8px;font-size:13px;font-weight:700;" onchange="onCustomRangeChange()" />
+        </div>
+        <div>
+          <button type="button" onclick="loadAllTabTrips(true)" style="background:#1d4ed8;color:#fff;border:none;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;">🔍 Lọc</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KHUNG ĐẾM SỐ CHUYẾN (GRID THỐNG KÊ TRỰC QUAN) -->
+    <div class="stats-counter-grid">
+      <!-- TỔNG SỐ CHUYẾN -->
+      <div class="counter-box box-total">
+        <div class="counter-num" id="statAllTotal">0</div>
+        <div class="counter-lbl">TỔNG SỐ CHUYẾN</div>
+        <div class="counter-sub" id="statAllContSummary">20": 0 • 40": 0</div>
+      </div>
+      <!-- HÀNG NHẬP -->
+      <div class="counter-box box-nhap">
+        <div class="counter-num" id="statAllNhap">0</div>
+        <div class="counter-lbl">📥 HÀNG NHẬP</div>
+        <div class="counter-sub" id="statNhapSub">20": 0 • 40": 0</div>
+      </div>
+      <!-- HÀNG XUẤT -->
+      <div class="counter-box box-xuat">
+        <div class="counter-num" id="statAllXuat">0</div>
+        <div class="counter-lbl">📤 HÀNG XUẤT</div>
+        <div class="counter-sub" id="statXuatSub">20": 0 • 40": 0</div>
+      </div>
     </div>
   </div>
 
@@ -545,6 +728,133 @@
     let contSizeFilter = 'ALL'; // 'ALL' | '20' | '40'
     const API_BASE = '/api/index.php?route=';
 
+    // Biến cho Tab Tất cả: Đếm số chuyến theo kỳ (26 tháng này đến 25 tháng sau) & khoảng thời gian tự chọn
+    let allTabMode = 'KY'; // 'KY' | 'CUSTOM'
+    let currentKyOffset = 0; // 0 = kỳ hiện tại, -1 = kỳ trước, 1 = kỳ sau...
+    let allTabFromISO = '';
+    let allTabToISO = '';
+
+    function formatISODate(d) {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // Tính chu kỳ kỳ kế toán (từ 26 tháng này đến 25 tháng sau)
+    function calculateKyRange(offsetMonths = 0) {
+      const now = new Date();
+      const day = now.getDate();
+      let baseYear = now.getFullYear();
+      let baseMonth = now.getMonth(); // 0..11
+
+      // Nếu ngày hiện tại < 26: kỳ hiện tại bắt đầu từ ngày 26 tháng trước đến 25 tháng này
+      // Nếu ngày hiện tại >= 26: kỳ hiện tại bắt đầu từ ngày 26 tháng này đến 25 tháng sau
+      if (day < 26) {
+        baseMonth -= 1;
+      }
+      baseMonth += offsetMonths;
+
+      const startDate = new Date(baseYear, baseMonth, 26);
+      const endYear = startDate.getFullYear();
+      const endMonth = startDate.getMonth() + 1;
+      const endDate = new Date(endYear, endMonth, 25);
+
+      const fromISO = formatISODate(startDate);
+      const toISO = formatISODate(endDate);
+
+      const fromDStr = `${String(startDate.getDate()).padStart(2, '0')}/${String(startDate.getMonth() + 1).padStart(2, '0')}/${startDate.getFullYear()}`;
+      const toDStr = `${String(endDate.getDate()).padStart(2, '0')}/${String(endDate.getMonth() + 1).padStart(2, '0')}/${endDate.getFullYear()}`;
+
+      return {
+        fromISO,
+        toISO,
+        label: `${fromDStr} ➔ ${toDStr}`,
+        shortTitle: `Kỳ 26/${String(startDate.getMonth() + 1).padStart(2, '0')} ➔ 25/${String(endDate.getMonth() + 1).padStart(2, '0')}`
+      };
+    }
+
+    function setAllTabFilterMode(mode) {
+      allTabMode = mode;
+      document.getElementById('btnModeKy').classList.toggle('active', mode === 'KY');
+      document.getElementById('btnModeCustom').classList.toggle('active', mode === 'CUSTOM');
+      document.getElementById('panelKyControls').style.display = (mode === 'KY') ? 'block' : 'none';
+      document.getElementById('panelCustomControls').style.display = (mode === 'CUSTOM') ? 'block' : 'none';
+
+      if (mode === 'KY') {
+        applyCurrentKy();
+      } else {
+        const fromEl = document.getElementById('allCustomFromDate');
+        const toEl = document.getElementById('allCustomToDate');
+        if (fromEl && !fromEl.value) fromEl.value = allTabFromISO;
+        if (toEl && !toEl.value) toEl.value = allTabToISO;
+        renderTrips();
+      }
+    }
+
+    function changePresetKy(offset) {
+      currentKyOffset = offset;
+      document.getElementById('kyPillPrev').classList.toggle('active', offset === -1);
+      document.getElementById('kyPillCurrent').classList.toggle('active', offset === 0);
+      document.getElementById('kyPillNext').classList.toggle('active', offset === 1);
+      applyCurrentKy();
+    }
+
+    function applyCurrentKy() {
+      const range = calculateKyRange(currentKyOffset);
+      allTabFromISO = range.fromISO;
+      allTabToISO = range.toISO;
+      const lbl = document.getElementById('kyDisplayLabel');
+      if (lbl) lbl.textContent = range.label;
+      const fromEl = document.getElementById('allCustomFromDate');
+      const toEl = document.getElementById('allCustomToDate');
+      if (fromEl) fromEl.value = allTabFromISO;
+      if (toEl) toEl.value = allTabToISO;
+      loadAllTabTrips(false);
+    }
+
+    function onCustomRangeChange() {
+      const fromVal = document.getElementById('allCustomFromDate').value;
+      const toVal = document.getElementById('allCustomToDate').value;
+      if (fromVal && toVal) {
+        allTabFromISO = fromVal;
+        allTabToISO = toVal;
+        loadAllTabTrips(false);
+      }
+    }
+
+    async function loadAllTabTrips(forceRefresh = false) {
+      const token = localStorage.getItem('vs_driver_token');
+      if (!token) return;
+
+      if (!allTabFromISO || !allTabToISO) {
+        const r = calculateKyRange(0);
+        allTabFromISO = r.fromISO;
+        allTabToISO = r.toISO;
+      }
+
+      renderTrips();
+
+      try {
+        const url = `${API_BASE}/driver/my-trips&fromDate=${encodeURIComponent(allTabFromISO)}&toDate=${encodeURIComponent(allTabToISO)}${forceRefresh ? '&refresh=1' : ''}`;
+        const res = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ok && Array.isArray(data.trips)) {
+            const tripMap = {};
+            currentTrips.forEach(t => { if (t.idPo) tripMap[t.idPo] = t; });
+            data.trips.forEach(t => { if (t.idPo) tripMap[t.idPo] = t; });
+            currentTrips = Object.values(tripMap);
+            renderTrips();
+          }
+        }
+      } catch (err) {
+        console.error('loadAllTabTrips error:', err);
+      }
+    }
+
     function showDriverToast(msg) {
       const el = document.getElementById('driverToast');
       if (!el) return;
@@ -594,6 +904,18 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('driverDateInput').value = selectedDateISO;
+
+      // Khởi tạo Kỳ đếm chuyến cho Tab Tất cả (26 tháng này đến 25 tháng sau)
+      const initKy = calculateKyRange(0);
+      allTabFromISO = initKy.fromISO;
+      allTabToISO = initKy.toISO;
+      const kyLbl = document.getElementById('kyDisplayLabel');
+      if (kyLbl) kyLbl.textContent = initKy.label;
+      const cFrom = document.getElementById('allCustomFromDate');
+      const cTo = document.getElementById('allCustomToDate');
+      if (cFrom) cFrom.value = allTabFromISO;
+      if (cTo) cTo.value = allTabToISO;
+
       const token = localStorage.getItem('vs_driver_token');
       if (token) {
         document.getElementById('driverLoginView').style.display = 'none';
@@ -762,7 +1084,10 @@
         }
         const data = await res.json();
         if (data.ok) {
-          currentTrips = data.trips || [];
+          const tripMap = {};
+          currentTrips.forEach(t => { if (t.idPo) tripMap[t.idPo] = t; });
+          (data.trips || []).forEach(t => { if (t.idPo) tripMap[t.idPo] = t; });
+          currentTrips = Object.values(tripMap);
           availableImportConts = data.importConts || [];
           renderDriverHeader(data.driverInfo);
           renderTrips();
@@ -874,19 +1199,83 @@
       document.getElementById('tabN').className = 'nav-item' + (type === 'N' ? ' active-nhap' : '');
       document.getElementById('tabX').className = 'nav-item' + (type === 'X' ? ' active-xuat' : '');
       document.getElementById('tabAll').className = 'nav-item' + (type === 'ALL' ? ' active-all' : '');
-      renderTrips();
+
+      const dateBar = document.getElementById('driverDateBar');
+      const allStatsPanel = document.getElementById('allTabStatsPanel');
+
+      if (type === 'ALL') {
+        if (dateBar) dateBar.style.display = 'none';
+        if (allStatsPanel) allStatsPanel.style.display = 'block';
+        loadAllTabTrips(false);
+      } else {
+        if (dateBar) dateBar.style.display = 'block';
+        if (allStatsPanel) allStatsPanel.style.display = 'none';
+        renderTrips();
+      }
     }
 
     function renderTrips() {
-      const dateFiltered = currentTrips.filter(t => {
-        if (currentDateMode === 'ALL') return true;
-        const d = getTripDateISO(t);
-        return d === selectedDateISO;
-      });
+      let dateFiltered = [];
 
-      const cntAll = dateFiltered.length;
-      const cntN = dateFiltered.filter(t => t.xuatNhapPo === 'N').length;
-      const cntX = dateFiltered.filter(t => t.xuatNhapPo === 'X').length;
+      if (currentFilter === 'ALL') {
+        if (!allTabFromISO || !allTabToISO) {
+          const initRange = calculateKyRange(0);
+          allTabFromISO = initRange.fromISO;
+          allTabToISO = initRange.toISO;
+        }
+
+        dateFiltered = currentTrips.filter(t => {
+          const d = getTripDateISO(t);
+          if (!d) return false;
+          return d >= allTabFromISO && d <= allTabToISO;
+        });
+
+        // Sắp xếp các chuyến mới nhất lên đầu
+        dateFiltered.sort((a, b) => {
+          const da = getTripDateISO(a) || '';
+          const db = getTripDateISO(b) || '';
+          return db.localeCompare(da);
+        });
+
+        // Cập nhật các ô thống kê đếm chuyến cho Tab Tất cả
+        const total = dateFiltered.length;
+        const nhapList = dateFiltered.filter(t => t.xuatNhapPo === 'N');
+        const xuatList = dateFiltered.filter(t => t.xuatNhapPo === 'X');
+
+        const nhap20 = nhapList.filter(t => Number(t.cont40Po) === 0).length;
+        const nhap40 = nhapList.filter(t => Number(t.cont40Po) > 0).length;
+
+        const xuat20 = xuatList.filter(t => Number(t.cont40Po) === 0).length;
+        const xuat40 = xuatList.filter(t => Number(t.cont40Po) > 0).length;
+
+        const total20 = nhap20 + xuat20;
+        const total40 = nhap40 + xuat40;
+
+        const elTot = document.getElementById('statAllTotal');
+        if (elTot) elTot.textContent = total;
+        const elTotSub = document.getElementById('statAllContSummary');
+        if (elTotSub) elTotSub.textContent = `20": ${total20} • 40": ${total40}`;
+
+        const elNhap = document.getElementById('statAllNhap');
+        if (elNhap) elNhap.textContent = nhapList.length;
+        const elNhapSub = document.getElementById('statNhapSub');
+        if (elNhapSub) elNhapSub.textContent = `20": ${nhap20} • 40": ${nhap40}`;
+
+        const elXuat = document.getElementById('statAllXuat');
+        if (elXuat) elXuat.textContent = xuatList.length;
+        const elXuatSub = document.getElementById('statXuatSub');
+        if (elXuatSub) elXuatSub.textContent = `20": ${xuat20} • 40": ${xuat40}`;
+      } else {
+        dateFiltered = currentTrips.filter(t => {
+          if (currentDateMode === 'ALL') return true;
+          const d = getTripDateISO(t);
+          return d === selectedDateISO;
+        });
+      }
+
+      const cntAll = (currentFilter === 'ALL') ? dateFiltered.length : currentTrips.length;
+      const cntN = (currentFilter === 'ALL' ? dateFiltered : currentTrips).filter(t => t.xuatNhapPo === 'N').length;
+      const cntX = (currentFilter === 'ALL' ? dateFiltered : currentTrips).filter(t => t.xuatNhapPo === 'X').length;
 
       document.getElementById('cntN').textContent = cntN;
       document.getElementById('cntX').textContent = cntX;
@@ -910,6 +1299,20 @@
 
       const container = document.getElementById('tripsContainer');
       if (filtered.length === 0) {
+        if (currentFilter === 'ALL') {
+          container.innerHTML = `
+            <div style="text-align:center;padding:36px 16px;color:var(--text-muted);background:#fff;border-radius:14px;border:1px dashed var(--border);">
+              <div style="font-size:38px;margin-bottom:8px;">📭</div>
+              <div style="font-weight:800;font-size:15px;color:#334155;">Chưa có chuyến xe nào trong khoảng thời gian này</div>
+              <div style="font-size:12.5px;color:#64748b;margin-top:4px;">Từ <b>${formatVNDate(allTabFromISO)}</b> đến <b>${formatVNDate(allTabToISO)}</b></div>
+              <div style="margin-top:12px;">
+                <button type="button" onclick="loadAllTabTrips(true)" class="btn btn-update" style="padding:7px 14px;font-size:12.5px;">🔄 Tải lại dữ liệu TMS</button>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
         const tabName = currentFilter === 'N' ? 'Hàng Nhập' : (currentFilter === 'X' ? 'Hàng Xuất' : 'chuyến nào');
         const dateLabel = currentDateMode === 'ALL' ? 'tất cả các ngày' : `ngày ${formatVNDate(selectedDateISO)}`;
         const otherTypeCount = currentFilter === 'N' ? cntX : (currentFilter === 'X' ? cntN : 0);

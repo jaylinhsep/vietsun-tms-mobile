@@ -1431,14 +1431,44 @@ try {
     if ($route === 'driver/my-trips') {
         $plate = to_clean_code($user['plate'] ?? '');
         $targetDate = $_GET['date'] ?? null;
+        $fromDate = $_GET['fromDate'] ?? null;
+        $toDate = $_GET['toDate'] ?? null;
         $forceRefresh = !empty($_GET['refresh']);
 
         $stDrv = $pdo->prepare("SELECT driver_name, phone, cccd, gplx FROM drivers WHERE assigned_plate = ? LIMIT 1");
         $stDrv->execute([$plate]);
         $drvRow = $stDrv->fetch() ?: [];
 
-        // Tài xế chỉ xem chuyến chạy, bỏ qua bảng cước Debit đối soát để tải tức thì
-        $all = fetch_vietsun_shipments($targetDate, $forceRefresh, false);
+        // Hỗ trợ lọc theo Kỳ (26->25) hoặc khoảng thời gian tự chọn
+        if ($fromDate && $toDate) {
+            $fTs = strtotime($fromDate);
+            $tTs = strtotime($toDate);
+            $cycles = [];
+            if ($fTs && $tTs) {
+                for ($ts = $fTs; $ts <= $tTs + 86400 * 35; $ts += 86400 * 15) {
+                    $cycles[] = get_billing_cycle_param(date('Y-m-d', $ts));
+                }
+            }
+            $cycles = array_unique(array_filter($cycles));
+            if (empty($cycles)) {
+                $cycles = [get_billing_cycle_param($fromDate)];
+            }
+            $all = [];
+            foreach ($cycles as $c) {
+                $arr = fetch_single_cycle($c, $forceRefresh);
+                if (is_array($arr)) {
+                    foreach ($arr as $item) {
+                        if (isset($item['idPo'])) {
+                            $all[$item['idPo']] = normalize_shipment_item($item);
+                        }
+                    }
+                }
+            }
+        } else {
+            // Tài xế chỉ xem chuyến chạy, bỏ qua bảng cước Debit đối soát để tải tức thì
+            $all = fetch_vietsun_shipments($targetDate, $forceRefresh, false);
+        }
+
         $myTrips = [];
         foreach ($all as $item) {
             $itemPlate = to_clean_code($item['soXePo'] ?? '');
