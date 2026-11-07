@@ -743,7 +743,7 @@
 
     // Tính chu kỳ kỳ kế toán (từ 26 tháng này đến 25 tháng sau)
     function calculateKyRange(offsetMonths = 0) {
-      const now = new Date();
+      const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
       const day = now.getDate();
       let baseYear = now.getFullYear();
       let baseMonth = now.getMonth(); // 0..11
@@ -876,7 +876,7 @@
     }
 
     function getLocalTodayISO(offsetDays = 0) {
-      const d = new Date();
+      const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
       d.setDate(d.getDate() + offsetDays);
       const yyyy = d.getFullYear();
       const mm = String(d.getMonth() + 1).padStart(2, '0');

@@ -1152,7 +1152,7 @@
     }
 
     function getLocalTodayISO(offsetDays = 0) {
-      const d = new Date();
+      const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
       d.setDate(d.getDate() + offsetDays);
       const yyyy = d.getFullYear();
       const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -1235,7 +1235,7 @@
     });
 
     function initDates() {
-      const now = new Date();
+      const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
       const yyyy = now.getFullYear();
       const mm = String(now.getMonth() + 1).padStart(2, '0');
       const prevMm = String(now.getMonth() === 0 ? 12 : now.getMonth()).padStart(2, '0');

@@ -1,5 +1,6 @@
 <?php
-if (isset(['api']) || isset(['route'])) {
+date_default_timezone_set('Asia/Ho_Chi_Minh');
+if (isset($_GET['api']) || isset($_GET['route'])) {
     require_once __DIR__ . '/api/index.php';
     exit;
 }
@@ -2486,7 +2487,7 @@ if (isset(['api']) || isset(['route'])) {
     // 3. DATE & UTILITY HELPERS
     // =========================================================================
     function getTodayISO() {
-      const now = new Date();
+      const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
       const yyyy = now.getFullYear();
       const mm = String(now.getMonth() + 1).padStart(2, "0");
       const dd = String(now.getDate()).padStart(2, "0");
