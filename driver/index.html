@@ -460,22 +460,22 @@
     </div>
   </header>
 
-  <!-- BỘ LỌC NGÀY (DÀNH CHO TAB HÀNG NHẬP & HÀNG XUẤT) -->
+  <!-- BỘ LỌC NGÀY & KỲ -->
   <div class="date-bar" id="driverDateBar">
     <div class="date-chips">
       <button class="date-chip active" id="chipToday" onclick="setDateMode('TODAY')">📅 Hôm nay</button>
       <button class="date-chip" id="chipYesterday" onclick="setDateMode('YESTERDAY')">⏪ Hôm qua</button>
       <button class="date-chip" id="chipTomorrow" onclick="setDateMode('TOMORROW')">⏩ Ngày mai</button>
-      <button class="date-chip" id="chipAll" onclick="setDateMode('ALL')">📋 Tất cả ngày</button>
+      <button class="date-chip" id="chipPeriod" onclick="setDateMode('PERIOD')">📊 Theo kỳ (26➜25)</button>
     </div>
-    <div class="date-picker-row">
+    <div class="date-picker-row" id="singleDatePickerRow">
       <span style="font-size:12px;font-weight:700;color:#475569;">Ngày chạy:</span>
       <input type="date" id="driverDateInput" class="date-input" onchange="onCustomDateChange(this.value)" />
       <button onclick="loadDriverData(true)" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:6px 10px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;">🔄 Tải lại</button>
     </div>
   </div>
 
-  <!-- BỘ ĐẾM SỐ CHUYẾN THEO KỲ & KHOẢNG THỜI GIAN (DÀNH CHO TAB TẤT CẢ) -->
+  <!-- BỘ ĐẾM SỐ CHUYẾN THEO KỲ & KHOẢNG THỜI GIAN -->
   <div class="all-tab-stats-panel" id="allTabStatsPanel" style="display:none;">
     <div class="stats-top-bar">
       <div style="display:flex;align-items:center;gap:6px;">
@@ -940,7 +940,11 @@
         const t = localStorage.getItem('vs_driver_token');
         const modalOpen = document.querySelector('.modal-overlay.open');
         if (t && !document.hidden && !modalOpen) {
-          loadDriverData(false);
+          if (currentDateMode === 'PERIOD') {
+            loadAllTabTrips(false);
+          } else {
+            loadDriverData(false);
+          }
         }
       }, 30000);
 
@@ -948,7 +952,11 @@
       document.addEventListener('visibilitychange', () => {
         const t = localStorage.getItem('vs_driver_token');
         if (!document.hidden && t) {
-          loadDriverData(false);
+          if (currentDateMode === 'PERIOD') {
+            loadAllTabTrips(false);
+          } else {
+            loadDriverData(false);
+          }
         }
       });
     });
@@ -965,19 +973,31 @@
       document.getElementById('chipToday').classList.toggle('active', mode === 'TODAY');
       document.getElementById('chipYesterday').classList.toggle('active', mode === 'YESTERDAY');
       document.getElementById('chipTomorrow').classList.toggle('active', mode === 'TOMORROW');
-      document.getElementById('chipAll').classList.toggle('active', mode === 'ALL');
+      document.getElementById('chipPeriod').classList.toggle('active', mode === 'PERIOD');
 
-      if (mode === 'TODAY') {
-        selectedDateISO = getLocalTodayISO(0);
-        document.getElementById('driverDateInput').value = selectedDateISO;
-      } else if (mode === 'YESTERDAY') {
-        selectedDateISO = getLocalTodayISO(-1);
-        document.getElementById('driverDateInput').value = selectedDateISO;
-      } else if (mode === 'TOMORROW') {
-        selectedDateISO = getLocalTodayISO(1);
-        document.getElementById('driverDateInput').value = selectedDateISO;
+      const allStatsPanel = document.getElementById('allTabStatsPanel');
+      const singlePickerRow = document.getElementById('singleDatePickerRow');
+
+      if (mode === 'PERIOD') {
+        if (allStatsPanel) allStatsPanel.style.display = 'block';
+        if (singlePickerRow) singlePickerRow.style.display = 'none';
+        loadAllTabTrips(false);
+      } else {
+        if (allStatsPanel) allStatsPanel.style.display = 'none';
+        if (singlePickerRow) singlePickerRow.style.display = 'flex';
+
+        if (mode === 'TODAY') {
+          selectedDateISO = getLocalTodayISO(0);
+          document.getElementById('driverDateInput').value = selectedDateISO;
+        } else if (mode === 'YESTERDAY') {
+          selectedDateISO = getLocalTodayISO(-1);
+          document.getElementById('driverDateInput').value = selectedDateISO;
+        } else if (mode === 'TOMORROW') {
+          selectedDateISO = getLocalTodayISO(1);
+          document.getElementById('driverDateInput').value = selectedDateISO;
+        }
+        loadDriverData(false);
       }
-      renderTrips();
     }
 
     function onCustomDateChange(val) {
@@ -985,6 +1005,10 @@
       selectedDateISO = val;
       currentDateMode = 'CUSTOM';
       document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('active'));
+      const allStatsPanel = document.getElementById('allTabStatsPanel');
+      const singlePickerRow = document.getElementById('singleDatePickerRow');
+      if (allStatsPanel) allStatsPanel.style.display = 'none';
+      if (singlePickerRow) singlePickerRow.style.display = 'flex';
       loadDriverData(false);
     }
 
@@ -1214,18 +1238,7 @@
       document.getElementById('tabX').className = 'nav-item' + (type === 'X' ? ' active-xuat' : '');
       document.getElementById('tabAll').className = 'nav-item' + (type === 'ALL' ? ' active-all' : '');
 
-      const dateBar = document.getElementById('driverDateBar');
-      const allStatsPanel = document.getElementById('allTabStatsPanel');
-
-      if (type === 'ALL') {
-        if (dateBar) dateBar.style.display = 'none';
-        if (allStatsPanel) allStatsPanel.style.display = 'block';
-        loadAllTabTrips(false);
-      } else {
-        if (dateBar) dateBar.style.display = 'block';
-        if (allStatsPanel) allStatsPanel.style.display = 'none';
-        renderTrips();
-      }
+      renderTrips();
     }
 
     function renderTrips() {
@@ -1239,7 +1252,7 @@
 
       let dateFiltered = [];
 
-      if (currentFilter === 'ALL') {
+      if (currentDateMode === 'PERIOD') {
         if (!allTabFromISO || !allTabToISO) {
           const initRange = calculateKyRange(0);
           allTabFromISO = initRange.fromISO;
@@ -1259,7 +1272,7 @@
           return db.localeCompare(da);
         });
 
-        // Cập nhật các ô thống kê đếm chuyến cho Tab Tất cả
+        // Cập nhật các ô thống kê đếm chuyến cho Bảng Thống Kê Kỳ
         const total = dateFiltered.length;
         const nhapList = dateFiltered.filter(t => t.xuatNhapPo === 'N');
         const xuatList = dateFiltered.filter(t => t.xuatNhapPo === 'X');
@@ -1289,22 +1302,15 @@
         if (elXuatSub) elXuatSub.textContent = `20": ${xuat20} • 40": ${xuat40}`;
       } else {
         dateFiltered = myTripsOnly.filter(t => {
-          if (currentDateMode === 'ALL') return true;
           const d = getTripDateISO(t);
           return d === selectedDateISO;
         });
       }
 
-      // Đếm số chuyến theo ngày đang xem cho Tab Nhập và Xuất
-      const dateForDaily = myTripsOnly.filter(t => {
-        if (currentDateMode === 'ALL') return true;
-        const d = getTripDateISO(t);
-        return d === selectedDateISO;
-      });
-
+      // Đếm số chuyến theo bộ lọc thời gian hiện tại cho 3 tab ở Bottom Navigation
+      const cntN = dateFiltered.filter(t => t.xuatNhapPo === 'N').length;
+      const cntX = dateFiltered.filter(t => t.xuatNhapPo === 'X').length;
       const cntAll = dateFiltered.length;
-      const cntN = (currentFilter === 'ALL' ? dateFiltered : dateForDaily).filter(t => t.xuatNhapPo === 'N').length;
-      const cntX = (currentFilter === 'ALL' ? dateFiltered : dateForDaily).filter(t => t.xuatNhapPo === 'X').length;
 
       document.getElementById('cntN').textContent = cntN;
       document.getElementById('cntX').textContent = cntX;
@@ -1328,11 +1334,12 @@
 
       const container = document.getElementById('tripsContainer');
       if (filtered.length === 0) {
-        if (currentFilter === 'ALL') {
+        if (currentDateMode === 'PERIOD') {
+          const tabLabel = currentFilter === 'N' ? 'chuyến Hàng Nhập' : (currentFilter === 'X' ? 'chuyến Hàng Xuất' : 'chuyến xe');
           container.innerHTML = `
             <div style="text-align:center;padding:36px 16px;color:var(--text-muted);background:#fff;border-radius:14px;border:1px dashed var(--border);">
               <div style="font-size:38px;margin-bottom:8px;">📭</div>
-              <div style="font-weight:800;font-size:15px;color:#334155;">Chưa có chuyến xe nào trong khoảng thời gian này</div>
+              <div style="font-weight:800;font-size:15px;color:#334155;">Chưa có ${tabLabel} nào trong khoảng thời gian này</div>
               <div style="font-size:12.5px;color:#64748b;margin-top:4px;">Từ <b>${formatVNDate(allTabFromISO)}</b> đến <b>${formatVNDate(allTabToISO)}</b></div>
               <div style="margin-top:12px;">
                 <button type="button" onclick="loadAllTabTrips(true)" class="btn btn-update" style="padding:7px 14px;font-size:12.5px;">🔄 Tải lại dữ liệu TMS</button>
@@ -1343,16 +1350,14 @@
         }
 
         const tabName = currentFilter === 'N' ? 'Hàng Nhập' : (currentFilter === 'X' ? 'Hàng Xuất' : 'chuyến nào');
-        const dateLabel = currentDateMode === 'ALL' ? 'tất cả các ngày' : `ngày ${formatVNDate(selectedDateISO)}`;
         const otherTypeCount = currentFilter === 'N' ? cntX : (currentFilter === 'X' ? cntN : 0);
-        const totalAnyDate = currentTrips.length;
 
         container.innerHTML = `
           <div style="text-align:center;padding:42px 16px;color:var(--text-muted);background:#fff;border-radius:14px;border:1px dashed var(--border);">
             <div style="font-size:40px;margin-bottom:8px;">📭</div>
-            <div style="font-weight:800;font-size:15.5px;color:#334155;">Chưa có ${tabName} trong ${dateLabel}</div>
-            ${otherTypeCount > 0 ? `<div style="margin-top:8px;"><button onclick="switchTab('${currentFilter === 'N' ? 'X' : 'N'}')" class="btn btn-update" style="padding:8px 14px;font-size:13px;">👉 Xem ${otherTypeCount} chuyến ${currentFilter === 'N' ? 'Hàng Xuất' : 'Hàng Nhập'} hôm nay</button></div>` : ''}
-            ${totalAnyDate > 0 && currentDateMode !== 'ALL' ? `<div style="margin-top:10px;"><button onclick="setDateMode('ALL');switchTab('ALL');" style="background:#f1f5f9;color:#1e40af;border:1px solid #cbd5e1;padding:7px 14px;border-radius:8px;font-weight:700;font-size:12.5px;cursor:pointer;">📋 Xem toàn bộ ${totalAnyDate} chuyến các ngày khác</button></div>` : ''}
+            <div style="font-weight:800;font-size:15.5px;color:#334155;">Chưa có ${tabName} trong ngày ${formatVNDate(selectedDateISO)}</div>
+            ${otherTypeCount > 0 ? `<div style="margin-top:8px;"><button onclick="switchTab('${currentFilter === 'N' ? 'X' : 'N'}')" class="btn btn-update" style="padding:8px 14px;font-size:13px;">👉 Xem ${otherTypeCount} chuyến ${currentFilter === 'N' ? 'Hàng Xuất' : 'Hàng Nhập'} ngày này</button></div>` : ''}
+            <div style="margin-top:10px;"><button onclick="setDateMode('PERIOD')" style="background:#f1f5f9;color:#1e40af;border:1px solid #cbd5e1;padding:7px 14px;border-radius:8px;font-weight:700;font-size:12.5px;cursor:pointer;">📊 Xem thống kê theo kỳ (26➜25)</button></div>
           </div>
         `;
         return;
