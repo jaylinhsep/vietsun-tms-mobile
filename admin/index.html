@@ -298,18 +298,21 @@
 </head>
 <body>
 
-  <!-- MÀN HÌNH KHÓA MẬT KHẨU ADMIN (PASS: 69) -->
+  <!-- MÀN HÌNH KHÓA MẬT KHẨU ADMIN (PASS: 69 HOẶC 40) -->
   <div class="login-overlay" id="adminLoginOverlay">
     <div class="login-box">
       <div style="font-size:42px;margin-bottom:6px;">🔐</div>
       <h2 style="margin:0;font-size:19px;font-weight:800;color:#1e3a8a;">QUẢN TRỊ VIETSUN TMS</h2>
-      <p style="margin:4px 0 16px;font-size:12.5px;color:var(--text-muted);">Nhập mật khẩu Admin để truy cập</p>
+      <p style="margin:4px 0 16px;font-size:12.5px;color:var(--text-muted);">
+        Nhập mật khẩu quản trị để truy cập<br />
+        <span style="font-size:11.5px;color:#475569;margin-top:4px;display:inline-block;">(Pass <b>69</b>: Toàn quyền Admin • Pass <b>40</b>: Duyệt cont xuất 40")</span>
+      </p>
       <form onsubmit="handleAdminLogin(event)">
         <input
           type="password"
           id="adminPassInput"
           class="form-control"
-          placeholder="Nhập mật khẩu..."
+          placeholder="Nhập 69 hoặc 40..."
           style="text-align:center;font-size:18px;font-weight:800;letter-spacing:3px;margin-bottom:10px;"
           required
           autofocus
@@ -327,17 +330,20 @@
     <div class="nav-title">
       <span>⚙️</span>
       <div>
-        <div>QUẢN TRỊ VENDOR & DUYỆT TMS</div>
-        <div style="font-size:11px;font-weight:500;opacity:0.8;">Kiểm duyệt thông tin đẩy TMS & Quản lý đội xe</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span id="adminTitleText">QUẢN TRỊ VENDOR & DUYỆT TMS</span>
+          <span id="adminRoleBadge"></span>
+        </div>
+        <div id="adminSubtitleText" style="font-size:11px;font-weight:500;opacity:0.8;">Kiểm duyệt thông tin đẩy TMS & Quản lý đội xe</div>
       </div>
     </div>
     <div class="nav-links">
       <button type="button" class="btn-install" id="btnInstallAdmin" onclick="handleInstallAdminApp()">📲 Cài App Admin</button>
       <button class="btn-sync" onclick="syncFromGoogleSheet()" id="btnSyncSheet">🔄 Đồng bộ Sheet</button>
-      <a href="https://docs.google.com/spreadsheets/d/13ndQsSmBsKlHjIRQR0S0MO5BPqqL6J4CECBAYfQi1oo/edit?gid=1046738475#gid=1046738475" target="_blank">📄 Sheet gốc</a>
-      <a href="/vendor">🏢 Vendor</a>
-      <a href="/driver">🚛 Tài Xế</a>
-      <a href="/">🏠 Trang Chủ</a>
+      <a href="https://docs.google.com/spreadsheets/d/13ndQsSmBsKlHjIRQR0S0MO5BPqqL6J4CECBAYfQi1oo/edit?gid=1046738475#gid=1046738475" target="_blank" id="linkSheetGoc">📄 Sheet gốc</a>
+      <a href="/vendor" id="linkVendorSite">🏢 Vendor</a>
+      <a href="/driver" id="linkDriverSite">🚛 Tài Xế</a>
+      <a href="/" id="linkHomeSite">🏠 Trang Chủ</a>
       <button onclick="logoutAdmin()" style="background:rgba(220,38,38,0.85);">🔒 Khóa</button>
     </div>
   </header>
@@ -358,25 +364,25 @@
   </div>
 
   <main class="container">
-    <div class="stats-row">
-      <div class="stat-card" style="border-left:4px solid var(--warning);cursor:pointer;" onclick="switchAdminTab('APPROVALS')">
-        <div class="stat-title">⏳ Chờ duyệt TMS</div>
+    <div class="stats-row" id="statsRowContainer">
+      <div class="stat-card" id="statCardApprovals" style="border-left:4px solid var(--warning);cursor:pointer;" onclick="switchAdminTab('APPROVALS')">
+        <div class="stat-title" id="statTitleApprovals">⏳ Chờ duyệt TMS</div>
         <div class="stat-num" id="statPendingCount" style="color:var(--warning);">0</div>
-        <div class="stat-desc" style="font-size:12px;color:var(--text-muted);margin-top:4px;">Thông tin Vendor / Tài xế chờ duyệt</div>
+        <div class="stat-desc" id="statDescApprovals" style="font-size:12px;color:var(--text-muted);margin-top:4px;">Thông tin Vendor / Tài xế chờ duyệt</div>
       </div>
-      <div class="stat-card" style="cursor:pointer;" onclick="switchAdminTab('VENDORS')">
+      <div class="stat-card" id="statCardVendor" style="cursor:pointer;" onclick="switchAdminTab('VENDORS')">
         <div class="stat-title">🏢 Nhà xe (Vendor)</div>
         <div class="stat-num" id="statVendorCount">0</div>
         <div class="stat-desc" style="font-size:12px;color:var(--text-muted);margin-top:4px;">ID: viết liền không dấu</div>
       </div>
-      <div class="stat-card" style="cursor:pointer;" onclick="switchAdminTab('DRIVERS')">
+      <div class="stat-card" id="statCardDriver" style="cursor:pointer;" onclick="switchAdminTab('DRIVERS')">
         <div class="stat-title">🚛 Số Xe / Tài xế</div>
         <div class="stat-num" id="statDriverCount" style="color:var(--success);">0</div>
         <div class="stat-desc" style="font-size:12px;color:var(--text-muted);margin-top:4px;">User: Số xe | MK: 123456</div>
       </div>
     </div>
 
-    <div class="tabs" style="flex-wrap:wrap;">
+    <div class="tabs" id="adminTabsBar" style="flex-wrap:wrap;">
       <button class="tab-btn active" id="tabBtnApprovals" onclick="switchAdminTab('APPROVALS')">
         ⏳ Duyệt TMS (<span id="tabPendingCount">0</span>)
       </button>
@@ -602,8 +608,75 @@
     let allDrivers = [];
     let allApprovals = [];
     let approvalStickFilter = 'ALL'; // 'ALL' | 'N' | 'X'
+    let currentAdminLevel = localStorage.getItem('vs_admin_level') || 'super'; // 'super' (pass 69) | 'export_40' (pass 40)
+
+    function applyAdminRoleUI() {
+      const isExport40 = (currentAdminLevel === 'export_40');
+      const roleBadge = document.getElementById('adminRoleBadge');
+      const titleText = document.getElementById('adminTitleText');
+      const subText = document.getElementById('adminSubtitleText');
+      const statCardVendor = document.getElementById('statCardVendor');
+      const statCardDriver = document.getElementById('statCardDriver');
+      const tabBtnVendors = document.getElementById('tabBtnVendors');
+      const tabBtnDrivers = document.getElementById('tabBtnDrivers');
+      const btnSyncSheet = document.getElementById('btnSyncSheet');
+      const linkSheetGoc = document.getElementById('linkSheetGoc');
+      const statTitleApprovals = document.getElementById('statTitleApprovals');
+      const statDescApprovals = document.getElementById('statDescApprovals');
+      const btnStickN = document.getElementById('btnStickN');
+      const btnStickX = document.getElementById('btnStickX');
+      const btnApproveAll = document.getElementById('btnApproveAll');
+
+      if (isExport40) {
+        if (roleBadge) {
+          roleBadge.innerHTML = '<span style="background:#ffedd5;color:#c2410c;padding:2.5px 8px;border-radius:6px;font-size:11px;font-weight:800;border:1px solid #fed7aa;">📦 DUYỆT XUẤT 40"</span>';
+        }
+        if (titleText) titleText.textContent = 'DUYỆT TMS - CONT XUẤT 40"';
+        if (subText) subText.textContent = 'Phân quyền kiểm duyệt cont Hàng Xuất 40"';
+        if (statTitleApprovals) statTitleApprovals.textContent = '⏳ Chờ duyệt Xuất 40"';
+        if (statDescApprovals) statDescApprovals.textContent = 'Yêu cầu cont Xuất 40" chờ phê duyệt';
+        if (statCardVendor) statCardVendor.style.display = 'none';
+        if (statCardDriver) statCardDriver.style.display = 'none';
+        if (tabBtnVendors) tabBtnVendors.style.display = 'none';
+        if (tabBtnDrivers) tabBtnDrivers.style.display = 'none';
+        if (btnSyncSheet) btnSyncSheet.style.display = 'none';
+        if (linkSheetGoc) linkSheetGoc.style.display = 'none';
+        if (btnStickN) btnStickN.style.display = 'none';
+        if (btnStickX) {
+          btnStickX.innerHTML = '<span>📤 XUẤT 40"</span> <span class="stick-badge" id="badgeStickX">0</span>';
+          btnStickX.classList.add('active');
+        }
+        if (btnApproveAll) btnApproveAll.textContent = '✅ Duyệt tất cả Xuất 40" & Đẩy TMS';
+        approvalStickFilter = 'X';
+      } else {
+        if (roleBadge) {
+          roleBadge.innerHTML = '<span style="background:#fef08a;color:#854d0e;padding:2.5px 8px;border-radius:6px;font-size:11px;font-weight:800;border:1px solid #fde047;">👑 TOÀN QUYỀN (69)</span>';
+        }
+        if (titleText) titleText.textContent = 'QUẢN TRỊ VENDOR & DUYỆT TMS';
+        if (subText) subText.textContent = 'Kiểm duyệt thông tin đẩy TMS & Quản lý đội xe';
+        if (statTitleApprovals) statTitleApprovals.textContent = '⏳ Chờ duyệt TMS';
+        if (statDescApprovals) statDescApprovals.textContent = 'Thông tin Vendor / Tài xế chờ duyệt';
+        if (statCardVendor) statCardVendor.style.display = 'block';
+        if (statCardDriver) statCardDriver.style.display = 'block';
+        if (tabBtnVendors) tabBtnVendors.style.display = 'inline-flex';
+        if (tabBtnDrivers) tabBtnDrivers.style.display = 'inline-flex';
+        if (btnSyncSheet) btnSyncSheet.style.display = 'inline-flex';
+        if (linkSheetGoc) linkSheetGoc.style.display = 'inline-flex';
+        if (btnStickN) btnStickN.style.display = 'inline-flex';
+        if (btnStickX) {
+          btnStickX.innerHTML = '<span>📤 X</span> <span class="stick-badge" id="badgeStickX">0</span>';
+        }
+        if (btnApproveAll) btnApproveAll.textContent = '✅ Duyệt tất cả chờ duyệt & Đẩy TMS';
+      }
+    }
 
     function toggleApprovalStick(type) {
+      if (currentAdminLevel === 'export_40') {
+        // Tài khoản Xuất 40 luôn cố định lọc Xuất 40
+        approvalStickFilter = 'X';
+        renderApprovals();
+        return;
+      }
       if (approvalStickFilter === type) {
         approvalStickFilter = 'ALL';
       } else {
@@ -616,6 +689,15 @@
       const btnN = document.getElementById('btnStickN');
       const btnX = document.getElementById('btnStickX');
       if (!btnN || !btnX) return;
+
+      if (currentAdminLevel === 'export_40') {
+        btnN.style.display = 'none';
+        btnX.classList.add('active');
+        const badgeX = document.getElementById('badgeStickX');
+        const pool40 = allApprovals.filter(r => r.status === 'PENDING');
+        if (badgeX) badgeX.textContent = pool40.length;
+        return;
+      }
 
       btnN.classList.toggle('active', approvalStickFilter === 'N');
       btnX.classList.toggle('active', approvalStickFilter === 'X');
@@ -731,6 +813,7 @@
       const token = localStorage.getItem('vs_admin_token');
       if (token) {
         document.getElementById('adminLoginOverlay').style.display = 'none';
+        applyAdminRoleUI();
         loadOverview();
       }
       // Tự động kiểm tra yêu cầu mới mỗi 15 giây khi đã đăng nhập
@@ -759,6 +842,9 @@
           return;
         }
         localStorage.setItem('vs_admin_token', data.token);
+        localStorage.setItem('vs_admin_level', data.adminLevel || (password === '40' ? 'export_40' : 'super'));
+        currentAdminLevel = data.adminLevel || (password === '40' ? 'export_40' : 'super');
+        applyAdminRoleUI();
         document.getElementById('adminLoginOverlay').style.display = 'none';
         loadOverview();
       } catch (err) {
@@ -769,6 +855,7 @@
 
     function logoutAdmin() {
       localStorage.removeItem('vs_admin_token');
+      localStorage.removeItem('vs_admin_level');
       document.getElementById('adminPassInput').value = '';
       document.getElementById('adminLoginOverlay').style.display = 'flex';
     }
@@ -793,6 +880,11 @@
         }
         const data = await res.json();
         if (data.ok) {
+          if (data.adminLevel) {
+            currentAdminLevel = data.adminLevel;
+            localStorage.setItem('vs_admin_level', currentAdminLevel);
+            applyAdminRoleUI();
+          }
           allVendors = (data.vendors || []).filter(v => (v.vendor_code || '').toUpperCase() !== 'VIETSUN');
           allDrivers = (data.drivers || []).filter(d => (d.vendor_code || '').toUpperCase() !== 'VIETSUN');
           allApprovals = data.pendingApprovals || [];
@@ -819,6 +911,9 @@
 
       const filtered = allApprovals.filter(r => {
         if (stFilter !== 'ALL' && r.status !== stFilter) return false;
+        if (currentAdminLevel === 'export_40') {
+          return r.xuat_nhap === 'X' && String(r.cont_size || '') === '40';
+        }
         if (approvalStickFilter === 'N' && r.xuat_nhap !== 'N') return false;
         if (approvalStickFilter === 'X' && r.xuat_nhap !== 'X') return false;
         if (!q) return true;
@@ -829,6 +924,10 @@
       const listEl = document.getElementById('approvalsCardList');
       if (!filtered.length) {
         let filterHint = '';
+        if (currentAdminLevel === 'export_40') {
+          listEl.innerHTML = '<div style="text-align:center;padding:32px 16px;background:#fff;border-radius:12px;border:1px dashed var(--border);color:var(--text-muted);grid-column:1/-1;">📭 Hiện không có yêu cầu nào cho cont Hàng Xuất 40".</div>';
+          return;
+        }
         if (approvalStickFilter !== 'ALL') {
           const lbl = approvalStickFilter === 'N' ? 'Hàng Nhập (N)' : 'Hàng Xuất (X)';
           filterHint = `<div style="margin-top:10px;"><button type="button" class="btn" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font-size:12.5px;padding:6px 14px;" onclick="toggleApprovalStick('ALL')">🔄 Đang lọc stick theo <b>${lbl}</b> (0 kết quả) - Bấm để hiển thị Tất cả</button></div>`;
@@ -839,9 +938,13 @@
 
       listEl.innerHTML = filtered.map(r => {
         const isXuat = r.xuat_nhap === 'X';
+        const is40 = String(r.cont_size || '') === '40';
         const typeBadge = isXuat
           ? '<span style="background:#ffedd5;color:#c2410c;padding:2px 6px;border-radius:4px;font-weight:800;font-size:11px;">📤 XUẤT</span>'
           : '<span style="background:#dbeafe;color:#1d4ed8;padding:2px 6px;border-radius:4px;font-weight:800;font-size:11px;">📥 NHẬP</span>';
+        const sizeBadge = is40
+          ? '<span style="background:#fef3c7;color:#b45309;padding:2px 6px;border-radius:4px;font-weight:800;font-size:11px;">40"</span>'
+          : '<span style="background:#e0f2fe;color:#0369a1;padding:2px 6px;border-radius:4px;font-weight:800;font-size:11px;">20"</span>';
         const roleBadge = r.actor_role === 'VENDOR'
           ? '<span style="background:#ede9fe;color:#6d28d9;padding:2px 7px;border-radius:5px;font-weight:800;font-size:11px;">🏢 VENDOR</span>'
           : '<span style="background:#dcfce7;color:#15803d;padding:2px 7px;border-radius:5px;font-weight:800;font-size:11px;">🚛 TÀI XẾ</span>';
@@ -897,7 +1000,11 @@
             </div>
 
             <div class="ap-po-bar">
-              <div>${typeBadge} <b style="color:#1e40af;margin-left:4px;">#${r.id_po}</b></div>
+              <div style="display:flex;align-items:center;gap:4px;">
+                ${typeBadge}
+                ${sizeBadge}
+                <b style="color:#1e40af;margin-left:4px;">#${r.id_po}</b>
+              </div>
               <div style="font-weight:700;color:#334155;">📅 ${r.trip_date || '--'}</div>
             </div>
 

@@ -153,6 +153,7 @@ function ensure_schema($pdo) {
                     `code_po` VARCHAR(64) NOT NULL DEFAULT '',
                     `trip_date` VARCHAR(20) NOT NULL DEFAULT '',
                     `xuat_nhap` VARCHAR(10) NOT NULL DEFAULT '',
+                    `cont_size` VARCHAR(10) NOT NULL DEFAULT '',
                     `khach_kho` VARCHAR(255) NOT NULL DEFAULT '',
                     `actor_role` VARCHAR(20) NOT NULL,
                     `actor_name` VARCHAR(120) NOT NULL,
@@ -165,6 +166,9 @@ function ensure_schema($pdo) {
                     INDEX `idx_status_created` (`status`, `created_at`)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             ");
+            try {
+                $pdo->exec("ALTER TABLE `tms_pending_approvals` ADD COLUMN `cont_size` VARCHAR(10) NOT NULL DEFAULT '' AFTER `xuat_nhap`");
+            } catch (Exception $e) {}
         } catch (Exception $e) {}
 
         // Xóa các dòng demo cũ bị lệch mã (HLP -> HOANGLONGPHAT)
@@ -879,6 +883,8 @@ function queue_pending_tms_approval($pdo, $idPo, $codePo, $actorRole, $actorName
 
     $codePoFinal = $codePo ?: ($foundTrip['codePo'] ?? '');
     $xuatNhap    = $foundTrip['xuatNhapPo'] ?? '';
+    $is40        = (int)($foundTrip['cont40Po'] ?? 0) > 0;
+    $contSize    = $is40 ? '40' : '20';
     $khachKho    = ($foundTrip['khoNhanHangPo'] ?? '') ?: ($foundTrip['tenKhachPo'] ?? '');
     $origMap     = $foundTrip['_tmsOriginal'] ?? [];
 
@@ -901,17 +907,17 @@ function queue_pending_tms_approval($pdo, $idPo, $codePo, $actorRole, $actorName
     if ($existRow) {
         $stUpd = $pdo->prepare("
             UPDATE tms_pending_approvals
-            SET code_po = ?, trip_date = ?, xuat_nhap = ?, khach_kho = ?, actor_name = ?, vendor_name = ?, changes_json = ?, created_at = NOW()
+            SET code_po = ?, trip_date = ?, xuat_nhap = ?, cont_size = ?, khach_kho = ?, actor_name = ?, vendor_name = ?, changes_json = ?, created_at = NOW()
             WHERE id = ?
         ");
-        $stUpd->execute([$codePoFinal, $tripDate, $xuatNhap, $khachKho, $actorName, $vendorName, $changesJson, $existRow['id']]);
+        $stUpd->execute([$codePoFinal, $tripDate, $xuatNhap, $contSize, $khachKho, $actorName, $vendorName, $changesJson, $existRow['id']]);
         $pendingId = (int)$existRow['id'];
     } else {
         $stIns = $pdo->prepare("
-            INSERT INTO tms_pending_approvals (id_po, code_po, trip_date, xuat_nhap, khach_kho, actor_role, actor_name, vendor_name, changes_json, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')
+            INSERT INTO tms_pending_approvals (id_po, code_po, trip_date, xuat_nhap, cont_size, khach_kho, actor_role, actor_name, vendor_name, changes_json, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')
         ");
-        $stIns->execute([(string)$idPo, $codePoFinal, $tripDate, $xuatNhap, $khachKho, $actorRole, $actorName, $vendorName, $changesJson]);
+        $stIns->execute([(string)$idPo, $codePoFinal, $tripDate, $xuatNhap, $contSize, $khachKho, $actorRole, $actorName, $vendorName, $changesJson]);
         $pendingId = (int)$pdo->lastInsertId();
     }
 
@@ -1108,18 +1114,35 @@ try {
     }
 
     // ========================================================================
-    // 2B. ĐĂNG NHẬP QUẢN TRỊ VIÊN (/admin) - PASS: 69
+    // 2B. ĐĂNG NHẬP QUẢN TRỊ VIÊN (/admin) - PASS: 69 (SUPER ADMIN) HOẶC 40 (DUYỆT CONT XUẤT 40")
     // ========================================================================
     if ($route === 'auth/admin-login') {
         $pass = trim($jsonBody['password'] ?? '');
-        if ($pass !== '69') {
+        if ($pass === '69') {
+            $token = make_token(['role' => 'admin', 'admin' => true, 'level' => 'super']);
+            echo json_encode([
+                'ok'         => true,
+                'token'      => $token,
+                'adminLevel' => 'super',
+                'level'      => 69,
+                'roleName'   => 'Toàn quyền Quản trị (Super Admin)'
+            ]);
+            exit;
+        } elseif ($pass === '40') {
+            $token = make_token(['role' => 'admin', 'admin' => true, 'level' => 'export_40']);
+            echo json_encode([
+                'ok'         => true,
+                'token'      => $token,
+                'adminLevel' => 'export_40',
+                'level'      => 40,
+                'roleName'   => 'Duyệt Cont Hàng Xuất 40"'
+            ]);
+            exit;
+        } else {
             http_response_code(401);
             echo json_encode(['ok' => false, 'error' => 'Mật khẩu quản trị không đúng!']);
             exit;
         }
-        $token = make_token(['role' => 'admin', 'admin' => true]);
-        echo json_encode(['ok' => true, 'token' => $token]);
-        exit;
     }
 
     // ========================================================================
@@ -1167,13 +1190,55 @@ try {
     if (strpos($route, 'admin/') === 0) {
         $authPayload = verify_token($authHeader);
         $isAdmin = ($authPayload && ($authPayload['role'] ?? '') === 'admin');
+        $adminLevel = $authPayload['level'] ?? 'super';
         $isVendorFleetOp = ($authPayload && ($authPayload['role'] ?? '') === 'vendor' && in_array($route, ['admin/save-driver', 'admin/delete-driver'], true));
         if (!$isAdmin && !$isVendorFleetOp) {
             http_response_code(401);
             echo json_encode(['ok' => false, 'error' => 'Yêu cầu mật khẩu Quản trị viên (/admin)!']);
             exit;
         }
+
+        // Chặn thao tác Nhà xe / Đội xe / Sync Sheet đối với tài khoản phụ (pass: 40 - chỉ duyệt xuất 40)
+        if ($isAdmin && $adminLevel === 'export_40' && in_array($route, ['admin/sync-sheet', 'admin/save-vendor', 'admin/delete-vendor', 'admin/save-driver', 'admin/delete-driver'], true)) {
+            http_response_code(403);
+            echo json_encode(['ok' => false, 'error' => 'Tài khoản phụ (Duyệt xuất 40) không có quyền thao tác mục này!']);
+            exit;
+        }
     }
+
+    // Helper bổ sung thông tin changes & cont_size (20 / 40) cho các bản ghi chờ duyệt
+    $enrichPendingRows = function(&$rows, $pdo) {
+        $allShipmentsCache = null;
+        foreach ($rows as &$pr) {
+            $pr['changes'] = json_decode($pr['changes_json'] ?? '{}', true) ?: [];
+            if (empty($pr['cont_size'])) {
+                $cj = $pr['changes_json'] ?? '';
+                if (strpos($cj, "40'") !== false || strpos($cj, '40"') !== false) {
+                    $pr['cont_size'] = '40';
+                } else {
+                    if ($allShipmentsCache === null) {
+                        $allShipmentsCache = fetch_vietsun_shipments(null, false);
+                    }
+                    $found = null;
+                    foreach ($allShipmentsCache as $stmp) {
+                        if ((string)($stmp['idPo'] ?? '') === (string)$pr['id_po']) {
+                            $found = $stmp;
+                            break;
+                        }
+                    }
+                    if ($found) {
+                        $pr['cont_size'] = ((int)($found['cont40Po'] ?? 0) > 0) ? '40' : '20';
+                        try {
+                            $pdo->prepare("UPDATE tms_pending_approvals SET cont_size = ? WHERE id = ?")->execute([$pr['cont_size'], $pr['id']]);
+                        } catch (Exception $e) {}
+                    } else {
+                        $pr['cont_size'] = '20';
+                    }
+                }
+            }
+        }
+        unset($pr);
+    };
 
     // API Đồng bộ Google Sheet ngay lập tức
     if ($route === 'admin/sync-sheet') {
@@ -1184,37 +1249,52 @@ try {
 
     // API Lấy toàn bộ danh sách Vendor, Tài xế & Yêu cầu chờ duyệt cho Dashboard Quản trị
     if ($route === 'admin/overview') {
-        $vendors = $pdo->query("
-            SELECT v.*, v.phone AS contact_phone,
-                   (SELECT COUNT(*) FROM drivers d WHERE d.vendor_id = v.id) AS driver_count,
-                   (SELECT COUNT(*) FROM drivers d WHERE d.vendor_id = v.id) AS truck_count
-            FROM vendors v
-            WHERE v.vendor_code != 'VIETSUN'
-            ORDER BY v.vendor_name ASC
-        ")->fetchAll();
+        $adminLevel = $authPayload['level'] ?? 'super';
+        $isExport40 = ($adminLevel === 'export_40');
 
-        $drivers = $pdo->query("
-            SELECT d.*, d.driver_name AS full_name, v.vendor_name, v.vendor_code
-            FROM drivers d
-            JOIN vendors v ON d.vendor_id = v.id
-            WHERE v.vendor_code != 'VIETSUN'
-            ORDER BY v.vendor_name ASC, d.assigned_plate ASC
-        ")->fetchAll();
+        $vendors = [];
+        $drivers = [];
+        if (!$isExport40) {
+            $vendors = $pdo->query("
+                SELECT v.*, v.phone AS contact_phone,
+                       (SELECT COUNT(*) FROM drivers d WHERE d.vendor_id = v.id) AS driver_count,
+                       (SELECT COUNT(*) FROM drivers d WHERE d.vendor_id = v.id) AS truck_count
+                FROM vendors v
+                WHERE v.vendor_code != 'VIETSUN'
+                ORDER BY v.vendor_name ASC
+            ")->fetchAll();
 
-        $pending = $pdo->query("
+            $drivers = $pdo->query("
+                SELECT d.*, d.driver_name AS full_name, v.vendor_name, v.vendor_code
+                FROM drivers d
+                JOIN vendors v ON d.vendor_id = v.id
+                WHERE v.vendor_code != 'VIETSUN'
+                ORDER BY v.vendor_name ASC, d.assigned_plate ASC
+            ")->fetchAll();
+        }
+
+        $allPending = $pdo->query("
             SELECT * FROM tms_pending_approvals
             ORDER BY FIELD(status, 'PENDING', 'APPROVED', 'REJECTED'), id DESC
             LIMIT 250
         ")->fetchAll();
-        foreach ($pending as &$pr) {
-            $pr['changes'] = json_decode($pr['changes_json'] ?? '{}', true) ?: [];
-        }
-        unset($pr);
 
-        $pendingCount = (int)$pdo->query("SELECT COUNT(*) FROM tms_pending_approvals WHERE status = 'PENDING'")->fetchColumn();
+        $enrichPendingRows($allPending, $pdo);
+
+        if ($isExport40) {
+            $pending = array_values(array_filter($allPending, function($r) {
+                return $r['xuat_nhap'] === 'X' && (string)($r['cont_size'] ?? '') === '40';
+            }));
+            $pendingCount = count(array_filter($pending, function($r) { return $r['status'] === 'PENDING'; }));
+        } else {
+            $pending = $allPending;
+            $pendingCount = (int)$pdo->query("SELECT COUNT(*) FROM tms_pending_approvals WHERE status = 'PENDING'")->fetchColumn();
+        }
 
         echo json_encode([
             'ok'               => true,
+            'adminLevel'       => $adminLevel,
+            'isExport40'       => $isExport40,
             'vendors'          => $vendors,
             'drivers'          => $drivers,
             'pendingCount'     => $pendingCount,
@@ -1225,18 +1305,31 @@ try {
 
     // API Lấy danh sách thay đổi chờ duyệt (Dùng cho nút thông báo nhanh hoặc poll)
     if ($route === 'admin/pending-approvals') {
-        $pending = $pdo->query("
+        $adminLevel = $authPayload['level'] ?? 'super';
+        $isExport40 = ($adminLevel === 'export_40');
+
+        $allPending = $pdo->query("
             SELECT * FROM tms_pending_approvals
             ORDER BY FIELD(status, 'PENDING', 'APPROVED', 'REJECTED'), id DESC
             LIMIT 250
         ")->fetchAll();
-        foreach ($pending as &$pr) {
-            $pr['changes'] = json_decode($pr['changes_json'] ?? '{}', true) ?: [];
+
+        $enrichPendingRows($allPending, $pdo);
+
+        if ($isExport40) {
+            $pending = array_values(array_filter($allPending, function($r) {
+                return $r['xuat_nhap'] === 'X' && (string)($r['cont_size'] ?? '') === '40';
+            }));
+            $pendingCount = count(array_filter($pending, function($r) { return $r['status'] === 'PENDING'; }));
+        } else {
+            $pending = $allPending;
+            $pendingCount = (int)$pdo->query("SELECT COUNT(*) FROM tms_pending_approvals WHERE status = 'PENDING'")->fetchColumn();
         }
-        unset($pr);
-        $pendingCount = (int)$pdo->query("SELECT COUNT(*) FROM tms_pending_approvals WHERE status = 'PENDING'")->fetchColumn();
+
         echo json_encode([
             'ok'               => true,
+            'adminLevel'       => $adminLevel,
+            'isExport40'       => $isExport40,
             'pendingCount'     => $pendingCount,
             'pendingApprovals' => $pending
         ]);
@@ -1245,15 +1338,28 @@ try {
 
     // API Duyệt thông tin từ Vendor/Tài xế -> Đẩy chính thức về Vietsun TMS
     if ($route === 'admin/approve-update') {
+        $adminLevel = $authPayload['level'] ?? 'super';
+        $isExport40 = ($adminLevel === 'export_40');
         $id = isset($jsonBody['id']) ? (int)$jsonBody['id'] : 0;
         $approveAll = !empty($jsonBody['approveAll']);
 
         if ($approveAll) {
-            $rows = $pdo->query("SELECT * FROM tms_pending_approvals WHERE status = 'PENDING' ORDER BY id ASC")->fetchAll();
+            if ($isExport40) {
+                $rows = $pdo->query("SELECT * FROM tms_pending_approvals WHERE status = 'PENDING' AND xuat_nhap = 'X' AND cont_size = '40' ORDER BY id ASC")->fetchAll();
+            } else {
+                $rows = $pdo->query("SELECT * FROM tms_pending_approvals WHERE status = 'PENDING' ORDER BY id ASC")->fetchAll();
+            }
         } else {
             $st = $pdo->prepare("SELECT * FROM tms_pending_approvals WHERE id = ? AND status = 'PENDING' LIMIT 1");
             $st->execute([$id]);
             $row = $st->fetch();
+            if ($row && $isExport40) {
+                if ($row['xuat_nhap'] !== 'X' || (string)($row['cont_size'] ?? '') !== '40') {
+                    http_response_code(403);
+                    echo json_encode(['ok' => false, 'error' => 'Bạn chỉ có quyền duyệt yêu cầu của cont Hàng Xuất 40!']);
+                    exit;
+                }
+            }
             $rows = $row ? [$row] : [];
         }
 
@@ -1287,11 +1393,28 @@ try {
 
     // API Từ chối thay đổi từ Vendor/Tài xế (Giữ nguyên dữ liệu gốc trên TMS)
     if ($route === 'admin/reject-update') {
+        $adminLevel = $authPayload['level'] ?? 'super';
+        $isExport40 = ($adminLevel === 'export_40');
         $id = isset($jsonBody['id']) ? (int)$jsonBody['id'] : 0;
         $rejectAll = !empty($jsonBody['rejectAll']);
+
         if ($rejectAll) {
-            $pdo->exec("UPDATE tms_pending_approvals SET status = 'REJECTED', reviewed_at = NOW() WHERE status = 'PENDING'");
+            if ($isExport40) {
+                $pdo->exec("UPDATE tms_pending_approvals SET status = 'REJECTED', reviewed_at = NOW() WHERE status = 'PENDING' AND xuat_nhap = 'X' AND cont_size = '40'");
+            } else {
+                $pdo->exec("UPDATE tms_pending_approvals SET status = 'REJECTED', reviewed_at = NOW() WHERE status = 'PENDING'");
+            }
         } elseif ($id > 0) {
+            if ($isExport40) {
+                $stChk = $pdo->prepare("SELECT xuat_nhap, cont_size FROM tms_pending_approvals WHERE id = ?");
+                $stChk->execute([$id]);
+                $chk = $stChk->fetch();
+                if ($chk && ($chk['xuat_nhap'] !== 'X' || (string)($chk['cont_size'] ?? '') !== '40')) {
+                    http_response_code(403);
+                    echo json_encode(['ok' => false, 'error' => 'Bạn chỉ có quyền từ chối yêu cầu của cont Hàng Xuất 40!']);
+                    exit;
+                }
+            }
             $st = $pdo->prepare("UPDATE tms_pending_approvals SET status = 'REJECTED', reviewed_at = NOW() WHERE id = ?");
             $st->execute([$id]);
         }
