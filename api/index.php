@@ -135,7 +135,37 @@ function normalize_vendor_name($name) {
 // - Nhiều xe có thể dùng chung SĐT tài xế
 // - Lưu thêm CCCD, GPLX
 function ensure_schema($pdo) {
-    $flagFile = sys_get_temp_dir() . '/vietsun_schema_v5.flag';
+    // 1. Luôn đảm bảo bảng tms_pending_approvals và cột cont_size tồn tại
+    try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `tms_pending_approvals` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `id_po` VARCHAR(32) NOT NULL,
+                `code_po` VARCHAR(64) NOT NULL DEFAULT '',
+                `trip_date` VARCHAR(20) NOT NULL DEFAULT '',
+                `xuat_nhap` VARCHAR(10) NOT NULL DEFAULT '',
+                `cont_size` VARCHAR(10) NOT NULL DEFAULT '',
+                `khach_kho` VARCHAR(255) NOT NULL DEFAULT '',
+                `actor_role` VARCHAR(20) NOT NULL,
+                `actor_name` VARCHAR(120) NOT NULL,
+                `vendor_name` VARCHAR(120) NOT NULL DEFAULT '',
+                `changes_json` TEXT NOT NULL,
+                `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+                `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `reviewed_at` DATETIME NULL,
+                INDEX `idx_po_status` (`id_po`, `status`),
+                INDEX `idx_status_created` (`status`, `created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
+        // Kiểm tra trực tiếp cột cont_size, nếu thiếu tự động thêm ngay
+        $colChk = $pdo->query("SHOW COLUMNS FROM `tms_pending_approvals` LIKE 'cont_size'")->fetch();
+        if (!$colChk) {
+            $pdo->exec("ALTER TABLE `tms_pending_approvals` ADD COLUMN `cont_size` VARCHAR(10) NOT NULL DEFAULT '' AFTER `xuat_nhap`");
+        }
+    } catch (Exception $e) {}
+
+    // 2. Nâng cấp cấu trúc các bảng phụ (chạy một lần)
+    $flagFile = sys_get_temp_dir() . '/vietsun_schema_v7.flag';
     if (!file_exists($flagFile)) {
         try { $pdo->exec("ALTER TABLE `drivers` DROP INDEX `phone`"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE `drivers` MODIFY `phone` VARCHAR(30) NULL"); } catch (Exception $e) {}
@@ -143,33 +173,6 @@ function ensure_schema($pdo) {
         try { $pdo->exec("ALTER TABLE `drivers` ADD COLUMN `cccd` VARCHAR(100) NULL"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE `drivers` ADD COLUMN `gplx` VARCHAR(100) NULL"); } catch (Exception $e) {}
         try { $pdo->exec("ALTER TABLE `drivers` ADD UNIQUE INDEX `idx_assigned_plate` (`assigned_plate`)"); } catch (Exception $e) {}
-
-        // Bảng lưu yêu cầu cập nhật từ Vendor & Tài xế chờ Điều vận duyệt trước khi đẩy lên TMS Vietsun
-        try {
-            $pdo->exec("
-                CREATE TABLE IF NOT EXISTS `tms_pending_approvals` (
-                    `id` INT AUTO_INCREMENT PRIMARY KEY,
-                    `id_po` VARCHAR(32) NOT NULL,
-                    `code_po` VARCHAR(64) NOT NULL DEFAULT '',
-                    `trip_date` VARCHAR(20) NOT NULL DEFAULT '',
-                    `xuat_nhap` VARCHAR(10) NOT NULL DEFAULT '',
-                    `cont_size` VARCHAR(10) NOT NULL DEFAULT '',
-                    `khach_kho` VARCHAR(255) NOT NULL DEFAULT '',
-                    `actor_role` VARCHAR(20) NOT NULL,
-                    `actor_name` VARCHAR(120) NOT NULL,
-                    `vendor_name` VARCHAR(120) NOT NULL DEFAULT '',
-                    `changes_json` TEXT NOT NULL,
-                    `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-                    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    `reviewed_at` DATETIME NULL,
-                    INDEX `idx_po_status` (`id_po`, `status`),
-                    INDEX `idx_status_created` (`status`, `created_at`)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-            ");
-            try {
-                $pdo->exec("ALTER TABLE `tms_pending_approvals` ADD COLUMN `cont_size` VARCHAR(10) NOT NULL DEFAULT '' AFTER `xuat_nhap`");
-            } catch (Exception $e) {}
-        } catch (Exception $e) {}
 
         // Xóa các dòng demo cũ bị lệch mã (HLP -> HOANGLONGPHAT)
         try {
@@ -904,21 +907,50 @@ function queue_pending_tms_approval($pdo, $idPo, $codePo, $actorRole, $actorName
     }
 
     $changesJson = json_encode($changes, JSON_UNESCAPED_UNICODE);
-    if ($existRow) {
-        $stUpd = $pdo->prepare("
-            UPDATE tms_pending_approvals
-            SET code_po = ?, trip_date = ?, xuat_nhap = ?, cont_size = ?, khach_kho = ?, actor_name = ?, vendor_name = ?, changes_json = ?, created_at = NOW()
-            WHERE id = ?
-        ");
-        $stUpd->execute([$codePoFinal, $tripDate, $xuatNhap, $contSize, $khachKho, $actorName, $vendorName, $changesJson, $existRow['id']]);
-        $pendingId = (int)$existRow['id'];
-    } else {
-        $stIns = $pdo->prepare("
-            INSERT INTO tms_pending_approvals (id_po, code_po, trip_date, xuat_nhap, cont_size, khach_kho, actor_role, actor_name, vendor_name, changes_json, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')
-        ");
-        $stIns->execute([(string)$idPo, $codePoFinal, $tripDate, $xuatNhap, $contSize, $khachKho, $actorRole, $actorName, $vendorName, $changesJson]);
-        $pendingId = (int)$pdo->lastInsertId();
+    try {
+        if ($existRow) {
+            $stUpd = $pdo->prepare("
+                UPDATE tms_pending_approvals
+                SET code_po = ?, trip_date = ?, xuat_nhap = ?, cont_size = ?, khach_kho = ?, actor_name = ?, vendor_name = ?, changes_json = ?, created_at = NOW()
+                WHERE id = ?
+            ");
+            $stUpd->execute([$codePoFinal, $tripDate, $xuatNhap, $contSize, $khachKho, $actorName, $vendorName, $changesJson, $existRow['id']]);
+            $pendingId = (int)$existRow['id'];
+        } else {
+            $stIns = $pdo->prepare("
+                INSERT INTO tms_pending_approvals (id_po, code_po, trip_date, xuat_nhap, cont_size, khach_kho, actor_role, actor_name, vendor_name, changes_json, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')
+            ");
+            $stIns->execute([(string)$idPo, $codePoFinal, $tripDate, $xuatNhap, $contSize, $khachKho, $actorRole, $actorName, $vendorName, $changesJson]);
+            $pendingId = (int)$pdo->lastInsertId();
+        }
+    } catch (PDOException $pdoEx) {
+        // Tự động khôi phục nếu database chưa kịp nâng cấp cột cont_size
+        if (strpos($pdoEx->getMessage(), 'cont_size') !== false || $pdoEx->getCode() == '42S22') {
+            try {
+                $pdo->exec("ALTER TABLE `tms_pending_approvals` ADD COLUMN `cont_size` VARCHAR(10) NOT NULL DEFAULT '' AFTER `xuat_nhap`");
+                if ($existRow) {
+                    $stUpd = $pdo->prepare("
+                        UPDATE tms_pending_approvals
+                        SET code_po = ?, trip_date = ?, xuat_nhap = ?, cont_size = ?, khach_kho = ?, actor_name = ?, vendor_name = ?, changes_json = ?, created_at = NOW()
+                        WHERE id = ?
+                    ");
+                    $stUpd->execute([$codePoFinal, $tripDate, $xuatNhap, $contSize, $khachKho, $actorName, $vendorName, $changesJson, $existRow['id']]);
+                    $pendingId = (int)$existRow['id'];
+                } else {
+                    $stIns = $pdo->prepare("
+                        INSERT INTO tms_pending_approvals (id_po, code_po, trip_date, xuat_nhap, cont_size, khach_kho, actor_role, actor_name, vendor_name, changes_json, status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')
+                    ");
+                    $stIns->execute([(string)$idPo, $codePoFinal, $tripDate, $xuatNhap, $contSize, $khachKho, $actorRole, $actorName, $vendorName, $changesJson]);
+                    $pendingId = (int)$pdo->lastInsertId();
+                }
+            } catch (Exception $retryEx) {
+                throw $pdoEx;
+            }
+        } else {
+            throw $pdoEx;
+        }
     }
 
     return [
