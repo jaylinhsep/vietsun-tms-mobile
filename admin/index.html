@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>VS Admin - Quản Trị & Duyệt TMS</title>
-  <link rel="manifest" href="/admin/manifest.json" />
-  <link rel="icon" type="image/svg+xml" href="/admin/icon.svg" />
-  <link rel="apple-touch-icon" href="/admin/icon.svg" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+  <link rel="apple-touch-icon" href="icon.svg" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="VS Admin" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -469,7 +469,7 @@
   <div class="modal-overlay" id="mobileInstallModal">
     <div class="modal-box" style="max-width:400px;text-align:center;">
       <div style="display:flex;justify-content:center;margin-bottom:12px;">
-        <img src="/admin/icon.svg" width="68" height="68" style="border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,0.25);" alt="VS Admin" />
+        <img src="icon.svg" width="68" height="68" style="border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,0.25);" alt="VS Admin" />
       </div>
       <h3 style="margin:0 0 6px;color:#0f172a;font-size:17.5px;font-weight:800;">Cài App "VS Admin" Lên Mobile</h3>
       <p style="margin:0 0 14px;color:#64748b;font-size:12px;">Tạo biểu tượng App Admin riêng biệt trên màn hình chính, không trùng với app vietsun.site</p>
@@ -504,7 +504,12 @@
   </div>
 
   <script>
-    const API_BASE = '/api/index.php?route=';
+    // Tự động nhận diện nếu chạy trên subdomain (vd: admin.vietsun.site) thì gọi API về domain chính
+    let API_BASE = '/api/index.php?route=';
+    if (window.location.hostname.startsWith('admin.')) {
+      const mainDomain = window.location.hostname.replace(/^admin\./, '');
+      API_BASE = `${window.location.protocol}//${mainDomain}/api/index.php?route=`;
+    }
     let allVendors = [];
     let allDrivers = [];
     let allApprovals = [];
@@ -585,7 +590,8 @@
     window.addEventListener('DOMContentLoaded', () => {
       // Đăng ký Service Worker cho Admin PWA
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/admin/sw.js', { scope: '/admin/' }).catch(() => {});
+        const swPath = window.location.pathname.includes('/admin') ? '/admin/sw.js' : 'sw.js';
+        navigator.serviceWorker.register(swPath).catch(() => {});
       }
 
       // Kiểm tra nếu đang mở trong app standalone

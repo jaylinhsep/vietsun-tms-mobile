@@ -3,15 +3,15 @@
   "name": "Vietsun Admin - Quản Trị & Duyệt TMS",
   "short_name": "VS Admin",
   "description": "Ứng dụng Phê duyệt TMS và Quản lý Nhà xe & Đội xe Vietsun Logistics",
-  "start_url": "/admin/?app=admin",
-  "scope": "/admin/",
+  "start_url": "./?app=admin",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/admin/icon.svg",
+      "src": "icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
