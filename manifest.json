@@ -1,8 +1,10 @@
 {
+  "id": "vietsun-tms-pwa",
   "name": "Vietsun TMS Mobile - Quản Lý Vận Tải",
   "short_name": "Vietsun TMS",
   "description": "Ứng dụng Quản lý Điều vận & Vận tải Vietsun Logistics trên Android",
-  "start_url": "./",
+  "start_url": "/?app=tms",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#1e40af",

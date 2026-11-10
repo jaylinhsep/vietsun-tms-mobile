@@ -4,9 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>VS Admin - Quản Trị & Duyệt TMS</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" type="image/svg+xml" href="icon.svg" />
-  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="manifest" href="/admin/manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="/admin/icon.svg" />
+  <link rel="apple-touch-icon" href="/admin/icon.svg" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="VS Admin" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -465,31 +465,41 @@
     </div>
   </div>
 
-  <!-- MODAL HƯỚNG DẪN CÀI ĐẶT CHO IPHONE (SAFARI) -->
-  <div class="modal-overlay" id="iosInstallModal">
-    <div class="modal-box" style="max-width:390px;text-align:center;">
+  <!-- MODAL HƯỚNG DẪN CÀI ĐẶT RIÊNG BIỆT CHO MOBILE -->
+  <div class="modal-overlay" id="mobileInstallModal">
+    <div class="modal-box" style="max-width:400px;text-align:center;">
       <div style="display:flex;justify-content:center;margin-bottom:12px;">
-        <img src="icon.svg" width="68" height="68" style="border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,0.25);" alt="VS Admin" />
+        <img src="/admin/icon.svg" width="68" height="68" style="border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,0.25);" alt="VS Admin" />
       </div>
-      <h3 style="margin:0 0 6px;color:#0f172a;font-size:17.5px;font-weight:800;">Cài App "VS Admin" Lên iPhone</h3>
-      <p style="margin:0 0 16px;color:#64748b;font-size:12.5px;">Tạo app riêng biệt có icon riêng trên màn hình chính</p>
+      <h3 style="margin:0 0 6px;color:#0f172a;font-size:17.5px;font-weight:800;">Cài App "VS Admin" Lên Mobile</h3>
+      <p style="margin:0 0 14px;color:#64748b;font-size:12px;">Tạo biểu tượng App Admin riêng biệt trên màn hình chính, không trùng với app vietsun.site</p>
 
       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;text-align:left;font-size:13px;display:flex;flex-direction:column;gap:12px;">
-        <div style="display:flex;gap:10px;align-items:flex-start;">
-          <span style="background:#1e40af;color:#fff;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;">1</span>
-          <div>Chạm vào biểu tượng <b>Chia sẻ</b> (<span style="font-size:16px;font-weight:bold;">⎋</span> nút ô vuông có mũi tên trỏ lên) ở thanh dưới cùng của Safari.</div>
+        <div style="font-weight:800;color:#1e40af;font-size:12.5px;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">
+          🤖 Dành cho Android (Google Chrome):
         </div>
         <div style="display:flex;gap:10px;align-items:flex-start;">
-          <span style="background:#1e40af;color:#fff;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;">2</span>
-          <div>Cuộn xuống chọn <b>"Thêm vào Màn hình chính"</b> (Add to Home Screen ➕).</div>
+          <span style="background:#1e40af;color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">1</span>
+          <div>Bấm vào biểu tượng <b>3 chấm (⋮)</b> ở góc trên bên phải trình duyệt Chrome.</div>
         </div>
         <div style="display:flex;gap:10px;align-items:flex-start;">
-          <span style="background:#1e40af;color:#fff;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;">3</span>
-          <div>Chạm <b>Thêm</b> (Add) ở góc trên bên phải. App <b>VS Admin</b> sẽ xuất hiện trên màn hình điện thoại với biểu tượng Admin riêng biệt!</div>
+          <span style="background:#1e40af;color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">2</span>
+          <div>Chọn dòng <b>"Thêm vào màn hình chính"</b> (Add to Home screen) hoặc <b>"Cài đặt ứng dụng"</b>.</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="background:#1e40af;color:#fff;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">3</span>
+          <div>Bấm <b>Thêm</b> (Cài đặt). Biểu tượng <b>VS Admin</b> (khiên bảo mật xanh đen huy hiệu vàng) sẽ xuất hiện độc lập trên màn hình điện thoại!</div>
+        </div>
+
+        <div style="font-weight:800;color:#0284c7;font-size:12.5px;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-top:4px;">
+          🍎 Dành cho iPhone / iPad (Safari):
+        </div>
+        <div style="font-size:12.5px;color:#334155;line-height:1.4;">
+          Bấm nút <b>Chia sẻ</b> (<span style="font-weight:bold;">⎋</span> ô vuông mũi tên lên ở thanh dưới) ➔ Chọn <b>"Thêm vào MH chính"</b> ➔ Bấm <b>Thêm</b>.
         </div>
       </div>
 
-      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:16px;padding:12px;font-size:14px;" onclick="closeModal('iosInstallModal')">Đã hiểu</button>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:14px;padding:11px;font-size:13.5px;" onclick="closeModal('mobileInstallModal')">Đã hiểu</button>
     </div>
   </div>
 
@@ -529,21 +539,22 @@
         return;
       }
       if (deferredInstallPrompt) {
-        deferredInstallPrompt.prompt();
-        const choice = await deferredInstallPrompt.userChoice;
-        if (choice && choice.outcome === 'accepted') {
-          const b = document.getElementById('adminInstallBanner');
-          if (b) b.style.display = 'none';
+        try {
+          deferredInstallPrompt.prompt();
+          const choice = await deferredInstallPrompt.userChoice;
+          if (choice && choice.outcome === 'accepted') {
+            const b = document.getElementById('adminInstallBanner');
+            if (b) b.style.display = 'none';
+          }
+          deferredInstallPrompt = null;
+          return;
+        } catch (err) {
+          console.warn('Install prompt error:', err);
         }
-        deferredInstallPrompt = null;
-        return;
       }
-      if (isIos) {
-        const m = document.getElementById('iosInstallModal');
-        if (m) m.classList.add('open');
-        return;
-      }
-      alert('Để cài đặt VS Admin thành App riêng:\n\n1. Bấm vào menu 3 chấm (⋮) ở góc trên trình duyệt Chrome/Edge.\n2. Chọn "Cài đặt ứng dụng" (Install App) hoặc "Thêm vào màn hình chính" (Add to Home Screen).');
+      // Mở modal hướng dẫn chi tiết cách tạo biểu tượng riêng biệt không bị đè app vietsun.site
+      const m = document.getElementById('mobileInstallModal');
+      if (m) m.classList.add('open');
     }
 
     function dismissInstallBanner() {
@@ -574,7 +585,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       // Đăng ký Service Worker cho Admin PWA
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
+        navigator.serviceWorker.register('/admin/sw.js', { scope: '/admin/' }).catch(() => {});
       }
 
       // Kiểm tra nếu đang mở trong app standalone
