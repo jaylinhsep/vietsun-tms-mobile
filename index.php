@@ -5006,9 +5006,7 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
       const cangXep = (po.cangDiPo || "BẾN NGHÉ").toUpperCase().trim();
       const cangDo = (po.tinhXuatHangPo || po.cangDenPo || "").toUpperCase().trim();
       let chuHang = (po.chuHangPo || "").toUpperCase().trim();
-      if (!chuHang) {
-        chuHang = "NHAT VIET - LOG";
-      } else if (!chuHang.startsWith("NHAT VIET")) {
+      if (chuHang && !chuHang.startsWith("NHAT VIET")) {
         chuHang = "NHAT VIET - " + chuHang;
       }
       const ngayTau = (po.ngayTauChayPo && po.ngayTauChayPo !== "2021-11-11") ? formatIsoToVN(po.ngayTauChayPo) : "";
