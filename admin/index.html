@@ -338,9 +338,9 @@
       <button type="button" class="btn-install" id="btnInstallAdmin" onclick="handleInstallAdminApp()">📲 Cài App Admin</button>
       <button class="btn-sync" onclick="syncFromGoogleSheet()" id="btnSyncSheet">🔄 Đồng bộ Sheet</button>
       <a href="https://docs.google.com/spreadsheets/d/13ndQsSmBsKlHjIRQR0S0MO5BPqqL6J4CECBAYfQi1oo/edit?gid=1046738475#gid=1046738475" target="_blank" id="linkSheetGoc">📄 Sheet gốc</a>
-      <a href="/vendor" id="linkVendorSite">🏢 Vendor</a>
-      <a href="/driver" id="linkDriverSite">🚛 Tài Xế</a>
-      <a href="/" id="linkHomeSite">🏠 Trang Chủ</a>
+      <a href="https://vietsun.site/vendor" id="linkVendorSite">🏢 Vendor</a>
+      <a href="https://vietsun.site/driver" id="linkDriverSite">🚛 Tài Xế</a>
+      <a href="https://vietsun.site" id="linkHomeSite">🏠 Trang Chủ</a>
       <button onclick="logoutAdmin()" style="background:rgba(220,38,38,0.85);">🔒 Khóa</button>
     </div>
   </header>
@@ -623,6 +623,17 @@
       const btnStickN = document.getElementById('btnStickN');
       const btnStickX = document.getElementById('btnStickX');
       const btnApproveAll = document.getElementById('btnApproveAll');
+
+      // Tự động gán link sang domain chính khi chạy trên subdomain admin
+      const mainOrigin = window.location.hostname.startsWith('admin.')
+        ? `${window.location.protocol}//${window.location.hostname.replace(/^admin\./, '')}`
+        : 'https://vietsun.site';
+      const lV = document.getElementById('linkVendorSite');
+      const lD = document.getElementById('linkDriverSite');
+      const lH = document.getElementById('linkHomeSite');
+      if (lV) lV.href = `${mainOrigin}/vendor`;
+      if (lD) lD.href = `${mainOrigin}/driver`;
+      if (lH) lH.href = `${mainOrigin}/`;
 
       if (isExport40) {
         if (roleBadge) {
