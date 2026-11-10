@@ -202,6 +202,82 @@
       flex: 1; justify-content: center; padding: 10px 12px; font-size: 13px; border-radius: 9px;
     }
 
+    /* 2 NÚT LỌC STICK: N & X CHO MỤC DUYỆT TMS */
+    #sectionApprovals .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 25;
+      background: #ffffff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .stick-filter-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #f1f5f9;
+      padding: 3px 4px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+    }
+    .stick-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
+      border-radius: 7px;
+      border: 1.5px solid transparent;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      user-select: none;
+      background: #ffffff;
+    }
+    .stick-btn-n {
+      color: #1d4ed8;
+      border-color: #bfdbfe;
+    }
+    .stick-btn-n:hover {
+      background: #eff6ff;
+    }
+    .stick-btn-n.active {
+      background: #1d4ed8 !important;
+      color: #ffffff !important;
+      border-color: #1e40af !important;
+      box-shadow: 0 2px 8px rgba(29, 78, 216, 0.35);
+    }
+    .stick-btn-n.active .stick-badge {
+      background: #ffffff !important;
+      color: #1d4ed8 !important;
+    }
+    .stick-btn-x {
+      color: #c2410c;
+      border-color: #fed7aa;
+    }
+    .stick-btn-x:hover {
+      background: #fff7ed;
+    }
+    .stick-btn-x.active {
+      background: #c2410c !important;
+      color: #ffffff !important;
+      border-color: #9a3412 !important;
+      box-shadow: 0 2px 8px rgba(194, 65, 12, 0.35);
+    }
+    .stick-btn-x.active .stick-badge {
+      background: #ffffff !important;
+      color: #c2410c !important;
+    }
+    .stick-badge {
+      padding: 1px 6px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      background: #f1f5f9;
+      color: inherit;
+      min-width: 16px;
+      text-align: center;
+    }
+
     @media (max-width: 640px) {
       .admin-nav { padding: 10px 12px; }
       .nav-title { font-size: 15px; }
@@ -319,7 +395,19 @@
             <option value="ALL">📋 Tất cả trạng thái</option>
           </select>
           <input type="text" id="searchApprovalInput" class="form-control" style="flex:2;min-width:160px;max-width:300px;" placeholder="🔍 Tìm PO, số xe, cont, nhà xe..." oninput="renderApprovals()" />
-          <button class="btn" style="background:#f1f5f9;border:1px solid var(--border);" onclick="loadOverview()">🔄</button>
+          <button class="btn" style="background:#f1f5f9;border:1px solid var(--border);" onclick="loadOverview()" title="Tải lại dữ liệu">🔄</button>
+          
+          <!-- 2 NÚT LỌC STICK: N & X (NHẬP VÀ XUẤT) BÊN GÓC PHẢI -->
+          <div class="stick-filter-group" style="margin-left:auto;">
+            <button type="button" class="stick-btn stick-btn-n" id="btnStickN" onclick="toggleApprovalStick('N')" title="Lọc xem Hàng Nhập (N) - Bấm lại để xem Tất cả">
+              <span>📥 N</span>
+              <span class="stick-badge" id="badgeStickN">0</span>
+            </button>
+            <button type="button" class="stick-btn stick-btn-x" id="btnStickX" onclick="toggleApprovalStick('X')" title="Lọc xem Hàng Xuất (X) - Bấm lại để xem Tất cả">
+              <span>📤 X</span>
+              <span class="stick-badge" id="badgeStickX">0</span>
+            </button>
+          </div>
         </div>
         <div style="display:flex;gap:8px;width:100%; sm:width:auto;">
           <button class="btn btn-success" style="width:100%;justify-content:center;" onclick="approveAllPending()" id="btnApproveAll">✅ Duyệt tất cả chờ duyệt & Đẩy TMS</button>
@@ -513,6 +601,41 @@
     let allVendors = [];
     let allDrivers = [];
     let allApprovals = [];
+    let approvalStickFilter = 'ALL'; // 'ALL' | 'N' | 'X'
+
+    function toggleApprovalStick(type) {
+      if (approvalStickFilter === type) {
+        approvalStickFilter = 'ALL';
+      } else {
+        approvalStickFilter = type;
+      }
+      renderApprovals();
+    }
+
+    function updateApprovalStickUI() {
+      const btnN = document.getElementById('btnStickN');
+      const btnX = document.getElementById('btnStickX');
+      if (!btnN || !btnX) return;
+
+      btnN.classList.toggle('active', approvalStickFilter === 'N');
+      btnX.classList.toggle('active', approvalStickFilter === 'X');
+
+      // Đếm số lượng N và X dựa theo bộ lọc trạng thái đang chọn
+      const stSelect = document.getElementById('filterApprovalStatus');
+      const stFilter = stSelect ? stSelect.value : 'PENDING';
+      const pool = allApprovals.filter(r => {
+        if (stFilter !== 'ALL' && r.status !== stFilter) return false;
+        return true;
+      });
+
+      const countN = pool.filter(r => r.xuat_nhap === 'N').length;
+      const countX = pool.filter(r => r.xuat_nhap === 'X').length;
+
+      const badgeN = document.getElementById('badgeStickN');
+      const badgeX = document.getElementById('badgeStickX');
+      if (badgeN) badgeN.textContent = countN;
+      if (badgeX) badgeX.textContent = countX;
+    }
 
     // PWA INSTALLATION CHO ADMIN APP
     let deferredInstallPrompt = null;
@@ -689,11 +812,15 @@
     }
 
     function renderApprovals() {
+      updateApprovalStickUI();
+
       const stFilter = document.getElementById('filterApprovalStatus').value;
       const q = (document.getElementById('searchApprovalInput').value || '').toLowerCase();
 
       const filtered = allApprovals.filter(r => {
         if (stFilter !== 'ALL' && r.status !== stFilter) return false;
+        if (approvalStickFilter === 'N' && r.xuat_nhap !== 'N') return false;
+        if (approvalStickFilter === 'X' && r.xuat_nhap !== 'X') return false;
         if (!q) return true;
         const rawText = `${r.id_po} ${r.actor_name} ${r.vendor_name} ${r.khach_kho} ${r.changes_json}`.toLowerCase();
         return rawText.includes(q);
@@ -701,7 +828,12 @@
 
       const listEl = document.getElementById('approvalsCardList');
       if (!filtered.length) {
-        listEl.innerHTML = '<div style="text-align:center;padding:32px 16px;background:#fff;border-radius:12px;border:1px dashed var(--border);color:var(--text-muted);grid-column:1/-1;">📭 Không có yêu cầu thay đổi nào trong mục này.</div>';
+        let filterHint = '';
+        if (approvalStickFilter !== 'ALL') {
+          const lbl = approvalStickFilter === 'N' ? 'Hàng Nhập (N)' : 'Hàng Xuất (X)';
+          filterHint = `<div style="margin-top:10px;"><button type="button" class="btn" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font-size:12.5px;padding:6px 14px;" onclick="toggleApprovalStick('ALL')">🔄 Đang lọc stick theo <b>${lbl}</b> (0 kết quả) - Bấm để hiển thị Tất cả</button></div>`;
+        }
+        listEl.innerHTML = `<div style="text-align:center;padding:32px 16px;background:#fff;border-radius:12px;border:1px dashed var(--border);color:var(--text-muted);grid-column:1/-1;">📭 Không có yêu cầu thay đổi nào trong mục này.${filterHint}</div>`;
         return;
       }
 
