@@ -617,21 +617,25 @@
 
       <!-- SỐ CONTAINER VỚI GỢI Ý TỪ LIST HÀNG TRẢ NHẬP -->
       <div class="form-group" style="position:relative;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:4px;">
           <label style="margin:0;font-weight:700;font-size:13px;color:#1e3a8a;">Số Container (4 chữ + 7 số)</label>
-          <span id="contMatchBadge" style="display:none;font-size:11px;font-weight:800;color:#047857;background:#d1fae5;padding:2px 7px;border-radius:6px;">
-            ✨ Khớp vỏ trả nhập
-          </span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span id="contIsoBadge" style="display:none;font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;"></span>
+            <span id="contMatchBadge" style="display:none;font-size:11px;font-weight:800;color:#047857;background:#d1fae5;padding:2px 7px;border-radius:6px;">
+              ✨ Khớp vỏ trả nhập
+            </span>
+          </div>
         </div>
         <input
           type="text"
           id="modalSoCont"
           class="form-control"
-          placeholder="Chạm để xem gợi ý cont trả nhập..."
+          placeholder="VD: TCNU4595047 (viết liền, không dấu cách)"
           style="text-transform:uppercase;font-weight:700;letter-spacing:0.5px;"
           autocomplete="off"
           onfocus="showContSuggestions(this.value)"
           oninput="onContInput(this.value)"
+          onblur="formatAndCleanContInput(this)"
         />
         <div class="cont-ac-dropdown" id="contAcDropdown"></div>
         <div id="contHint" style="font-size:11.5px;color:#64748b;margin-top:4px;">
@@ -1484,6 +1488,36 @@
       }).join('');
     }
 
+    // ISO 6346 Container Check Digit Validator chuẩn quốc tế
+    function validateContainerISO(contStr) {
+      if (!contStr) return { valid: false, empty: true, message: "Chưa nhập" };
+      const csc = contStr.toUpperCase().replace(/[^A-Z0-9]+/g, "");
+      if (csc.length !== 11) {
+        return { valid: false, empty: false, message: `Độ dài ${csc.length}/11 ký tự` };
+      }
+      const charMap = {
+        A: 10, B: 12, C: 13, D: 14, E: 15, F: 16, G: 17, H: 18, I: 19, J: 20,
+        K: 21, L: 23, M: 24, N: 25, O: 26, P: 27, Q: 28, R: 29, S: 30, T: 31,
+        U: 32, V: 34, W: 35, X: 36, Y: 37, Z: 38
+      };
+      let sum = 0;
+      for (let i = 0; i < 10; i++) {
+        const ch = csc[i];
+        let val = (ch >= '0' && ch <= '9') ? parseInt(ch, 10) : charMap[ch];
+        if (val === undefined) {
+          return { valid: false, empty: false, message: `Ký tự ${ch} không hợp lệ` };
+        }
+        sum += val * Math.pow(2, i);
+      }
+      const check = (sum % 11) % 10;
+      const lastDigit = parseInt(csc.charAt(10), 10);
+      if (check === lastDigit) {
+        return { valid: true, empty: false, message: "Chuẩn ISO ✓" };
+      } else {
+        return { valid: false, empty: false, message: `Sai số cuối (đúng: ${check})` };
+      }
+    }
+
     function findMatchingImportCont(soCont) {
       if (!soCont) return null;
       const clean = soCont.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -1495,11 +1529,40 @@
     }
 
     function onContInput(val) {
-      val = val.toUpperCase();
-      document.getElementById('modalSoCont').value = val;
-      const clean = val.replace(/[^A-Z0-9]/g, '');
-      const matchBadge = document.getElementById('contMatchBadge');
+      // Tự động viết hoa, xóa sạch khoảng trắng và viết liền mạch
+      const clean = (val || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const inp = document.getElementById('modalSoCont');
+      if (inp && inp.value !== clean) {
+        inp.value = clean;
+      }
 
+      // Kiểm tra chuẩn ISO
+      const isoBadge = document.getElementById('contIsoBadge');
+      if (isoBadge) {
+        if (!clean) {
+          isoBadge.style.display = 'none';
+        } else if (clean.length < 11) {
+          isoBadge.textContent = `${clean.length}/11 ký tự`;
+          isoBadge.style.background = '#f1f5f9';
+          isoBadge.style.color = '#475569';
+          isoBadge.style.display = 'inline-block';
+        } else {
+          const iso = validateContainerISO(clean);
+          if (iso.valid) {
+            isoBadge.textContent = '✅ Chuẩn ISO';
+            isoBadge.style.background = '#dcfce7';
+            isoBadge.style.color = '#15803d';
+          } else {
+            isoBadge.textContent = `❌ ${iso.message}`;
+            isoBadge.style.background = '#fee2e2';
+            isoBadge.style.color = '#b91c1c';
+          }
+          isoBadge.style.display = 'inline-block';
+        }
+      }
+
+      // Khớp gợi ý cont trả nhập
+      const matchBadge = document.getElementById('contMatchBadge');
       const matched = findMatchingImportCont(clean);
       if (matched) {
         if (matchBadge) {
@@ -1507,13 +1570,21 @@
           matchBadge.style.display = 'inline-block';
         }
         const inpNoiLay = document.getElementById('modalNoiLayCont');
-        inpNoiLay.value = matched.khLabel;
-        highlightPill(matched.khLabel);
+        if (inpNoiLay) {
+          inpNoiLay.value = matched.khLabel;
+          highlightPill(matched.khLabel);
+        }
       } else {
         if (matchBadge) matchBadge.style.display = 'none';
       }
 
-      showContSuggestions(val);
+      showContSuggestions(clean);
+    }
+
+    function formatAndCleanContInput(inp) {
+      if (!inp) return;
+      inp.value = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+      onContInput(inp.value);
     }
 
     function showContSuggestions(query) {
@@ -1597,28 +1668,16 @@
     function openUpdateModal(idPo, codePo, soCont, soSeal, cangDen, noiLayCont, bookingSize) {
       document.getElementById('modalPoId').value = idPo;
       document.getElementById('modalCodePo').value = codePo;
-      document.getElementById('modalSoCont').value = soCont || '';
+      const cleanCont = (soCont || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      document.getElementById('modalSoCont').value = cleanCont;
       document.getElementById('modalSoSeal').value = soSeal || '';
       document.getElementById('modalCangDen').value = cangDen || '';
       document.getElementById('modalPortTime').value = '';
       document.getElementById('modalBookingSize').value = bookingSize || '20';
       document.getElementById('modalNoiLayCont').value = noiLayCont || '';
 
-      const matchBadge = document.getElementById('contMatchBadge');
-      const matched = findMatchingImportCont(soCont);
-      if (matched) {
-        if (matchBadge) {
-          matchBadge.textContent = `✨ Khớp cont trả nhập (${matched.khLabel})`;
-          matchBadge.style.display = 'inline-block';
-        }
-        if (!noiLayCont || noiLayCont.startsWith('KH')) {
-          document.getElementById('modalNoiLayCont').value = matched.khLabel;
-          highlightPill(matched.khLabel);
-        }
-      } else {
-        if (matchBadge) matchBadge.style.display = 'none';
-        highlightPill(noiLayCont);
-      }
+      onContInput(cleanCont);
+      highlightPill(noiLayCont);
 
       document.getElementById('updateTripModal').classList.add('open');
     }
@@ -1638,11 +1697,23 @@
       const token = localStorage.getItem('vs_driver_token');
       const idPo = document.getElementById('modalPoId').value;
       const codePo = document.getElementById('modalCodePo').value;
-      const soCont = document.getElementById('modalSoCont').value.trim();
+      const rawCont = document.getElementById('modalSoCont').value;
+      const soCont = (rawCont || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
       const soSeal = document.getElementById('modalSoSeal').value.trim();
       const noiLayCont = document.getElementById('modalNoiLayCont').value.trim();
       const cangDen = document.getElementById('modalCangDen').value.trim();
       const portTime = document.getElementById('modalPortTime').value.trim();
+
+      // Kiểm tra chuẩn ISO 6346 nếu có nhập số cont
+      if (soCont !== '') {
+        const isoRes = validateContainerISO(soCont);
+        if (!isoRes.valid) {
+          alert(`❌ Số container "${soCont}" không đúng chuẩn quốc tế ISO 6346!\n\nChi tiết: ${isoRes.message}\n\nVui lòng kiểm tra lại số container trước khi gửi.`);
+          const inp = document.getElementById('modalSoCont');
+          if (inp) inp.focus();
+          return;
+        }
+      }
 
       try {
         const res = await fetch(`${API_BASE}/driver/update-trip`, {

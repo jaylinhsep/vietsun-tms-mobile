@@ -130,6 +130,38 @@ function normalize_vendor_name($name) {
     return $map[$code] ?? $clean;
 }
 
+// Kiểm tra số container theo chuẩn quốc tế ISO 6346
+function validate_container_iso($contStr) {
+    if (!$contStr) return ['valid' => false, 'message' => 'Chưa nhập'];
+    $csc = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$contStr));
+    if (strlen($csc) !== 11) {
+        return ['valid' => false, 'message' => 'Độ dài ' . strlen($csc) . '/11 ký tự'];
+    }
+    $charMap = [
+        'A' => 10, 'B' => 12, 'C' => 13, 'D' => 14, 'E' => 15, 'F' => 16, 'G' => 17, 'H' => 18, 'I' => 19, 'J' => 20,
+        'K' => 21, 'L' => 23, 'M' => 24, 'N' => 25, 'O' => 26, 'P' => 27, 'Q' => 28, 'R' => 29, 'S' => 30, 'T' => 31,
+        'U' => 32, 'V' => 34, 'W' => 35, 'X' => 36, 'Y' => 37, 'Z' => 38
+    ];
+    $sum = 0;
+    for ($i = 0; $i < 10; $i++) {
+        $ch = $csc[$i];
+        if ($ch >= '0' && $ch <= '9') {
+            $val = (int)$ch;
+        } elseif (isset($charMap[$ch])) {
+            $val = $charMap[$ch];
+        } else {
+            return ['valid' => false, 'message' => "Ký tự $ch không hợp lệ"];
+        }
+        $sum += $val * (1 << $i);
+    }
+    $check = ($sum % 11) % 10;
+    $lastDigit = (int)$csc[10];
+    if ($check === $lastDigit) {
+        return ['valid' => true, 'message' => 'Chuẩn ISO ✓'];
+    }
+    return ['valid' => false, 'message' => "Sai số cuối (đúng: $check)"];
+}
+
 // Tự động nâng cấp cấu trúc bảng để hỗ trợ:
 // - Số xe (assigned_plate) là UNIQUE
 // - Nhiều xe có thể dùng chung SĐT tài xế
@@ -1697,7 +1729,19 @@ try {
         }
         $fieldsToQueue = [];
         if (isset($jsonBody['soCont'])) {
-            $fieldsToQueue['soContPo'] = strtoupper(trim($jsonBody['soCont']));
+            $cleanCont = strtoupper(preg_replace('/[^A-Z0-9]/', '', (string)$jsonBody['soCont']));
+            if ($cleanCont !== '') {
+                $chkIso = validate_container_iso($cleanCont);
+                if (!$chkIso['valid']) {
+                    http_response_code(400);
+                    echo json_encode([
+                        'ok' => false,
+                        'error' => "Số container \"$cleanCont\" không đúng chuẩn quốc tế ISO 6346! ({$chkIso['message']})"
+                    ]);
+                    exit;
+                }
+            }
+            $fieldsToQueue['soContPo'] = $cleanCont;
         }
         if (isset($jsonBody['soSeal'])) {
             $fieldsToQueue['soSealPo'] = trim($jsonBody['soSeal']);
