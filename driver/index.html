@@ -1187,13 +1187,11 @@
       const cleanKho = getCleanWarehouseName(t);
       if (isXuat) {
         return [
-          `THÔNG TIN ĐÓNG HÀNG:`,
+          `THÔNG TIN ĐÓNG HÀNG NGÀY ${ngayGiao}:`,
           `- Khách hàng: ${t.tenKhachPo || ''}`,
           `- Kho ĐÓNG: ${cleanKho || ''}`,
-          `- Địa chỉ: ${t.diaChiNhanPo || ''}\t- Tỉnh: ${t.tinhNhanPo || ''}`,
-          `- Liên hệ: ${t.lienHeNhanPo || ''}`,
+          `- Địa chỉ: ${t.diaChiNhanPo || ''}`,
           `- Số cont: ${t.soContPo || ''}\t\t- Số seal: ${t.soSealPo || ''}`,
-          `- Ngày ĐÓNG: ${ngayGiao}`,
           `- Nơi cấp rỗng: ${t.noiLayContPo || ''}`,
           `- Thời gian dự kiến tới kho: `,
           `- Số xe: ${plate}`,

@@ -4736,15 +4736,13 @@
           );
         } else {
           return (
-            `THÔNG TIN ĐÓNG HÀNG:\n` +
+            `THÔNG TIN ĐÓNG HÀNG NGÀY ${ngayGiao}:\n` +
             `- Khách hàng: ${khach}\n` +
             `- Kho ĐÓNG: ${kho}\n` +
-            `- Địa chỉ: ${diachi}\t- Tỉnh: ${tinh}\n` +
+            `- Địa chỉ: ${diachi}\n` +
             `- Số cont: ${soCont}\t\t- Số seal: ${soSeal}\n` +
-            `- Ngày ĐÓNG: ${ngayGiao}\n` +
             `- Nơi cấp rỗng: ${noiCapRong}\n` +
             `- Thời gian dự kiến tới kho: \n` +
-            `- Liên hệ: ${lienhe}\n` +
             `- Số xe: ${soXe}\n` +
             `- Tên Lái Xe: ${tenLaiXe}\n` +
             `- Số CMND: ${cccdLaiXe}\n` +
@@ -4755,14 +4753,29 @@
       }
 
       // Default loai === 2 (Icon 🚛 chiếc xe): THÔNG TIN GIAO HÀNG / ĐÓNG HÀNG
-      const loaigiao = isXuat ? "ĐÓNG" : "GIAO";
+      if (isXuat) {
+        return (
+          `THÔNG TIN ĐÓNG HÀNG NGÀY ${ngayGiao}:\n` +
+          `- Khách hàng: ${khach}\n` +
+          `- Kho ĐÓNG: ${kho}\n` +
+          `- Địa chỉ: ${diachi}\n` +
+          `- Số cont: ${soCont}\t\t- Số seal: ${soSeal}\n` +
+          `- Nơi cấp rỗng: ${noiCapRong}\n` +
+          `- Thời gian dự kiến tới kho: \n` +
+          `- Số xe: ${soXe}\n` +
+          `- Tên Lái Xe: ${tenLaiXe}\n` +
+          `- Số CMND: ${cccdLaiXe}\n` +
+          `- Số GPLX: ${gplxLaiXe}\n` +
+          `- SĐT: ${sdtLaiXe}`
+        );
+      }
       return (
-        `THÔNG TIN ${loaigiao} HÀNG:\n` +
-        `- Kho ${loaigiao}: ${kho}\n` +
+        `THÔNG TIN GIAO HÀNG:\n` +
+        `- Kho GIAO: ${kho}\n` +
         `- Địa chỉ: ${diachi}\t- Tỉnh: ${tinh}\n` +
         `- Liên hệ: ${lienhe}\n` +
         `- Số cont: ${soCont}\t\t- Số seal: ${soSeal}\n` +
-        `- Ngày ${loaigiao}: ${ngayGiao}\n` +
+        `- Ngày GIAO: ${ngayGiao}\n` +
         `- Số xe: ${soXe}\n` +
         `- Tên Lái Xe: ${tenLaiXe}\n` +
         `- SĐT: ${sdtLaiXe}\n` +
