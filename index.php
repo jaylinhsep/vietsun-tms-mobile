@@ -379,6 +379,32 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
       box-shadow: 0 2px 6px rgba(15, 118, 110, 0.25);
     }
 
+    #chipSingleDate {
+      position: relative;
+      cursor: pointer;
+      margin: 0;
+    }
+    #quickSingleDatePicker {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      border: none;
+      z-index: 2;
+    }
+    #quickSingleDatePicker::-webkit-calendar-picker-indicator {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
     .advanced-filters {
       display: none;
       margin-top: 10px;
@@ -1556,9 +1582,9 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
       <button class="chip" data-date-mode="d2" onclick="setQuickDate('d2')" id="chipD2">📆 Ngày D+2</button>
       <button class="chip" data-date-mode="d3" onclick="setQuickDate('d3')" id="chipD3">📆 Ngày D+3</button>
       <button class="chip" data-date-mode="yesterday" onclick="setQuickDate('yesterday')" id="chipYesterday">⏮️ Hôm qua</button>
-      <label class="chip" data-date-mode="single" id="chipSingleDate" style="position:relative;cursor:pointer;margin:0;">
+      <label class="chip" data-date-mode="single" id="chipSingleDate" onclick="openQuickSingleDatePicker(event)">
         <span id="chipSingleDateLabel">🎯 Chọn ngày</span>
-        <input type="date" id="quickSingleDatePicker" onchange="onQuickSingleDatePick(this.value)" style="position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none;" />
+        <input type="date" id="quickSingleDatePicker" onchange="onQuickSingleDatePick(this.value)" oninput="onQuickSingleDatePick(this.value)" onclick="event.stopPropagation(); try{if(this.showPicker)this.showPicker();}catch(_){}" />
       </label>
       <button class="chip" data-date-mode="3days" onclick="setQuickDate('3days')">📆 ±3 ngày</button>
       <button class="chip" data-date-mode="unset" onclick="setQuickDate('unset')">⚠️ Chưa xếp ngày</button>
@@ -3953,6 +3979,26 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
         ensureDateCyclesLoaded(state.fromDate, state.toDate);
       }
       applyFilters();
+    }
+
+    function openQuickSingleDatePicker(e) {
+      const inp = document.getElementById("quickSingleDatePicker");
+      if (!inp) return;
+      if (!inp.value && state.fromDate) {
+        inp.value = state.fromDate;
+      }
+      try {
+        if (typeof inp.showPicker === "function") {
+          inp.showPicker();
+          return;
+        }
+      } catch (err) {}
+      const adv = document.getElementById("advancedFilters");
+      if (adv && !adv.classList.contains("open")) {
+        adv.classList.add("open");
+      }
+      const fromInp = document.getElementById("filterFromDate");
+      if (fromInp) fromInp.focus();
     }
 
     function onQuickSingleDatePick(isoVal) {
