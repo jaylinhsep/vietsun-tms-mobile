@@ -602,6 +602,61 @@ function call_tms_post($endpoint, $postFields) {
     return $resp ?: '';
 }
 
+// Lấy danh sách đội xe & tài xế VIETSUN trực tiếp từ TMS (ajax-gvt.php loai=26)
+function fetch_live_vietsun_fleet($forceRefresh = false) {
+    global $COOKIE_FILE;
+    $cacheFile = sys_get_temp_dir() . '/vietsun_fleet_cache.json';
+    // Cache 30 phút để giảm tải hệ thống TMS
+    if (!$forceRefresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 1800)) {
+        $cached = json_decode(file_get_contents($cacheFile), true);
+        if (is_array($cached) && !empty($cached)) return $cached;
+    }
+
+    if (!file_exists($COOKIE_FILE)) {
+        vietsun_login();
+    }
+
+    $userString = 'trucking14<<|7<<|a0b923820d<<|1<<|0.0.0.0.0.0.1.0.1.1.0.1.0.1.';
+    $postData = [
+        'userString' => $userString,
+        'loai'       => '26',
+        'query'      => '0',
+        'cv'         => '0',
+        'id'         => '1'
+    ];
+    $html = call_tms_post('ajax-gvt.php', $postData);
+    if (!$html || strpos($html, '<tr') === false) {
+        vietsun_login();
+        $html = call_tms_post('ajax-gvt.php', $postData);
+    }
+
+    $list = [];
+    if ($html) {
+        preg_match_all('/<tr\s+id="tr\d+">([\s\S]*?)<\/tr>/i', $html, $rowMatches);
+        if (!empty($rowMatches[1])) {
+            foreach ($rowMatches[1] as $inner) {
+                if (preg_match('/<th[^>]*>([^<]*)<\/th>\s*<td[^>]*>([^<]*)<\/td>\s*<td[^>]*>([^<]*)<\/td>/i', $inner, $m)) {
+                    $plate = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $m[1]));
+                    $name = trim(strip_tags($m[2]));
+                    $phone = trim(strip_tags($m[3]));
+                    if ($plate && $plate !== 'DEPOT') {
+                        $list[] = [
+                            'vendor' => 'VIETSUN',
+                            'plate'  => $plate,
+                            'name'   => $name,
+                            'phone'  => $phone
+                        ];
+                    }
+                }
+            }
+        }
+    }
+    if (!empty($list)) {
+        @file_put_contents($cacheFile, json_encode($list, JSON_UNESCAPED_UNICODE));
+    }
+    return $list;
+}
+
 function fetch_tms_debit_map($startDate, $endDate, $forceRefresh = false) {
     global $COOKIE_FILE;
     $safeKey = preg_replace('/[^0-9\-]/', '', $startDate . '_' . $endDate);
@@ -1302,6 +1357,9 @@ try {
     }
 
     if ($route === 'drivers' || $route === 'api/drivers') {
+        $force = !empty($_GET['refresh']);
+        $vietsunFleet = fetch_live_vietsun_fleet($force);
+
         $drivers = $pdo->query("
             SELECT d.assigned_plate AS plate, d.driver_name AS name, d.phone, d.cccd, d.gplx, v.vendor_name AS vendor
             FROM drivers d
@@ -1309,7 +1367,15 @@ try {
             WHERE d.is_active = 1 AND v.vendor_code != 'VIETSUN'
             ORDER BY v.vendor_name ASC, d.assigned_plate ASC
         ")->fetchAll();
-        echo json_encode(['ok' => true, 'vendors' => $drivers, 'total' => count($drivers)]);
+
+        echo json_encode([
+            'ok'           => true,
+            'vietsun'      => $vietsunFleet,
+            'vietsunCount' => count($vietsunFleet),
+            'vendors'      => $drivers,
+            'vendorCount'  => count($drivers),
+            'total'        => count($vietsunFleet) + count($drivers)
+        ]);
         exit;
     }
 
