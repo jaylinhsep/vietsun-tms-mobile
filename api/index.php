@@ -223,11 +223,42 @@ function ensure_schema($pdo) {
             $pdo->exec("DELETE FROM drivers WHERE vendor_id IN ($inClause)");
             $pdo->exec("DELETE FROM vendors WHERE id IN ($inClause)");
         }
-        // Chuẩn hóa thống nhất tên vendor trong DB để không bị xung đột (VD: PHUCTRUONGAN -> PHUC TRUONG AN)
-        $pdo->exec("UPDATE `vendors` SET `vendor_name` = 'PHUC TRUONG AN' WHERE `vendor_code` = 'PHUCTRUONGAN' OR `vendor_name` = 'PHUCTRUONGAN'");
-        $pdo->exec("UPDATE `tms_pending_approvals` SET `vendor_name` = 'PHUC TRUONG AN' WHERE `vendor_name` = 'PHUCTRUONGAN'");
-        $pdo->exec("UPDATE `tms_pending_approvals` SET `actor_name` = 'PHUC TRUONG AN' WHERE `actor_name` = 'PHUCTRUONGAN'");
-        $pdo->exec("UPDATE `tms_pending_approvals` SET `changes_json` = REPLACE(`changes_json`, '\"PHUCTRUONGAN\"', '\"PHUC TRUONG AN\"') WHERE `changes_json` LIKE '%PHUCTRUONGAN%'");
+        // Chuẩn hóa thống nhất tên toàn bộ Vendor trong DB để không bị xung đột (VD: TUANHUNG -> TUAN HUNG, PHUCTRUONGAN -> PHUC TRUONG AN)
+        $vendorFixes = [
+            'PHUCTRUONGAN'  => 'PHUC TRUONG AN',
+            'TUANHUNG'      => 'TUAN HUNG',
+            'PHUCAN'        => 'PHUC AN',
+            'VUONGPHAT'     => 'VUONG PHAT',
+            'NHATSON'       => 'NHAT SON',
+            'NGOCSANG'      => 'NGOC SANG',
+            'GIAKHANG'      => 'GIA KHANG',
+            'DUCANH'        => 'ANH DUC',
+            'HOANGLONGPHAT' => 'HOANG LONG PHAT',
+            'DAILONGPHAT'   => 'DAI LONG PHAT',
+            'BAONAMPHAT'    => 'BAO NAM PHAT',
+            'ANTHANHPHAT'   => 'AN THANH PHAT',
+            'DUYLINHPHAT'   => 'DUY LINH PHAT',
+            'NHANBAOPHAT'   => 'NHAN BAO PHAT',
+            'THIENPHUCPHAT' => 'THIEN PHUC PHAT',
+            'TANHOANGQUANG' => 'TAN HOANG QUANG',
+            'MAINHATANH'    => 'MAI NHAT ANH',
+            'DUONGNGUYEN'   => 'DUONG NGUYEN',
+            'GIABAO'        => 'GIA BAO',
+            'DUCHAI'        => 'DUC HAI',
+            'DANGHUNG'      => 'DANG HUNG',
+            'TRUCANH'       => 'TRUC ANH'
+        ];
+        $stUpdV  = $pdo->prepare("UPDATE `vendors` SET `vendor_name` = ? WHERE `vendor_code` = ? OR REPLACE(UPPER(`vendor_name`), ' ', '') = ?");
+        $stUpdP1 = $pdo->prepare("UPDATE `tms_pending_approvals` SET `vendor_name` = ? WHERE REPLACE(UPPER(`vendor_name`), ' ', '') = ?");
+        $stUpdP2 = $pdo->prepare("UPDATE `tms_pending_approvals` SET `actor_name` = ? WHERE REPLACE(UPPER(`actor_name`), ' ', '') = ?");
+        $stUpdP3 = $pdo->prepare("UPDATE `tms_pending_approvals` SET `changes_json` = REPLACE(`changes_json`, ?, ?)");
+
+        foreach ($vendorFixes as $vCode => $vFull) {
+            $stUpdV->execute([$vFull, $vCode, $vCode]);
+            $stUpdP1->execute([$vFull, $vCode]);
+            $stUpdP2->execute([$vFull, $vCode]);
+            $stUpdP3->execute(['"' . $vCode . '"', '"' . $vFull . '"']);
+        }
     } catch (Exception $e) {}
 }
 
@@ -948,11 +979,18 @@ function queue_pending_tms_approval($pdo, $idPo, $codePo, $actorRole, $actorName
     if (isset($changes['donViVcPo'])) {
         $norm = normalize_vendor_name($changes['donViVcPo']['new']);
         $origDv = trim($origMap['donViVcPo'] ?? ($foundTrip['donViVcPo'] ?? ''));
+        $oldNorm = normalize_vendor_name($origDv);
         if ($origDv !== '' && to_clean_code($origDv) === to_clean_code($norm)) {
             unset($changes['donViVcPo']);
         } else {
+            $changes['donViVcPo']['old'] = $oldNorm ?: $changes['donViVcPo']['old'];
             $changes['donViVcPo']['new'] = $norm;
         }
+    }
+
+    if ($actorRole === 'VENDOR') {
+        $actorName = normalize_vendor_name($actorName);
+        $vendorName = normalize_vendor_name($vendorName);
     }
 
     $changesJson = json_encode($changes, JSON_UNESCAPED_UNICODE);
@@ -1292,6 +1330,22 @@ try {
         $allShipmentsCache = null;
         foreach ($rows as &$pr) {
             $pr['changes'] = json_decode($pr['changes_json'] ?? '{}', true) ?: [];
+            if ($pr['actor_role'] === 'VENDOR') {
+                $pr['actor_name'] = normalize_vendor_name($pr['actor_name']);
+            }
+            if (!empty($pr['vendor_name'])) {
+                $pr['vendor_name'] = normalize_vendor_name($pr['vendor_name']);
+            }
+            if (isset($pr['changes']['donViVcPo'])) {
+                $oldNorm = normalize_vendor_name($pr['changes']['donViVcPo']['old'] ?? '');
+                $newNorm = normalize_vendor_name($pr['changes']['donViVcPo']['new'] ?? '');
+                if ($oldNorm !== '' && to_clean_code($oldNorm) === to_clean_code($newNorm)) {
+                    unset($pr['changes']['donViVcPo']);
+                } else {
+                    $pr['changes']['donViVcPo']['old'] = $oldNorm;
+                    $pr['changes']['donViVcPo']['new'] = $newNorm;
+                }
+            }
             if (empty($pr['cont_size'])) {
                 $cj = $pr['changes_json'] ?? '';
                 if (strpos($cj, "40'") !== false || strpos($cj, '40"') !== false) {
@@ -1777,8 +1831,9 @@ try {
         }
 
         $actorRole = ($user['role'] ?? '') === 'vendor' ? 'VENDOR' : 'DRIVER';
-        $actorName = $actorRole === 'VENDOR' ? ($user['vendorName'] ?? 'Vendor') : trim(($user['plate'] ?? '') . ' - ' . ($user['driverName'] ?? ''));
-        $vendorName = strtoupper(trim($user['vendorName'] ?? ''));
+        $vName = normalize_vendor_name($user['vendorName'] ?? ($user['vendorCode'] ?? 'Vendor'));
+        $actorName = $actorRole === 'VENDOR' ? $vName : trim(($user['plate'] ?? '') . ' - ' . ($user['driverName'] ?? ''));
+        $vendorName = $vName;
         $qRes = queue_pending_tms_approval($pdo, $idPo, $codePo, $actorRole, $actorName, $vendorName, $fieldsToQueue);
         if (!$qRes['ok']) {
             http_response_code(403);

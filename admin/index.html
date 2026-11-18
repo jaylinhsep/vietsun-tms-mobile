@@ -607,6 +607,38 @@
     let approvalStickFilter = 'ALL'; // 'ALL' | 'N' | 'X'
     let currentAdminLevel = localStorage.getItem('vs_admin_level') || 'super'; // 'super' (pass 69) | 'export_40' (pass 40)
 
+    const VENDOR_NAME_NORMALIZE = {
+      TUANHUNG: "TUAN HUNG",
+      PHUCTRUONGAN: "PHUC TRUONG AN",
+      PHUCAN: "PHUC AN",
+      VUONGPHAT: "VUONG PHAT",
+      NHATSON: "NHAT SON",
+      NGOCSANG: "NGOC SANG",
+      GIAKHANG: "GIA KHANG",
+      DUCANH: "ANH DUC",
+      HOANGLONGPHAT: "HOANG LONG PHAT",
+      DAILONGPHAT: "DAI LONG PHAT",
+      BAONAMPHAT: "BAO NAM PHAT",
+      ANTHANHPHAT: "AN THANH PHAT",
+      DUYLINHPHAT: "DUY LINH PHAT",
+      NHANBAOPHAT: "NHAN BAO PHAT",
+      THIENPHUCPHAT: "THIEN PHUC PHAT",
+      TANHOANGQUANG: "TAN HOANG QUANG",
+      MAINHATANH: "MAI NHAT ANH",
+      DUONGNGUYEN: "DUONG NGUYEN",
+      GIABAO: "GIA BAO",
+      DUCHAI: "DUC HAI",
+      DANGHUNG: "DANG HUNG",
+      TRUCANH: "TRUC ANH"
+    };
+
+    function normalizeVendorNameClient(raw) {
+      if (!raw) return "";
+      const clean = String(raw).toUpperCase().trim();
+      const noSp = clean.replace(/[^A-Z0-9]/g, "");
+      return VENDOR_NAME_NORMALIZE[noSp] || raw;
+    }
+
     function applyAdminRoleUI() {
       const isExport40 = (currentAdminLevel === 'export_40');
       const roleBadge = document.getElementById('adminRoleBadge');
@@ -960,8 +992,13 @@
         const changes = r.changes || {};
         const diffHtml = Object.keys(changes).map(fKey => {
           const lbl = FIELD_LABELS[fKey] || fKey;
-          const oldVal = changes[fKey].old || '(Trống)';
-          const newVal = changes[fKey].new || '(Xóa trống)';
+          let oldVal = changes[fKey].old || '(Trống)';
+          let newVal = changes[fKey].new || '(Xóa trống)';
+          if (fKey === 'donViVcPo') {
+            oldVal = normalizeVendorNameClient(oldVal);
+            newVal = normalizeVendorNameClient(newVal);
+            if (oldVal && newVal && oldVal === newVal) return '';
+          }
           return `
             <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;">
               <span style="font-weight:700;color:#475569;font-size:12px;">${lbl}:</span>
@@ -972,7 +1009,7 @@
               </div>
             </div>
           `;
-        }).join('');
+        }).filter(Boolean).join('');
 
         let statusBadge = '';
         let actionHtml = '';
@@ -999,7 +1036,7 @@
             <div class="ap-header">
               <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                 ${roleBadge}
-                <b style="color:#0f172a;font-size:13.5px;">${r.actor_name}</b>
+                <b style="color:#0f172a;font-size:13.5px;">${r.actor_role === 'VENDOR' ? normalizeVendorNameClient(r.actor_name) : r.actor_name}</b>
               </div>
               <div style="display:flex;align-items:center;gap:6px;">
                 <span style="font-size:11px;color:#64748b;">🕒 ${timeShort}</span>
@@ -1018,7 +1055,7 @@
 
             <div style="font-size:12.5px;color:#1e293b;font-weight:600;line-height:1.35;">
               📍 ${r.khach_kho || '--'}
-              ${r.vendor_name && r.actor_role === 'DRIVER' ? `<span style="color:#64748b;font-weight:500;"> • (${r.vendor_name})</span>` : ''}
+              ${r.vendor_name && r.actor_role === 'DRIVER' ? `<span style="color:#64748b;font-weight:500;"> • (${normalizeVendorNameClient(r.vendor_name)})</span>` : ''}
             </div>
 
             <div class="ap-diff-box">
@@ -1119,7 +1156,7 @@
         <tr>
           <td>${idx + 1}</td>
           <td><span class="badge-code">${v.vendor_code}</span></td>
-          <td><b>${v.vendor_name}</b></td>
+          <td><b>${normalizeVendorNameClient(v.vendor_name)}</b></td>
           <td><span class="badge-pass">${v.password_hash || '123456'}</span></td>
           <td><b style="color:var(--primary);">${v.truck_count || 0} xe</b></td>
           <td>${v.contact_phone || '--'}</td>
