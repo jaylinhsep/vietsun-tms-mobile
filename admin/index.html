@@ -835,7 +835,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       // Đăng ký Service Worker cho Admin PWA
       if ('serviceWorker' in navigator) {
-        const swPath = window.location.pathname.includes('/admin') ? '/admin/sw.js' : 'sw.js';
+        const swPath = window.location.pathname.includes('/admin') ? '/admin/sw.js?v=3' : 'sw.js?v=3';
         navigator.serviceWorker.register(swPath).catch(() => {});
       }
 

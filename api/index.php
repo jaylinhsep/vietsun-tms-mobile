@@ -259,6 +259,29 @@ function ensure_schema($pdo) {
             $stUpdP2->execute([$vFull, $vCode]);
             $stUpdP3->execute(['"' . $vCode . '"', '"' . $vFull . '"']);
         }
+
+        // 1. Quét và chuẩn hóa trực tiếp actor_name và vendor_name trong tms_pending_approvals
+        $stPendActor = $pdo->query("SELECT id, actor_name FROM tms_pending_approvals WHERE actor_role = 'VENDOR'")->fetchAll();
+        foreach ($stPendActor as $pa) {
+            $normActor = normalize_vendor_name($pa['actor_name']);
+            if ($normActor !== $pa['actor_name']) {
+                $pdo->prepare("UPDATE tms_pending_approvals SET actor_name = ?, vendor_name = ? WHERE id = ?")->execute([$normActor, $normActor, $pa['id']]);
+            }
+        }
+
+        // 2. Dọn sạch các trường donViVcPo thừa (khi old == new) trong changes_json của hàng đợi chờ duyệt
+        $stPendClean = $pdo->query("SELECT id, changes_json FROM tms_pending_approvals WHERE status = 'PENDING' AND changes_json LIKE '%donViVcPo%'")->fetchAll();
+        foreach ($stPendClean as $pc) {
+            $cj = json_decode($pc['changes_json'], true);
+            if (is_array($cj) && isset($cj['donViVcPo'])) {
+                $oldN = normalize_vendor_name($cj['donViVcPo']['old'] ?? '');
+                $newN = normalize_vendor_name($cj['donViVcPo']['new'] ?? '');
+                if ($oldN !== '' && to_clean_code($oldN) === to_clean_code($newN)) {
+                    unset($cj['donViVcPo']);
+                    $pdo->prepare("UPDATE tms_pending_approvals SET changes_json = ? WHERE id = ?")->execute([json_encode($cj, JSON_UNESCAPED_UNICODE), $pc['id']]);
+                }
+            }
+        }
     } catch (Exception $e) {}
 }
 

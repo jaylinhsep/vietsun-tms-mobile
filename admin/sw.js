@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vs-admin-pwa-v1';
+const CACHE_NAME = 'vs-admin-pwa-v3';
 const ASSETS = [
   './',
   './index.html',
