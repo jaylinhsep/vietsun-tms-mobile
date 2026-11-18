@@ -224,8 +224,10 @@ function ensure_schema($pdo) {
             $pdo->exec("DELETE FROM vendors WHERE id IN ($inClause)");
         }
         // Chuẩn hóa thống nhất tên vendor trong DB để không bị xung đột (VD: PHUCTRUONGAN -> PHUC TRUONG AN)
-        $pdo->exec("UPDATE `vendors` SET `vendor_name` = 'PHUC TRUONG AN' WHERE `vendor_code` = 'PHUCTRUONGAN'");
+        $pdo->exec("UPDATE `vendors` SET `vendor_name` = 'PHUC TRUONG AN' WHERE `vendor_code` = 'PHUCTRUONGAN' OR `vendor_name` = 'PHUCTRUONGAN'");
         $pdo->exec("UPDATE `tms_pending_approvals` SET `vendor_name` = 'PHUC TRUONG AN' WHERE `vendor_name` = 'PHUCTRUONGAN'");
+        $pdo->exec("UPDATE `tms_pending_approvals` SET `actor_name` = 'PHUC TRUONG AN' WHERE `actor_name` = 'PHUCTRUONGAN'");
+        $pdo->exec("UPDATE `tms_pending_approvals` SET `changes_json` = REPLACE(`changes_json`, '\"PHUCTRUONGAN\"', '\"PHUC TRUONG AN\"') WHERE `changes_json` LIKE '%PHUCTRUONGAN%'");
     } catch (Exception $e) {}
 }
 
@@ -266,7 +268,7 @@ function sync_from_google_sheet($pdo) {
             if ($line === '') continue;
             $cols = str_getcsv($line);
             if (count($cols) < 2) continue;
-            $vName = strtoupper(trim($cols[0] ?? ''));
+            $vName = normalize_vendor_name(strtoupper(trim($cols[0] ?? '')));
             $plate = to_clean_code($cols[1] ?? '');
             if (!$vName || !$plate) continue;
             $vCode = to_clean_code($vName);
@@ -304,6 +306,7 @@ function sync_from_google_sheet($pdo) {
 
     foreach ($rows as $r) {
         list($vName, $plate, $dName, $phone, $cccd, $gplx) = $r;
+        $vName = normalize_vendor_name($vName);
         $vCode = to_clean_code($vName);
         if (!$vCode || !$plate) continue;
 
@@ -875,6 +878,9 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false, $inc
             }
             foreach ($changes as $field => $diff) {
                 $newVal = $diff['new'] ?? '';
+                if ($field === 'donViVcPo') {
+                    $newVal = normalize_vendor_name($newVal);
+                }
                 if (!array_key_exists($field, $merged[$pid]['_tmsOriginal'])) {
                     $merged[$pid]['_tmsOriginal'][$field] = $merged[$pid][$field] ?? '';
                 }
@@ -936,6 +942,17 @@ function queue_pending_tms_approval($pdo, $idPo, $codePo, $actorRole, $actorName
             'old' => (string)$oldVal,
             'new' => $newVal
         ];
+    }
+
+    // Luôn bảo toàn tên ĐVVT: nếu chuyến gốc trên TMS đã có ĐVVT rồi thì bỏ ghi đè donViVcPo, tránh mất dấu cách
+    if (isset($changes['donViVcPo'])) {
+        $norm = normalize_vendor_name($changes['donViVcPo']['new']);
+        $origDv = trim($origMap['donViVcPo'] ?? ($foundTrip['donViVcPo'] ?? ''));
+        if ($origDv !== '' && to_clean_code($origDv) === to_clean_code($norm)) {
+            unset($changes['donViVcPo']);
+        } else {
+            $changes['donViVcPo']['new'] = $norm;
+        }
     }
 
     $changesJson = json_encode($changes, JSON_UNESCAPED_UNICODE);
@@ -1162,7 +1179,7 @@ try {
         $token = make_token([
             'role'       => 'vendor',
             'vendorId'   => $vendor['id'],
-            'vendorName' => $vendor['vendor_name'],
+            'vendorName' => normalize_vendor_name($vendor['vendor_name']),
             'vendorCode' => $vendor['vendor_code']
         ]);
         echo json_encode([
@@ -1441,6 +1458,9 @@ try {
             $changes = json_decode($r['changes_json'] ?? '{}', true) ?: [];
             foreach ($changes as $fieldName => $diff) {
                 $newVal = $diff['new'] ?? '';
+                if ($fieldName === 'donViVcPo') {
+                    $newVal = normalize_vendor_name($newVal);
+                }
                 update_tms_field($idPo, $codePo, $fieldName, $newVal);
             }
             $stMark->execute([$r['id']]);
@@ -1783,9 +1803,23 @@ try {
             echo json_encode(['ok' => false, 'error' => 'Thiếu mã lô hàng idPo']);
             exit;
         }
-        $vendorName = strtoupper(trim($user['vendorName'] ?? ''));
+        $vendorName = normalize_vendor_name($user['vendorName'] ?? '');
         $fieldsToQueue = ['soXePo' => $soXe];
-        if ($vendorName !== '') {
+
+        // Lấy thông tin chuyến hiện tại trên TMS
+        $all = fetch_vietsun_shipments(null, false);
+        $currTrip = null;
+        foreach ($all as $t) {
+            if ((string)($t['idPo'] ?? '') === (string)$idPo) {
+                $currTrip = $t;
+                break;
+            }
+        }
+        // Nếu chuyến trên TMS đã có ĐVVT rồi (VD: "PHUC TRUONG AN") thì TUYỆT ĐỐI KHÔNG ghi đè,
+        // để bảo toàn nguyên vẹn tên ĐVVT có dấu cách từ Điều vận.
+        // Chỉ khi trên TMS chưa có ĐVVT mới bổ sung donViVcPo đã chuẩn hóa.
+        $currDv = trim($currTrip['donViVcPo'] ?? '');
+        if ($currDv === '' && $vendorName !== '') {
             $fieldsToQueue['donViVcPo'] = $vendorName;
         }
         $qRes = queue_pending_tms_approval($pdo, $idPo, $codePo, 'VENDOR', $vendorName, $vendorName, $fieldsToQueue);
