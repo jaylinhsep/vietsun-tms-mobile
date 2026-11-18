@@ -1,44 +1,3 @@
-<?php
-// VSHO Mobile Standalone Proxy + App
-if (isset($_GET['ajax_proxy'])) {
-    header('Content-Type: application/json; charset=utf-8');
-    header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type, Authorization');
-    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
-    $act = isset($_GET['act']) ? $_GET['act'] : '';
-    $base = 'http://203.205.21.186:8028';
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    if ($act === 'return_json') {
-        $ngay = isset($_GET['ngay']) ? urlencode($_GET['ngay']) : date('Y-m-d');
-        curl_setopt($ch, CURLOPT_URL, $base . '/API/return_json.php?ngay=' . $ngay);
-    } elseif ($act === 'sync_vendor_sheet') {
-        $sheetUrl = 'https://docs.google.com/spreadsheets/d/13ndQsSmBsKlHjIRQR0S0MO5BPqqL6J4CECBAYfQi1oo/export?format=csv&gid=1046738475';
-        curl_setopt($ch, CURLOPT_URL, $sheetUrl);
-        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-        header('Content-Type: text/csv; charset=utf-8');
-    } else {
-        $targetPath = isset($_GET['path']) ? $_GET['path'] : '/main/action.php';
-        curl_setopt($ch, CURLOPT_URL, $base . $targetPath);
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            curl_setopt($ch, CURLOPT_POST, true);
-            $rawBody = file_get_contents('php://input');
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $rawBody);
-            $contentType = isset($_SERVER['CONTENT_TYPE']) ? $_SERVER['CONTENT_TYPE'] : 'application/x-www-form-urlencoded; charset=UTF-8';
-            curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: ' . $contentType));
-        }
-    }
-    $res = curl_exec($ch);
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    http_response_code($code ? $code : 200);
-    echo $res;
-    exit;
-}
-?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -1534,7 +1493,7 @@ if (isset($_GET['ajax_proxy'])) {
             type="text"
             class="form-control"
             id="loginUsername"
-            placeholder="VD: trucking14, trucking4..."
+            placeholder="Tên tài khoản điều độ..."
             autocomplete="username"
             required
           />
@@ -1706,8 +1665,8 @@ if (isset($_GET['ajax_proxy'])) {
   <main class="list-container" id="poListContainer">
     <div class="state-box">
       <div class="spinner"></div>
-      <div style="font-weight:700; color:#334155;">Đang tải dữ liệu xuất nhập từ Vietsun TMS...</div>
-      <div style="font-size:12px; margin-top:4px;">Kết nối https://vsho.vietsunlogistics.com</div>
+      <div style="font-weight:700; color:#334155;">Đang tải dữ liệu điều độ...</div>
+      <div style="font-size:12px; margin-top:4px; color:#64748b;">Đang đồng bộ dữ liệu hệ thống...</div>
     </div>
   </main>
 
@@ -2142,15 +2101,15 @@ if (isset($_GET['ajax_proxy'])) {
       <div class="sheet-body">
         <div class="form-group">
           <label>Tài khoản đăng nhập (Username)</label>
-          <input type="text" class="form-control" id="cfgUsername" value="trucking14" />
+          <input type="text" class="form-control" id="cfgUsername" value="" placeholder="Nhập tài khoản điều độ" />
         </div>
         <div class="form-group">
           <label>Mật khẩu (Password)</label>
-          <input type="password" class="form-control" id="cfgPassword" value="1" />
+          <input type="password" class="form-control" id="cfgPassword" value="" placeholder="••••••••" />
         </div>
         <div class="form-group">
           <label>Chuỗi phiên làm việc (userString)</label>
-          <input type="text" class="form-control" id="cfgUserString" value="trucking14<<|7<<|a0b923820d<<|1<<|0.0.0.0.0.0.1.0.1.1.0.1.0.1." style="font-size:11.5px; font-family:monospace;" />
+          <input type="text" class="form-control" id="cfgUserString" value="" placeholder="Tự động đồng bộ từ máy chủ" style="font-size:11.5px; font-family:monospace;" />
         </div>
         <div class="form-group">
           <label>Ngày mốc lấy dữ liệu API (return_json.php?ngay=)</label>
@@ -2357,7 +2316,21 @@ if (isset($_GET['ajax_proxy'])) {
       VUONGPHAT: "VUONG PHAT",
       PHUCTRUONGAN: "PHUC TRUONG AN",
       GIAKHANG: "GIA KHANG",
-      DUCANH: "ANH DUC"
+      DUCANH: "ANH DUC",
+      HOANGLONGPHAT: "HOANG LONG PHAT",
+      DAILONGPHAT: "DAI LONG PHAT",
+      BAONAMPHAT: "BAO NAM PHAT",
+      ANTHANHPHAT: "AN THANH PHAT",
+      DUYLINHPHAT: "DUY LINH PHAT",
+      NHANBAOPHAT: "NHAN BAO PHAT",
+      THIENPHUCPHAT: "THIEN PHUC PHAT",
+      TANHOANGQUANG: "TAN HOANG QUANG",
+      MAINHATANH: "MAI NHAT ANH",
+      DUONGNGUYEN: "DUONG NGUYEN",
+      GIABAO: "GIA BAO",
+      DUCHAI: "DUC HAI",
+      DANGHUNG: "DANG HUNG",
+      TRUCANH: "TRUC ANH"
     };
 
     function normalizeVendorNameClient(raw) {
@@ -2376,7 +2349,11 @@ if (isset($_GET['ajax_proxy'])) {
       let vdUpdated = 0;
 
       try {
-        const urlsToTry = ["?api=drivers", "/api/drivers"];
+        const urlsToTry = [
+          "/api/index.php?route=drivers",
+          "/api/drivers",
+          "?api=drivers"
+        ];
         let data = null;
         for (const u of urlsToTry) {
           try {
@@ -2501,7 +2478,6 @@ if (isset($_GET['ajax_proxy'])) {
     // =========================================================================
     // 2. APPLICATION STATE
     // =========================================================================
-    const REMOTE_BASE = "https://vsho.vietsunlogistics.com";
     let allShipments = [];
     let filteredShipments = [];
     let renderLimit = 60;
@@ -2630,12 +2606,8 @@ if (isset($_GET['ajax_proxy'])) {
     }
 
     // =========================================================================
-    // 4. API COMMUNICATION (AUTO-DETECT LOCAL PROXY / SAME-ORIGIN / FALLBACK)
+    // 4. API COMMUNICATION (LOCAL API PROXY)
     // =========================================================================
-    function isSameOriginVietsun() {
-      return window.location.hostname.includes("vietsunlogistics.com");
-    }
-
     const loadedCycleSet = new Set();
 
     // Vietsun TMS return_json.php groups shipments by billing period: 26th of (M-1) -> 25th of M
@@ -2677,10 +2649,8 @@ if (isset($_GET['ajax_proxy'])) {
 
     async function fetchSingleCycleFromApi(cycleDateParam) {
       const urlsToTry = [
-        `?api=return_json&ngay=${encodeURIComponent(cycleDateParam)}`,
         `/api/index.php?route=return_json&ngay=${encodeURIComponent(cycleDateParam)}`,
-        `/api/return_json?ngay=${encodeURIComponent(cycleDateParam)}`,
-        `${REMOTE_BASE}/return_json.php?ngay=${encodeURIComponent(cycleDateParam)}`
+        `/api/return_json?ngay=${encodeURIComponent(cycleDateParam)}`
       ];
 
       let lastErr = null;
@@ -2690,6 +2660,7 @@ if (isset($_GET['ajax_proxy'])) {
           if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
           const text = await resp.text();
           const cleaned = text.trim();
+          if (cleaned.startsWith("<")) throw new Error("Phản hồi HTML thay vì JSON");
           const data = JSON.parse(cleaned);
           if (Array.isArray(data)) return data;
         } catch (err) {
@@ -2782,11 +2753,10 @@ if (isset($_GET['ajax_proxy'])) {
         formBody.append(k, v);
       }
 
+      // Luôn ưu tiên endpoint API Gateway trên máy chủ
       const urlsToTry = [
-        "?api=index_crud",
         "/api/index.php?route=index-crud",
-        "/api/index-crud",
-        `${REMOTE_BASE}/index-crud.php`
+        "/api/index-crud"
       ];
 
       let lastErr = null;
@@ -2798,7 +2768,11 @@ if (isset($_GET['ajax_proxy'])) {
             body: formBody.toString()
           });
           if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-          return await resp.text();
+          const text = await resp.text();
+          if (text.includes("Lỗi đăng nhập") || text.includes("<!DOCTYPE")) {
+            throw new Error(text.includes("Lỗi đăng nhập") ? "Lỗi phiên đăng nhập TMS" : "Phản hồi không hợp lệ từ máy chủ");
+          }
+          return text;
         } catch (err) {
           lastErr = err;
         }
@@ -2928,7 +2902,7 @@ if (isset($_GET['ajax_proxy'])) {
 
       allShipments.forEach(s => {
         const rawXe = (s.soXePo || "").toUpperCase().replace(/\s+/g, "").trim();
-        const rawDv = (s.donViVcPo || "").toUpperCase().trim();
+        const rawDv = normalizeVendorNameClient(s.donViVcPo || "");
         if (rawXe) {
           xeSet.add(rawXe);
           const existing = knownTruckMap.get(rawXe);
@@ -2987,7 +2961,7 @@ if (isset($_GET['ajax_proxy'])) {
 
       const baseDateAndSearch = allShipments.filter(item => {
         if (!matchesDateFilter(item)) return false;
-        if (state.vendor !== "ALL" && (item.donViVcPo || "").toUpperCase() !== state.vendor) return false;
+        if (state.vendor !== "ALL" && normalizeVendorNameClient(item.donViVcPo) !== state.vendor) return false;
         if (state.province !== "ALL" && (item.tinhNhanPo || "").toUpperCase() !== state.province) return false;
         if (state.truckStatus === "NO_TRUCK" && item.soXePo) return false;
         if (state.truckStatus === "HAS_TRUCK" && !item.soXePo) return false;
@@ -3640,22 +3614,36 @@ if (isset($_GET['ajax_proxy'])) {
           });
           po.soContPo = rawVal;
         } else if (fieldName === "soXePo") {
-          // Also check if driver DB has a vendor for this plate and sync donViVcPo automatically
           const drv = getDriverForPlate(rawVal);
           const dvInp = document.getElementById(`pc_dv_${po.idPo}`);
           let autoVendor = (drv && drv.vendor) || "";
           if (!autoVendor && DEFAULT_XE_VIETSUN.includes(rawVal)) autoVendor = "VIETSUN";
 
-          const htmlResp = await postCrudUpdate({
+          // 1. Luôn lưu Số xe chắc chắn bằng lệnh b18 chuẩn
+          await postCrudUpdate({
             TenDangNhap: state.username,
             userString: state.userString,
             cv: 3,
             loai: 1,
             iddt: 1,
-            cot: `b18newtruck<<|4<<|50<<|${po.idPo}<<|soXePo<<|${po.codePo}`,
+            cot: `b18<<|4<<|50<<|${po.idPo}<<|soXePo<<|${po.codePo}`,
             thongtin: rawVal
           });
           po.soXePo = rawVal;
+
+          // 2. Gửi thêm b18newtruck để TMS nhận diện xe Vietsun
+          let htmlResp = "";
+          try {
+            htmlResp = await postCrudUpdate({
+              TenDangNhap: state.username,
+              userString: state.userString,
+              cv: 3,
+              loai: 1,
+              iddt: 1,
+              cot: `b18newtruck<<|4<<|50<<|${po.idPo}<<|soXePo<<|${po.codePo}`,
+              thongtin: rawVal
+            });
+          } catch (_) {}
 
           if (htmlResp && htmlResp.includes("reload_input_ajax")) {
             const parser = new DOMParser();
@@ -3683,8 +3671,20 @@ if (isset($_GET['ajax_proxy'])) {
             });
           }
           saveRecentTruck(rawVal, po.donViVcPo || autoVendor);
+        } else if (fieldName === "donViVcPo") {
+          // Lưu Đơn vị vận tải bằng b18 chuẩn
+          await postCrudUpdate({
+            TenDangNhap: state.username,
+            userString: state.userString,
+            cv: 3,
+            loai: 1,
+            iddt: 1,
+            cot: `b18<<|4<<|30<<|${po.idPo}<<|donViVcPo<<|${po.codePo}`,
+            thongtin: rawVal
+          });
+          po.donViVcPo = rawVal;
         } else {
-          const maxLen = fieldName === "donViVcPo" ? 30 : 50;
+          const maxLen = 50;
           await postCrudUpdate({
             TenDangNhap: state.username,
             userString: state.userString,
@@ -3993,6 +3993,7 @@ if (isset($_GET['ajax_proxy'])) {
           return;
         }
       } catch (err) {}
+      // Fallback cho trình duyệt cũ không hỗ trợ showPicker: mở bảng lọc nâng cao và focus vào ô Từ ngày
       const adv = document.getElementById("advancedFilters");
       if (adv && !adv.classList.contains("open")) {
         adv.classList.add("open");
@@ -4561,34 +4562,76 @@ if (isset($_GET['ajax_proxy'])) {
           currentEditingPo.ngayTauChayPo = rawVal || "";
         } else if (fieldName === "soXePo") {
           rawVal = rawVal.toUpperCase();
-          const htmlResp = await postCrudUpdate({
+          // 1. Luôn lưu Số xe chắc chắn bằng lệnh b18 chuẩn
+          await postCrudUpdate({
             TenDangNhap: state.username,
             userString: state.userString,
             cv: 3,
             loai: 1,
             iddt: 1,
-            cot: `b18newtruck<<|4<<|50<<|${idPo}<<|soXePo<<|${codePo}`,
+            cot: `b18<<|4<<|50<<|${idPo}<<|soXePo<<|${codePo}`,
             thongtin: rawVal
           });
           currentEditingPo.soXePo = rawVal;
-          saveRecentTruck(rawVal, document.getElementById("inp_donViVcPo").value);
 
-          // Parse #reload_input_ajax response if server auto-resolved Vendor
+          // 2. Gửi thêm b18newtruck để TMS nhận diện xe Vietsun
+          let htmlResp = "";
+          try {
+            htmlResp = await postCrudUpdate({
+              TenDangNhap: state.username,
+              userString: state.userString,
+              cv: 3,
+              loai: 1,
+              iddt: 1,
+              cot: `b18newtruck<<|4<<|50<<|${idPo}<<|soXePo<<|${codePo}`,
+              thongtin: rawVal
+            });
+          } catch (_) {}
+
+          const curDvInp = document.getElementById("inp_donViVcPo");
+          saveRecentTruck(rawVal, curDvInp ? curDvInp.value : "");
+
+          // Tự động nhận diện Vendor nếu có
+          let autoDv = "";
           if (htmlResp && htmlResp.includes("reload_input_ajax")) {
             const parser = new DOMParser();
             const doc = parser.parseFromString(htmlResp, "text/html");
-            const kqXe = doc.getElementById(`kq_soXePo_${idPo}`);
             const kqDv = doc.getElementById(`kq_donViVcPo_${idPo}`);
-            if (kqXe && kqXe.textContent) {
-              currentEditingPo.soXePo = kqXe.textContent.trim();
-              document.getElementById("inp_soXePo").value = currentEditingPo.soXePo;
-            }
-            if (kqDv && kqDv.textContent) {
-              currentEditingPo.donViVcPo = kqDv.textContent.trim();
-              document.getElementById("inp_donViVcPo").value = currentEditingPo.donViVcPo;
-              document.getElementById("inp_donViVcPo").classList.add("saved");
+            if (kqDv && kqDv.textContent && kqDv.textContent.trim()) {
+              autoDv = kqDv.textContent.trim().toUpperCase();
             }
           }
+          if (!autoDv && rawVal) {
+            const drv = getDriverForPlate(rawVal);
+            if (drv && drv.vendor) autoDv = drv.vendor;
+            else if (DEFAULT_XE_VIETSUN.includes(rawVal)) autoDv = "VIETSUN";
+          }
+          if (autoDv && curDvInp && (!curDvInp.value || curDvInp.value === "VIETSUN" || curDvInp.value !== autoDv)) {
+            curDvInp.value = autoDv;
+            currentEditingPo.donViVcPo = autoDv;
+            curDvInp.classList.add("saved");
+            await postCrudUpdate({
+              TenDangNhap: state.username,
+              userString: state.userString,
+              cv: 3,
+              loai: 1,
+              iddt: 1,
+              cot: `b18<<|4<<|30<<|${idPo}<<|donViVcPo<<|${codePo}`,
+              thongtin: autoDv
+            });
+          }
+        } else if (fieldName === "donViVcPo") {
+          rawVal = rawVal.toUpperCase();
+          await postCrudUpdate({
+            TenDangNhap: state.username,
+            userString: state.userString,
+            cv: 3,
+            loai: 1,
+            iddt: 1,
+            cot: `b18<<|4<<|30<<|${idPo}<<|donViVcPo<<|${codePo}`,
+            thongtin: rawVal
+          });
+          currentEditingPo.donViVcPo = rawVal;
         } else {
           // Map field lengths exactly as gimax.js
           const lengthMap = {
@@ -5462,7 +5505,10 @@ if (isset($_GET['ajax_proxy'])) {
       btn.textContent = "⏳ Đang xác thực với TMS...";
 
       try {
-        const urlsToTry = ["?api=login", "/api/login"];
+        const urlsToTry = [
+          "/api/index.php?route=login",
+          "/api/login"
+        ];
         let loginResult = null;
 
         for (const u of urlsToTry) {
@@ -5552,9 +5598,9 @@ if (isset($_GET['ajax_proxy'])) {
       state.userString = document.getElementById("cfgUserString").value.trim();
       state.apiDate = document.getElementById("cfgApiDate").value || getTodayISO();
 
-      // Try logging in via ?api=login
+      // Try logging in via /api/index.php?route=login
       try {
-        const resp = await fetch("?api=login", {
+        const resp = await fetch("/api/index.php?route=login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ username: state.username, password: state.password })
@@ -5639,4 +5685,3 @@ if (isset($_GET['ajax_proxy'])) {
   </script>
 </body>
 </html>
-

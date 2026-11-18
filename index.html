@@ -1493,7 +1493,7 @@
             type="text"
             class="form-control"
             id="loginUsername"
-            placeholder="VD: trucking14, trucking4..."
+            placeholder="Tên tài khoản điều độ..."
             autocomplete="username"
             required
           />
@@ -1665,8 +1665,8 @@
   <main class="list-container" id="poListContainer">
     <div class="state-box">
       <div class="spinner"></div>
-      <div style="font-weight:700; color:#334155;">Đang tải dữ liệu xuất nhập từ Vietsun TMS...</div>
-      <div style="font-size:12px; margin-top:4px;">Kết nối https://vsho.vietsunlogistics.com</div>
+      <div style="font-weight:700; color:#334155;">Đang tải dữ liệu điều độ...</div>
+      <div style="font-size:12px; margin-top:4px; color:#64748b;">Đang đồng bộ dữ liệu hệ thống...</div>
     </div>
   </main>
 
@@ -2101,15 +2101,15 @@
       <div class="sheet-body">
         <div class="form-group">
           <label>Tài khoản đăng nhập (Username)</label>
-          <input type="text" class="form-control" id="cfgUsername" value="trucking14" />
+          <input type="text" class="form-control" id="cfgUsername" value="" placeholder="Nhập tài khoản điều độ" />
         </div>
         <div class="form-group">
           <label>Mật khẩu (Password)</label>
-          <input type="password" class="form-control" id="cfgPassword" value="1" />
+          <input type="password" class="form-control" id="cfgPassword" value="" placeholder="••••••••" />
         </div>
         <div class="form-group">
           <label>Chuỗi phiên làm việc (userString)</label>
-          <input type="text" class="form-control" id="cfgUserString" value="trucking14<<|7<<|a0b923820d<<|1<<|0.0.0.0.0.0.1.0.1.1.0.1.0.1." style="font-size:11.5px; font-family:monospace;" />
+          <input type="text" class="form-control" id="cfgUserString" value="" placeholder="Tự động đồng bộ từ máy chủ" style="font-size:11.5px; font-family:monospace;" />
         </div>
         <div class="form-group">
           <label>Ngày mốc lấy dữ liệu API (return_json.php?ngay=)</label>
@@ -2478,7 +2478,6 @@
     // =========================================================================
     // 2. APPLICATION STATE
     // =========================================================================
-    const REMOTE_BASE = "https://vsho.vietsunlogistics.com";
     let allShipments = [];
     let filteredShipments = [];
     let renderLimit = 60;
@@ -2607,12 +2606,8 @@
     }
 
     // =========================================================================
-    // 4. API COMMUNICATION (AUTO-DETECT LOCAL PROXY / SAME-ORIGIN / FALLBACK)
+    // 4. API COMMUNICATION (LOCAL API PROXY)
     // =========================================================================
-    function isSameOriginVietsun() {
-      return window.location.hostname.includes("vietsunlogistics.com");
-    }
-
     const loadedCycleSet = new Set();
 
     // Vietsun TMS return_json.php groups shipments by billing period: 26th of (M-1) -> 25th of M
@@ -2655,8 +2650,7 @@
     async function fetchSingleCycleFromApi(cycleDateParam) {
       const urlsToTry = [
         `/api/index.php?route=return_json&ngay=${encodeURIComponent(cycleDateParam)}`,
-        `/api/return_json?ngay=${encodeURIComponent(cycleDateParam)}`,
-        `${REMOTE_BASE}/return_json.php?ngay=${encodeURIComponent(cycleDateParam)}`
+        `/api/return_json?ngay=${encodeURIComponent(cycleDateParam)}`
       ];
 
       let lastErr = null;
@@ -2762,8 +2756,7 @@
       // Luôn ưu tiên endpoint API Gateway trên máy chủ
       const urlsToTry = [
         "/api/index.php?route=index-crud",
-        "/api/index-crud",
-        `${REMOTE_BASE}/index-crud.php`
+        "/api/index-crud"
       ];
 
       let lastErr = null;
@@ -2776,7 +2769,7 @@
           });
           if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
           const text = await resp.text();
-          if (text.includes("Lỗi đăng nhập") || (text.includes("<!DOCTYPE") && !url.includes("vietsunlogistics.com"))) {
+          if (text.includes("Lỗi đăng nhập") || text.includes("<!DOCTYPE")) {
             throw new Error(text.includes("Lỗi đăng nhập") ? "Lỗi phiên đăng nhập TMS" : "Phản hồi không hợp lệ từ máy chủ");
           }
           return text;

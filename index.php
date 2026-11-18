@@ -1500,7 +1500,7 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
             type="text"
             class="form-control"
             id="loginUsername"
-            placeholder="VD: trucking14, trucking4..."
+            placeholder="Tên tài khoản điều độ..."
             autocomplete="username"
             required
           />
@@ -1672,8 +1672,8 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
   <main class="list-container" id="poListContainer">
     <div class="state-box">
       <div class="spinner"></div>
-      <div style="font-weight:700; color:#334155;">Đang tải dữ liệu xuất nhập từ Vietsun TMS...</div>
-      <div style="font-size:12px; margin-top:4px;">Kết nối https://vsho.vietsunlogistics.com</div>
+      <div style="font-weight:700; color:#334155;">Đang tải dữ liệu điều độ...</div>
+      <div style="font-size:12px; margin-top:4px; color:#64748b;">Đang đồng bộ dữ liệu hệ thống...</div>
     </div>
   </main>
 
@@ -2108,15 +2108,15 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
       <div class="sheet-body">
         <div class="form-group">
           <label>Tài khoản đăng nhập (Username)</label>
-          <input type="text" class="form-control" id="cfgUsername" value="trucking14" />
+          <input type="text" class="form-control" id="cfgUsername" value="" placeholder="Nhập tài khoản điều độ" />
         </div>
         <div class="form-group">
           <label>Mật khẩu (Password)</label>
-          <input type="password" class="form-control" id="cfgPassword" value="1" />
+          <input type="password" class="form-control" id="cfgPassword" value="" placeholder="••••••••" />
         </div>
         <div class="form-group">
           <label>Chuỗi phiên làm việc (userString)</label>
-          <input type="text" class="form-control" id="cfgUserString" value="trucking14<<|7<<|a0b923820d<<|1<<|0.0.0.0.0.0.1.0.1.1.0.1.0.1." style="font-size:11.5px; font-family:monospace;" />
+          <input type="text" class="form-control" id="cfgUserString" value="" placeholder="Tự động đồng bộ từ máy chủ" style="font-size:11.5px; font-family:monospace;" />
         </div>
         <div class="form-group">
           <label>Ngày mốc lấy dữ liệu API (return_json.php?ngay=)</label>
@@ -2323,7 +2323,21 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
       VUONGPHAT: "VUONG PHAT",
       PHUCTRUONGAN: "PHUC TRUONG AN",
       GIAKHANG: "GIA KHANG",
-      DUCANH: "ANH DUC"
+      DUCANH: "ANH DUC",
+      HOANGLONGPHAT: "HOANG LONG PHAT",
+      DAILONGPHAT: "DAI LONG PHAT",
+      BAONAMPHAT: "BAO NAM PHAT",
+      ANTHANHPHAT: "AN THANH PHAT",
+      DUYLINHPHAT: "DUY LINH PHAT",
+      NHANBAOPHAT: "NHAN BAO PHAT",
+      THIENPHUCPHAT: "THIEN PHUC PHAT",
+      TANHOANGQUANG: "TAN HOANG QUANG",
+      MAINHATANH: "MAI NHAT ANH",
+      DUONGNGUYEN: "DUONG NGUYEN",
+      GIABAO: "GIA BAO",
+      DUCHAI: "DUC HAI",
+      DANGHUNG: "DANG HUNG",
+      TRUCANH: "TRUC ANH"
     };
 
     function normalizeVendorNameClient(raw) {
@@ -2471,7 +2485,6 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
     // =========================================================================
     // 2. APPLICATION STATE
     // =========================================================================
-    const REMOTE_BASE = "https://vsho.vietsunlogistics.com";
     let allShipments = [];
     let filteredShipments = [];
     let renderLimit = 60;
@@ -2513,7 +2526,7 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
     // 3. DATE & UTILITY HELPERS
     // =========================================================================
     function getTodayISO() {
-      const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+      const now = new Date();
       const yyyy = now.getFullYear();
       const mm = String(now.getMonth() + 1).padStart(2, "0");
       const dd = String(now.getDate()).padStart(2, "0");
@@ -2600,12 +2613,8 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
     }
 
     // =========================================================================
-    // 4. API COMMUNICATION (AUTO-DETECT LOCAL PROXY / SAME-ORIGIN / FALLBACK)
+    // 4. API COMMUNICATION (LOCAL API PROXY)
     // =========================================================================
-    function isSameOriginVietsun() {
-      return window.location.hostname.includes("vietsunlogistics.com");
-    }
-
     const loadedCycleSet = new Set();
 
     // Vietsun TMS return_json.php groups shipments by billing period: 26th of (M-1) -> 25th of M
@@ -2648,8 +2657,7 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
     async function fetchSingleCycleFromApi(cycleDateParam) {
       const urlsToTry = [
         `/api/index.php?route=return_json&ngay=${encodeURIComponent(cycleDateParam)}`,
-        `/api/return_json?ngay=${encodeURIComponent(cycleDateParam)}`,
-        `${REMOTE_BASE}/return_json.php?ngay=${encodeURIComponent(cycleDateParam)}`
+        `/api/return_json?ngay=${encodeURIComponent(cycleDateParam)}`
       ];
 
       let lastErr = null;
@@ -2755,8 +2763,7 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
       // Luôn ưu tiên endpoint API Gateway trên máy chủ
       const urlsToTry = [
         "/api/index.php?route=index-crud",
-        "/api/index-crud",
-        `${REMOTE_BASE}/index-crud.php`
+        "/api/index-crud"
       ];
 
       let lastErr = null;
@@ -2769,7 +2776,7 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
           });
           if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
           const text = await resp.text();
-          if (text.includes("Lỗi đăng nhập") || (text.includes("<!DOCTYPE") && !url.includes("vietsunlogistics.com"))) {
+          if (text.includes("Lỗi đăng nhập") || text.includes("<!DOCTYPE")) {
             throw new Error(text.includes("Lỗi đăng nhập") ? "Lỗi phiên đăng nhập TMS" : "Phản hồi không hợp lệ từ máy chủ");
           }
           return text;
@@ -2902,7 +2909,7 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
 
       allShipments.forEach(s => {
         const rawXe = (s.soXePo || "").toUpperCase().replace(/\s+/g, "").trim();
-        const rawDv = (s.donViVcPo || "").toUpperCase().trim();
+        const rawDv = normalizeVendorNameClient(s.donViVcPo || "");
         if (rawXe) {
           xeSet.add(rawXe);
           const existing = knownTruckMap.get(rawXe);
@@ -2961,7 +2968,7 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
 
       const baseDateAndSearch = allShipments.filter(item => {
         if (!matchesDateFilter(item)) return false;
-        if (state.vendor !== "ALL" && (item.donViVcPo || "").toUpperCase() !== state.vendor) return false;
+        if (state.vendor !== "ALL" && normalizeVendorNameClient(item.donViVcPo) !== state.vendor) return false;
         if (state.province !== "ALL" && (item.tinhNhanPo || "").toUpperCase() !== state.province) return false;
         if (state.truckStatus === "NO_TRUCK" && item.soXePo) return false;
         if (state.truckStatus === "HAS_TRUCK" && !item.soXePo) return false;
@@ -3993,6 +4000,7 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
           return;
         }
       } catch (err) {}
+      // Fallback cho trình duyệt cũ không hỗ trợ showPicker: mở bảng lọc nâng cao và focus vào ô Từ ngày
       const adv = document.getElementById("advancedFilters");
       if (adv && !adv.classList.contains("open")) {
         adv.classList.add("open");
