@@ -6365,21 +6365,95 @@
 </div>`;
     }
 
+    function getDefaultVietXoJumboHtml() {
+      const baseOrigin = window.location.origin;
+      return `<div class="bb-4oranges">
+  <div class="thna-header" style="display:flex;align-items:center;gap:16px;padding-left:4px;margin-bottom:6px;">
+    <div class="thna-logo-col" style="flex-shrink:0;">
+      <img src="${baseOrigin}/logoThna.png" alt="THNA Logo" class="thna-logo-img" style="width:170px;max-height:110px;object-fit:contain;display:block;" />
+    </div>
+    <div class="thna-info-col" style="flex:1;">
+      <div style="margin:2px 0;line-height:1.35;text-align:center;"><span style="font-weight:700;font-size:12pt;">CÔNG TY CỔ PHẦN TRUNG HẢI - NGHỆ AN GROUP</span></div>
+      <div style="margin:2px 0;line-height:1.35;"><span style="font-weight:700;font-size:11pt;">Trụ sở: Khối &nbsp;Bắc Hồ - TT. Quỳ Hợp – Huyện Quỳ Hợp – Tỉnh &nbsp;Nghệ An</span></div>
+      <div style="margin:2px 0;line-height:1.35;"><span style="font-weight:700;font-size:11pt;">ĐT VP:</span><span style="font-size:11pt;"> 038 398 2777 – Fax: 038 398 3777 – Hotline: 097 555 6777</span></div>
+      <div style="margin:2px 0;line-height:1.35;"><span style="font-weight:700;font-size:11pt;">VP Đại diện:</span><span style="font-size:11pt;"> Lô 30 Vinaconex9 – Đại Lộ Lê-nin – TP.Vinh – Nghệ An</span></div>
+      <div style="margin:2px 0;line-height:1.35;"><span style="font-weight:700;font-size:11pt;">Nhà máy</span><span style="font-size:11pt;">: KCN Châu Quang – Quỳ Hợp – Nghệ An</span></div>
+      <div style="margin:2px 0;line-height:1.35;"><span style="font-size:11pt;">Email: thna.caco3@gmail.com - Website : trunghainastone.com</span></div>
+    </div>
+  </div>
+  <div style="border-bottom:3px double #000;margin:8px 0 12px;height:2px;"></div>
+  <div style="margin:4px 0;line-height:1.6;text-align:center;"><span style="font-weight:700;font-size:16pt;">BIÊN BẢN GIAO NHẬN</span></div>
+  <div style="margin:4px 0;line-height:1.6;text-align:center;"><span style="font-weight:700;font-size:12pt;">Số: XK &nbsp; &nbsp; &nbsp;/T{{THANG}}-26</span></div>
+  <div style="margin:4px 0;line-height:1.6;"><span style="font-weight:700;font-size:11pt;">BÊN GIAO HÀNG: CTY CP TRUNG HẢI NGHỆ AN GROUP</span></div>
+  <div style="margin:4px 0;line-height:1.6;"><span style="font-size:12pt;">Địa chỉ: Khối Bắc Hồ, Thị trấn Quỳ Hợp, Huyện Quỳ Hợp, Tỉnh Nghệ An</span></div>
+  <div style="margin:4px 0;line-height:1.6;font-size:12pt;">
+    <span style="display:inline-block;width:52%;">Đại diện:</span>
+    <span>Chức vụ:</span>
+  </div>
+  <div style="margin:4px 0;line-height:1.6;"><span style="font-weight:700;font-size:12pt;">BÊN NHẬN HÀNG: : CÔNG TY CỔ PHẦN THÉP VIỆT XÔ THÀNH PHỐ HỒ CHÍ MINH</span></div>
+  <div style="margin:4px 0;line-height:1.6;"><span style="font-size:13pt;">Địa chỉ : Ấp Công Bính, Xã Tân Tây, Tỉnh Tây Ninh</span></div>
+  <div style="margin:4px 0;line-height:1.6;font-size:12pt;">
+    <span style="display:inline-block;width:52%;">Đại diện:</span>
+    <span>Chức vụ:</span>
+  </div>
+  <div style="margin:4px 0;line-height:1.6;"><span style="font-size:14pt;">Hai bên giao nhận hàng bột đá &nbsp;vôi trắng siêu mịn với nội dung như sau:</span></div>
+  <table class="thna-table" style="width:100%;border-collapse:collapse;margin:12px 0;">
+    <tr>
+      <th style="width:7.26%;border:1px solid #000;padding:5px 6px;vertical-align:middle;text-align:center;"><span style="font-weight:700;font-size:12pt;">STT</span></th>
+      <th style="width:20.89%;border:1px solid #000;padding:5px 6px;vertical-align:middle;text-align:center;"><span style="font-weight:700;font-size:12pt;">Mặt hàng</span></th>
+      <th style="width:16.92%;border:1px solid #000;padding:5px 6px;vertical-align:middle;text-align:center;"><span style="font-weight:700;font-size:12pt;">Trọng lượng<br/>(tấn/bao)</span></th>
+      <th style="width:11.64%;border:1px solid #000;padding:5px 6px;vertical-align:middle;text-align:center;"><span style="font-weight:700;font-size:12pt;">Số bao</span></th>
+      <th style="width:15.10%;border:1px solid #000;padding:5px 6px;vertical-align:middle;text-align:center;"><span style="font-weight:700;font-size:12pt;">Số lượng<br/>(tấn)</span></th>
+      <th style="width:28.19%;border:1px solid #000;padding:5px 6px;vertical-align:middle;text-align:center;"><span style="font-weight:700;font-size:12pt;">Số cont/seal</span></th>
+    </tr>
+    <tr>
+      <td style="width:7.26%;border:1px solid #000;padding:8px 6px;vertical-align:middle;text-align:center;"><span style="font-size:14pt;">1</span></td>
+      <td style="width:20.89%;border:1px solid #000;padding:8px 6px;vertical-align:middle;text-align:center;"><span style="font-size:14pt;">THNA25 T</span></td>
+      <td style="width:16.92%;border:1px solid #000;padding:8px 6px;vertical-align:middle;text-align:center;"><span style="font-size:14pt;">1.35</span></td>
+      <td style="width:11.64%;border:1px solid #000;padding:8px 6px;vertical-align:middle;text-align:center;"><span style="font-size:14pt;">20</span></td>
+      <td style="width:15.10%;border:1px solid #000;padding:8px 6px;vertical-align:middle;text-align:center;"><span style="font-size:14pt;">27</span></td>
+      <td style="width:28.19%;border:1px solid #000;padding:8px 6px;vertical-align:middle;text-align:center;"><span style="font-size:13pt;">{{SO_CONT}}<br/>seal: {{SO_SEAL}}</span></td>
+    </tr>
+  </table>
+  <div style="margin:6px 0;line-height:1.6;"><span style="font-style:italic;font-size:14pt;">Trọng lượng bằng chữ: Hai mươi bảy tấn chẵn./</span></div>
+  <div style="margin:6px 0;line-height:1.6;text-align:right;padding-right:24px;"><span style="font-style:italic;font-size:13pt;">Hôm nay, Ngày {{NGAY}} Tháng {{THANG}} Năm {{NAM}}</span></div>
+  <table style="width:100%;border-collapse:collapse;margin:14px 0;">
+    <tr>
+      <td style="width:33.33%;border:none;padding:6px 8px;vertical-align:middle;text-align:center;"><span style="font-weight:700;font-size:12pt;">ĐẠI DIỆN GIAO HÀNG</span></td>
+      <td style="width:33.33%;border:none;padding:6px 8px;vertical-align:middle;text-align:center;"></td>
+      <td style="width:33.33%;border:none;padding:6px 8px;vertical-align:middle;text-align:center;"><span style="font-weight:700;font-size:12pt;">ĐẠI DIỆN NHẬN HÀNG</span></td>
+    </tr>
+  </table>
+</div>`;
+    }
+
     function getBuiltInBbTemplates() {
       return [
         {
           id: "4ORANGES",
           name: "Form 4 Oranges (THNA Group)",
           short_badge: "4Oranges",
+          customer_keywords: "Cty Trung Hải",
           keywords: "4 ORANGES, 4ORANGES",
           html_content: getDefault4OrangesHtml(),
           is_active: 1,
           sort_order: 1
         },
         {
+          id: "VIETXO",
+          name: "Form Việt Xô - Jumbo (THNA Group)",
+          short_badge: "ViệtXô",
+          customer_keywords: "Cty Trung Hải",
+          keywords: "Cty Việt Xô, VIỆT XÔ, VIET XO",
+          html_content: getDefaultVietXoJumboHtml(),
+          is_active: 1,
+          sort_order: 2
+        },
+        {
           id: "STANDARD",
           name: "Form Chuẩn Vietsun",
           short_badge: "BB",
+          customer_keywords: "",
           keywords: "*",
           html_content: getDefaultStandardHtml(),
           is_active: 1,
@@ -6786,7 +6860,7 @@
         btnDel.style.display = tpl.id === "STANDARD" ? "none" : "inline-flex";
       }
       if (btnRest) {
-        btnRest.style.display = (tpl.id === "STANDARD" || tpl.id === "4ORANGES") ? "inline-flex" : "none";
+        btnRest.style.display = (tpl.id === "STANDARD" || tpl.id === "4ORANGES" || tpl.id === "VIETXO") ? "inline-flex" : "none";
       }
     }
 
@@ -6973,6 +7047,37 @@
       return files;
     }
 
+    function findBalancedClosingTag(xml, startIdx, tagName) {
+      const openRe = new RegExp(`<${tagName}(?:\\s|>|\\/)`, "g");
+      const closeStr = `</${tagName}>`;
+      let depth = 0;
+      let i = startIdx;
+      while (i < xml.length) {
+        const nextOpen = xml.slice(i).search(openRe);
+        const absOpen = nextOpen >= 0 ? i + nextOpen : -1;
+        const absClose = xml.indexOf(closeStr, i);
+        if (absClose < 0) return -1;
+
+        if (absOpen >= 0 && absOpen < absClose) {
+          const gt = xml.indexOf(">", absOpen);
+          if (gt > absOpen && xml[gt - 1] === "/") {
+            if (depth === 0 && absOpen === startIdx) return gt + 1;
+            i = gt + 1;
+          } else {
+            depth++;
+            i = gt + 1;
+          }
+        } else {
+          depth--;
+          if (depth <= 0) {
+            return absClose + closeStr.length;
+          }
+          i = absClose + closeStr.length;
+        }
+      }
+      return -1;
+    }
+
     function parseDocxXmlToHtml(rawDocXml, rawRelsXml, mediaBase64Map) {
       const relsMap = {};
       const relMatches = (rawRelsXml || "").match(/<Relationship [^>]+>/g) || [];
@@ -6993,24 +7098,30 @@
           .replace(/>/g, "&gt;");
       }
 
-      function extractRunInfo(rXml, defaultSzHalfPt) {
+      function extractRunInfo(rXml, defaultSzHalfPt, defaultBold) {
         const tMatches = rXml.match(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g) || [];
         const tabCount = (rXml.match(/<w:tab\/>/g) || []).length;
         const brCount = (rXml.match(/<w:br\/>/g) || []).length;
         const text = tMatches.map(t => t.replace(/<[^>]+>/g, "")).join("");
         if (!text && !tabCount && !brCount) return null;
 
-        let htmlText = escHtml(text);
-        if (tabCount > 0) htmlText += "\t".repeat(tabCount);
-        if (brCount > 0) htmlText += "\n".repeat(brCount);
+        let htmlText = "";
+        const innerTokens = rXml.match(/<w:t[^>]*>[\s\S]*?<\/w:t>|<w:tab\/>|<w:br\/>/g) || [];
+        innerTokens.forEach(tok => {
+          if (tok === "<w:tab/>") htmlText += "\t";
+          else if (tok === "<w:br/>") htmlText += "\n";
+          else htmlText += escHtml(tok.replace(/<[^>]+>/g, ""));
+        });
 
         const rPr = (rXml.match(/<w:rPr>([\s\S]*?)<\/w:rPr>/) || [])[1] || "";
-        const isBold = /<w:b\/>|<w:b w:val="(?!false|0)/.test(rPr);
+        const isBold = /<w:b\/>|<w:b w:val="(?!false|0)/.test(rPr) || (defaultBold && !/<w:b w:val="(?:false|0)"/.test(rPr));
         const isItalic = /<w:i\/>|<w:i w:val="(?!false|0)/.test(rPr);
-        const isUnderline = /<w:u w:val="(?!none)/.test(rPr);
+        const isUnderline = /<w:u w:val="(?!none)/.test(rPr) || /<w:rStyle w:val="Hyperlink"\/>/.test(rPr);
         const vertAlign = (rPr.match(/<w:vertAlign w:val="([^"]+)"/) || [])[1] || "";
         const color = (rPr.match(/<w:color w:val="([^"]+)"/) || [])[1] || "";
-        const szHalf = (rPr.match(/<w:sz w:val="(\d+)"/) || [])[1] || defaultSzHalfPt || "";
+        const szHalf = (rPr.match(/<w:sz w:val="(\d+)"/) || [])[1]
+          || (rPr.match(/<w:szCs w:val="(\d+)"/) || [])[1]
+          || defaultSzHalfPt || "26";
         const fontAscii = (rPr.match(/<w:rFonts[^>]*w:ascii="([^"]+)"/) || [])[1] || "";
 
         const styles = [];
@@ -7024,18 +7135,23 @@
         return { text: htmlText, vertAlign, styleStr: styles.join(";") };
       }
 
-      function parseSimpleParagraph(pXml) {
+      function parseSimpleParagraph(pXml, insideHeaderBox = false) {
         const pWithoutDrawings = pXml.replace(/<w:drawing>[\s\S]*?<\/w:drawing>/g, "");
         const pPr = (pWithoutDrawings.match(/<w:pPr>([\s\S]*?)<\/w:pPr>/) || [])[1] || "";
         const jc = (pPr.match(/<w:jc w:val="([^"]+)"/) || [])[1] || "left";
-        const defSz = (pPr.match(/<w:sz w:val="(\d+)"/) || [])[1] || "";
+        const pRPr = (pPr.match(/<w:rPr>([\s\S]*?)<\/w:rPr>/) || [])[1] || "";
+        const defSz = (pRPr.match(/<w:sz w:val="(\d+)"/) || [])[1]
+          || (pRPr.match(/<w:szCs w:val="(\d+)"/) || [])[1]
+          || (insideHeaderBox ? "22" : "26");
         const indLeft = (pPr.match(/<w:ind[^>]*w:left="(\d+)"/) || [])[1] || "";
         const indFirst = (pPr.match(/<w:ind[^>]*w:firstLine="(\d+)"/) || [])[1] || "";
+        const hasBottomDoubleBdr = /<w:pBdr>[\s\S]*?<w:bottom w:val="double"/.test(pPr);
+        const hasBottomSingleBdr = /<w:pBdr>[\s\S]*?<w:bottom w:val="single"/.test(pPr);
 
         const runs = pWithoutDrawings.match(/<w:r[ >][\s\S]*?<\/w:r>/g) || [];
         const merged = [];
         runs.forEach(r => {
-          const info = extractRunInfo(r, defSz);
+          const info = extractRunInfo(r, defSz, false);
           if (!info) return;
           const prev = merged[merged.length - 1];
           if (prev && prev.styleStr === info.styleStr && prev.vertAlign === info.vertAlign) {
@@ -7045,8 +7161,32 @@
           }
         });
 
+        const rawPlainText = merged.map(m => m.text).join("");
+        if (!rawPlainText.trim()) {
+          if (hasBottomDoubleBdr) {
+            return `<div style="border-bottom:3px double #000;margin:8px 0 12px;height:2px;"></div>`;
+          }
+          if (hasBottomSingleBdr) {
+            return `<div style="border-bottom:1px solid #000;margin:8px 0 12px;height:1px;"></div>`;
+          }
+          return "";
+        }
+
+        if (/Đại\s*diện\s*:/i.test(rawPlainText) && /Chức\s*vụ\s*:/i.test(rawPlainText)) {
+          return `<div style="margin:4px 0;line-height:1.6;font-size:12pt;">
+            <span style="display:inline-block;width:52%;">Đại diện:</span>
+            <span>Chức vụ:</span>
+          </div>`;
+        }
+
+        const leadingTabs = (rawPlainText.match(/^\t+/) || [""])[0].length;
+
         const inner = merged.map(m => {
-          let t = m.text
+          let t = m.text;
+          if (leadingTabs >= 4) {
+            t = t.replace(/^\t+/, "");
+          }
+          t = t
             .replace(/  /g, " &nbsp;")
             .replace(/\t/g, "&emsp;&emsp;&emsp;")
             .replace(/\n/g, "<br/>");
@@ -7055,17 +7195,25 @@
           return m.styleStr ? `<span style="${m.styleStr}">${t}</span>` : t;
         }).join("");
 
-        if (!inner.replace(/&nbsp;|&emsp;|\s|<[^>]+>/g, "")) return "";
-
-        const pStyles = ["margin:3px 0", "line-height:1.55"];
-        if (jc === "center") pStyles.push("text-align:center");
-        else if (jc === "right") pStyles.push("text-align:right;padding-right:24px");
-        else if (jc === "both") pStyles.push("text-align:justify");
+        const pStyles = [insideHeaderBox ? "margin:2px 0;line-height:1.35" : "margin:4px 0;line-height:1.6"];
+        if (leadingTabs >= 4 || jc === "right") {
+          pStyles.push("text-align:right;padding-right:24px");
+        } else if (jc === "center") {
+          pStyles.push("text-align:center");
+        } else if (jc === "both") {
+          pStyles.push("text-align:justify");
+        }
 
         const totalIndentTwips = Number(indLeft || 0) + Number(indFirst || 0);
-        if (totalIndentTwips > 200 && jc === "left") {
+        if (totalIndentTwips > 200 && jc === "left" && leadingTabs < 4) {
           const px = Math.min(120, Math.round(totalIndentTwips / 18));
           pStyles.push(`padding-left:${px}px`);
+        }
+
+        if (hasBottomDoubleBdr) {
+          pStyles.push("border-bottom:3px double #000;padding-bottom:6px;margin-bottom:10px");
+        } else if (hasBottomSingleBdr) {
+          pStyles.push("border-bottom:1px solid #000;padding-bottom:6px;margin-bottom:10px");
         }
 
         return `<div style="${pStyles.join(";")}">${inner}</div>`;
@@ -7083,18 +7231,18 @@
           const imgsHtml = blips.map(rId => {
             const target = relsMap[rId] || "";
             const b64 = mediaBase64Map[target] || mediaBase64Map["word/" + target] || "";
-            return b64 ? `<img src="${b64}" class="thna-logo-img" style="max-width:165px;max-height:95px;width:auto;height:auto;display:block;" />` : "";
+            return b64 ? `<img src="${b64}" class="thna-logo-img" style="width:170px;max-height:110px;object-fit:contain;display:block;" />` : "";
           }).filter(Boolean).join("");
 
           const txbxHtml = txbxMatches.map(tb => {
             const paras = tb.match(/<w:p[ >][\s\S]*?<\/w:p>/g) || [];
-            return paras.map(p => parseSimpleParagraph(p)).filter(Boolean).join("");
+            return paras.map(p => parseSimpleParagraph(p, true)).filter(Boolean).join("");
           }).filter(Boolean).join("");
 
           if (imgsHtml && txbxHtml) {
-            htmlOut += `<div class="thna-header" style="display:flex;align-items:flex-start;gap:16px;padding-left:8px;margin-bottom:6px;">
+            htmlOut += `<div class="thna-header" style="display:flex;align-items:center;gap:16px;padding-left:4px;margin-bottom:6px;">
               <div class="thna-logo-col" style="flex-shrink:0;">${imgsHtml}</div>
-              <div class="thna-info-col" style="flex:1;line-height:1.38;">${txbxHtml}</div>
+              <div class="thna-info-col" style="flex:1;">${txbxHtml}</div>
             </div>`;
           } else if (imgsHtml) {
             htmlOut += `<div style="margin:6px 0;">${imgsHtml}</div>`;
@@ -7111,6 +7259,10 @@
           return parseDrawings(tblXml);
         }
 
+        const tblPr = (tblXml.match(/<w:tblPr>([\s\S]*?)<\/w:tblPr>/) || [])[1] || "";
+        const hasNoBorder = /<w:tblBorders>[\s\S]*?<w:top w:val="(?:none|nil)"/.test(tblPr);
+        const borderCss = hasNoBorder ? "border:none;" : "border:1px solid #000;";
+
         const totalW = gridCols.reduce((a, b) => a + b, 0) || 1;
         const colPercents = gridCols.map(w => ((w / totalW) * 100).toFixed(2) + "%");
 
@@ -7121,32 +7273,36 @@
             const paras = tc.match(/<w:p[ >][\s\S]*?<\/w:p>/g) || [];
             const cellInner = paras.map(p => parseSimpleParagraph(p)).filter(Boolean).join("") || "";
             const wStyle = colPercents[cIdx] ? `width:${colPercents[cIdx]};` : "";
-            const tag = rIdx === 0 ? "th" : "td";
-            return `<${tag} style="${wStyle}border:1px solid #000;padding:6px 8px;vertical-align:middle;">${cellInner}</${tag}>`;
+            const tag = (!hasNoBorder && rIdx === 0) ? "th" : "td";
+            return `<${tag} style="${wStyle}${borderCss}padding:5px 6px;vertical-align:middle;">${cellInner}</${tag}>`;
           }).join("");
           return `<tr>${cellsHtml}</tr>`;
         }).join("");
 
-        return `<table class="thna-table" style="width:100%;border-collapse:collapse;margin:14px 0;">${rowsHtml}</table>`;
+        const tblClass = hasNoBorder ? "" : ' class="thna-table"';
+        return `<table${tblClass} style="width:100%;border-collapse:collapse;margin:12px 0;">${rowsHtml}</table>`;
       }
 
       const topTokens = [];
       let pos = 0;
       while (pos < bodyXml.length) {
-        const nextTbl = bodyXml.indexOf("<w:tbl>", pos);
-        const nextP = bodyXml.slice(pos).search(/<w:p[ >]/);
-        const absNextP = nextP >= 0 ? pos + nextP : -1;
+        const sub = bodyXml.slice(pos);
+        const tblMatch = sub.search(/<w:tbl(?:>|\s)/);
+        const pMatch = sub.search(/<w:p(?:>|\s|\/>)/);
 
-        if (nextTbl >= 0 && (absNextP < 0 || nextTbl < absNextP)) {
-          const endTbl = bodyXml.indexOf("</w:tbl>", nextTbl);
+        const absTbl = tblMatch >= 0 ? pos + tblMatch : -1;
+        const absP = pMatch >= 0 ? pos + pMatch : -1;
+
+        if (absTbl >= 0 && (absP < 0 || absTbl < absP)) {
+          const endTbl = findBalancedClosingTag(bodyXml, absTbl, "w:tbl");
           if (endTbl < 0) break;
-          topTokens.push({ type: "tbl", xml: bodyXml.slice(nextTbl, endTbl + 8) });
-          pos = endTbl + 8;
-        } else if (absNextP >= 0) {
-          const endP = bodyXml.indexOf("</w:p>", absNextP);
+          topTokens.push({ type: "tbl", xml: bodyXml.slice(absTbl, endTbl) });
+          pos = endTbl;
+        } else if (absP >= 0) {
+          const endP = findBalancedClosingTag(bodyXml, absP, "w:p");
           if (endP < 0) break;
-          topTokens.push({ type: "p", xml: bodyXml.slice(absNextP, endP + 6) });
-          pos = endP + 6;
+          topTokens.push({ type: "p", xml: bodyXml.slice(absP, endP) });
+          pos = endP;
         } else {
           break;
         }
@@ -7171,7 +7327,7 @@
 
       // Tự động nhận diện và chuyển Ngày giao, Số Cont, Số Seal thành biến động {{...}}
       finalHtml = finalHtml.replace(
-        /(Ngày(?:\s|&nbsp;)*)(\d{1,2}|\.{2,})((?:\s|&nbsp;)*tháng(?:\s|&nbsp;)*)(\d{1,2}|\.{2,})((?:\s|&nbsp;)*năm(?:\s|&nbsp;)*)(\d{4}|\.{2,})/gi,
+        /(Ngày(?:\s|&nbsp;)*)(\d{1,2}|\.{2,})((?:\s|&nbsp;)*(?:tháng|Tháng)(?:\s|&nbsp;)*)(\d{1,2}|\.{2,})((?:\s|&nbsp;)*(?:năm|Năm)(?:\s|&nbsp;)*)(\d{4}|\.{2,})/g,
         "$1{{NGAY}}$3{{THANG}}$5{{NAM}}"
       );
 
@@ -7181,7 +7337,11 @@
         return "{{SO_CONT}}";
       });
 
-      if (foundCont) {
+      // Nhận diện số Seal dạng "seal: 691148" (như Form Việt Xô - Jumbo)
+      finalHtml = finalHtml.replace(/(seal\s*:\s*(?:<[^>]+>|\s|&nbsp;)*)([A-Za-z0-9]{5,12})/gi, "$1{{SO_SEAL}}");
+
+      // Nhận diện số Seal nằm ở dòng STT 2 (như Form 4 Oranges)
+      if (foundCont && !finalHtml.includes("{{SO_SEAL}}")) {
         finalHtml = finalHtml.replace(
           /(<td[^>]*>\s*<div[^>]*>\s*(?:<span[^>]*>)?2(?:<\/span>)?\s*<\/div>\s*<\/td>\s*<td[^>]*>\s*<div[^>]*>\s*(?:<span[^>]*>)?(?:\s|&nbsp;)*)([A-Za-z0-9]{5,10})((?:<\/span>)?\s*<\/div>\s*<\/td>)/i,
           "$1{{SO_SEAL}}$3"
@@ -7222,14 +7382,40 @@
         const parsedHtml = parseDocxXmlToHtml(docXml, relsXml, mediaBase64Map);
         const cleanFileTitle = file.name.replace(/\.docx$/i, "").trim();
 
+        // Tự động gợi ý Khách Hàng & Kho Nhận từ TMS dựa trên nội dung file Word và tên file
+        const plainDocUpper = toCleanUpperCode(parsedHtml.replace(/<[^>]+>/g, " ") + " " + cleanFileTitle);
+        let autoCust = "";
+        let autoKho = "";
+        const uniqueCusts = new Set();
+        const uniqueKhos = new Set();
+        (allShipments || []).forEach(s => {
+          if (s.xuatNhapPo !== "N") return;
+          if (s.tenKhachPo) uniqueCusts.add(String(s.tenKhachPo).trim());
+          if (s.khoNhanHangPo) uniqueKhos.add(String(s.khoNhanHangPo).trim());
+        });
+        for (const cName of uniqueCusts) {
+          const core = toCleanUpperCode(cName.replace(/^(CTY|CONG TY|CP|TNHH|MTV|KS)\s+/gi, ""));
+          if (core.length >= 4 && plainDocUpper.includes(core)) {
+            autoCust = cName;
+            break;
+          }
+        }
+        for (const kName of uniqueKhos) {
+          const core = toCleanUpperCode(kName.replace(/^(CTY|CONG TY|KHO|CN|TNHH|CP)\s+/gi, ""));
+          if (core.length >= 4 && plainDocUpper.includes(core)) {
+            autoKho = kName;
+            break;
+          }
+        }
+
         if (isUploadingDocxAsNewTemplate || currentEditingBbTplId === "STANDARD") {
           const newId = "TPL_" + Date.now();
           const newTpl = {
             id: newId,
             name: `Form ${cleanFileTitle}`,
             short_badge: cleanFileTitle.slice(0, 12),
-            customer_keywords: "",
-            keywords: "",
+            customer_keywords: autoCust,
+            keywords: autoKho,
             is_active: 1,
             sort_order: bbTemplatesList.length + 1,
             html_content: parsedHtml
@@ -7245,6 +7431,10 @@
             canvas.contentEditable = "true";
             canvas.innerHTML = parsedHtml;
           }
+          const custInp = document.getElementById("bbTplCustomerKeywords");
+          const kwInp = document.getElementById("bbTplKeywords");
+          if (custInp && !custInp.value.trim() && autoCust) custInp.value = autoCust;
+          if (kwInp && !kwInp.value.trim() && autoKho) kwInp.value = autoKho;
         }
 
         showToast("✅ Đã nhận diện Form từ file Word (.docx) và tự động gắn biến {{SO_CONT}}, {{SO_SEAL}}, {{NGAY}}! Hãy chọn Kho Nhận và bấm Lưu.", "success");
