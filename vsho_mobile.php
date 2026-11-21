@@ -6467,6 +6467,27 @@
     let isBbLivePreviewMode = false;
     let rawDraftBbHtmlBeforePreview = "";
 
+    function sanitizeLegacyParsedBbHtml(html) {
+      if (!html || typeof html !== "string") return html;
+      let out = html;
+      // 1. Gỡ bỏ bảng 1 cột bị đóng khung quanh tiêu đề công ty (do bản cũ nhận nhầm layout table 1 cột thành bảng dữ liệu)
+      out = out.replace(/<table[^>]*>\s*(?:<tbody>)?((?:\s*<tr>\s*<(?:th|td)[^>]*>[\s\S]*?<\/(?:th|td)>\s*<\/tr>)+)\s*(?:<\/tbody>)?\s*<\/table>/gi, (fullTbl, rowsContent) => {
+        const trMatches = rowsContent.match(/<tr>[\s\S]*?<\/tr>/gi) || [];
+        const isSingleColPerRow = trMatches.length > 0 && trMatches.every(tr => {
+          const cells = tr.match(/<(?:th|td)\b[^>]*>/gi) || [];
+          return cells.length === 1;
+        });
+        if (!isSingleColPerRow) return fullTbl;
+        return trMatches.map(tr => tr.replace(/^<tr>\s*<(?:th|td)[^>]*>([\s\S]*?)<\/(?:th|td)>\s*<\/tr>$/i, "$1")).join("\n");
+      });
+      // 2. Chống rớt dòng cho đường kẻ ngang "-----"
+      out = out.replace(/<div style="margin:4px 0;line-height:1\.6"><span[^>]*>(-{15,})<\/span><\/div>/g,
+        '<div class="thna-divider" style="margin:6px 0 10px;white-space:nowrap;overflow:hidden;text-align:center;">-----------------------------------------------------------------------------------------------------------------------------------------</div>');
+      // 3. Xóa khoảng trắng &nbsp; thừa đầu dòng Ngày {{NGAY}} tháng {{THANG}} năm {{NAM}} để không bị rớt chữ {{NAM}}
+      out = out.replace(/(<div[^>]*text-align:right[^>]*>\s*<span[^>]*>)(?:&nbsp;|\s)+(Ngày\b[\s\S]*?\{\{NAM\}\}<\/span><\/div>)/gi, "$1$2");
+      return out;
+    }
+
     function initBbTemplatesLocal() {
       const builtIns = getBuiltInBbTemplates();
       let saved = [];
@@ -6479,7 +6500,7 @@
       if (Array.isArray(saved)) {
         saved.forEach(t => {
           if (t && t.id && t.html_content) {
-            map.set(t.id, { ...t, is_active: Number(t.is_active ?? 1) });
+            map.set(t.id, { ...t, html_content: sanitizeLegacyParsedBbHtml(t.html_content), is_active: Number(t.is_active ?? 1) });
           }
         });
       }
@@ -6499,7 +6520,7 @@
           builtIns.forEach(t => map.set(t.id, { ...t }));
           data.templates.forEach(t => {
             if (t && t.id && t.html_content) {
-              map.set(t.id, { ...t, is_active: Number(t.is_active ?? 1) });
+              map.set(t.id, { ...t, html_content: sanitizeLegacyParsedBbHtml(t.html_content), is_active: Number(t.is_active ?? 1) });
             }
           });
           bbTemplatesList = Array.from(map.values()).sort((a, b) => Number(a.sort_order || 10) - Number(b.sort_order || 10));
@@ -7162,7 +7183,9 @@
         });
 
         const rawPlainText = merged.map(m => m.text).join("");
-        if (!rawPlainText.trim()) {
+        const trimmedPlain = rawPlainText.replace(/^[\s\t\u00A0]+|[\s\t\u00A0]+$/g, "");
+
+        if (!trimmedPlain) {
           if (hasBottomDoubleBdr) {
             return `<div style="border-bottom:3px double #000;margin:8px 0 12px;height:2px;"></div>`;
           }
@@ -7172,23 +7195,57 @@
           return "";
         }
 
-        if (/Đại\s*diện\s*:/i.test(rawPlainText) && /Chức\s*vụ\s*:/i.test(rawPlainText)) {
-          return `<div style="margin:4px 0;line-height:1.6;font-size:12pt;">
-            <span style="display:inline-block;width:52%;">Đại diện:</span>
-            <span>Chức vụ:</span>
-          </div>`;
+        // 1. Đường kẻ ngang bằng dấu gạch ngang "-----" hoặc "_____" -> Không bao giờ cho rớt dòng
+        if (/^[-\s–—_=]{10,}$/.test(trimmedPlain)) {
+          return `<div class="thna-divider" style="margin:6px 0 10px;white-space:nowrap;overflow:hidden;text-align:center;">-----------------------------------------------------------------------------------------------------------------------------------------</div>`;
         }
 
-        const leadingTabs = (rawPlainText.match(/^\t+/) || [""])[0].length;
+        // 2. Dòng Ngày tháng năm (VD: "Ngày 19 tháng 11 năm 2026" hoặc "Hôm nay, Ngày 21 Tháng 11 Năm 2026")
+        if (/^(?:[A-Za-zÀ-ỹ\s,]+\s+)?Ngày\s+(\d{1,2}|\.{2,})\s+(?:tháng|Tháng)\s+(\d{1,2}|\.{2,})\s+(?:năm|Năm)\s+(\d{4}|\.{2,})$/i.test(trimmedPlain)) {
+          const sampleStyle = (merged.find(m => m.text.trim()) || merged[0] || {}).styleStr || "font-size:13pt";
+          const cleanDateLine = trimmedPlain.replace(/\s+/g, " ");
+          return `<div style="margin:4px 0 10px;line-height:1.6;text-align:right;padding-right:24px;white-space:nowrap;"><span style="${sampleStyle}">${cleanDateLine}</span></div>`;
+        }
 
+        // 3. Dòng 2 cột được căn bằng nhiều dấu cách (>= 10 spaces) hoặc dấu Tab (\t+)
+        const twoColParts = trimmedPlain.split(/(?:\t+|[\s\u00A0]{10,})/).map(s => s.trim()).filter(Boolean);
+        if (twoColParts.length === 2 && !trimmedPlain.includes("\n")) {
+          const [leftCol, rightCol] = twoColParts;
+          const sampleStyle = (merged.find(m => m.text.trim()) || merged[0] || {}).styleStr || "font-size:13pt";
+          const isSigLine = /(?:đại\s*diện|đạ\s*diện|bên\s*nhận|bên\s*giao|người\s*nhận|người\s*giao|ký\s*và\s*ghi|ký,\s*ghi|\(ký)/i.test(leftCol)
+            && /(?:đại\s*diện|đạ\s*diện|bên\s*nhận|bên\s*giao|người\s*nhận|người\s*giao|ký\s*và\s*ghi|ký,\s*ghi|\(ký)/i.test(rightCol);
+
+          if (isSigLine) {
+            return `<div style="display:flex;justify-content:space-between;margin:3px 0;line-height:1.5;text-align:center;">
+              <div style="width:46%;"><span style="${sampleStyle}">${leftCol}</span></div>
+              <div style="width:46%;"><span style="${sampleStyle}">${rightCol}</span></div>
+            </div>`;
+          } else {
+            return `<div style="display:flex;align-items:baseline;margin:4px 0;line-height:1.6;">
+              <div style="width:56%;"><span style="${sampleStyle}">${leftCol}</span></div>
+              <div style="width:44%;"><span style="${sampleStyle}">${rightCol}</span></div>
+            </div>`;
+          }
+        }
+
+        // 4. Kiểm tra nếu đoạn văn có nhiều tab hoặc khoảng trắng đẩy sang phải ở đầu dòng
+        const leadingWhitespaceMatch = rawPlainText.match(/^[\t\s\u00A0]+/);
+        const leadingRaw = leadingWhitespaceMatch ? leadingWhitespaceMatch[0] : "";
+        const leadingTabCount = (leadingRaw.match(/\t/g) || []).length;
+        const leadingSpaceCount = leadingRaw.length;
+        const shouldRightAlign = jc === "right" || leadingTabCount >= 4 || leadingSpaceCount >= 25;
+        const shouldStripLeading = shouldRightAlign || jc === "center";
+
+        let strippedLeadingDone = !shouldStripLeading;
         const inner = merged.map(m => {
           let t = m.text;
-          if (leadingTabs >= 4) {
-            t = t.replace(/^\t+/, "");
+          if (!strippedLeadingDone) {
+            t = t.replace(/^[\t\s\u00A0]+/, "");
+            if (t.length > 0) strippedLeadingDone = true;
           }
           t = t
             .replace(/  /g, " &nbsp;")
-            .replace(/\t/g, "&emsp;&emsp;&emsp;")
+            .replace(/\t/g, "&emsp;&emsp;")
             .replace(/\n/g, "<br/>");
           if (m.vertAlign === "superscript") t = `<sup>${t}</sup>`;
           else if (m.vertAlign === "subscript") t = `<sub>${t}</sub>`;
@@ -7196,7 +7253,7 @@
         }).join("");
 
         const pStyles = [insideHeaderBox ? "margin:2px 0;line-height:1.35" : "margin:4px 0;line-height:1.6"];
-        if (leadingTabs >= 4 || jc === "right") {
+        if (shouldRightAlign) {
           pStyles.push("text-align:right;padding-right:24px");
         } else if (jc === "center") {
           pStyles.push("text-align:center");
@@ -7205,7 +7262,7 @@
         }
 
         const totalIndentTwips = Number(indLeft || 0) + Number(indFirst || 0);
-        if (totalIndentTwips > 200 && jc === "left" && leadingTabs < 4) {
+        if (totalIndentTwips > 200 && jc === "left" && !shouldRightAlign) {
           const px = Math.min(120, Math.round(totalIndentTwips / 18));
           pStyles.push(`padding-left:${px}px`);
         }
@@ -7255,31 +7312,99 @@
 
       function parseTable(tblXml) {
         const gridCols = [...tblXml.matchAll(/<w:gridCol w:w="(\d+)"\/>/g)].map(m => Number(m[1]));
-        if (gridCols.length <= 1 && /<w:drawing>/.test(tblXml)) {
-          return parseDrawings(tblXml);
+        const trs = tblXml.match(/<w:tr[ >][\s\S]*?<\/w:tr>/g) || [];
+        let maxCellsInRow = 0;
+        let maxNonEmptyCellsInRow = 0;
+        const rowTcsList = trs.map(tr => {
+          const tcs = tr.match(/<w:tc[ >][\s\S]*?<\/w:tc>/g) || [];
+          if (tcs.length > maxCellsInRow) maxCellsInRow = tcs.length;
+          let nonEmpty = 0;
+          tcs.forEach(tc => {
+            const hasText = (tc.match(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g) || []).some(t => t.replace(/<[^>]+>/g, "").trim().length > 0);
+            const hasDrw = /<w:drawing>/.test(tc);
+            if (hasText || hasDrw) nonEmpty++;
+          });
+          if (nonEmpty > maxNonEmptyCellsInRow) maxNonEmptyCellsInRow = nonEmpty;
+          return tcs;
+        });
+
+        // QUAN TRỌNG: Nếu bảng chỉ có 1 cột (maxCellsInRow <= 1, gridCols.length <= 1, hoặc mỗi dòng chỉ có tối đa 1 ô có chữ),
+        // đây là khung layout chứa tiêu đề công ty / logo trong Word (như Form 4 Oranges, Form ANA Việt Nam),
+        // TUYỆT ĐỐI KHÔNG đóng khung <table> có viền!
+        if (gridCols.length <= 1 || maxCellsInRow <= 1 || maxNonEmptyCellsInRow <= 1) {
+          const outParts = [];
+          if (/<w:drawing>/.test(tblXml)) {
+            const dh = parseDrawings(tblXml);
+            if (dh) outParts.push(dh);
+          }
+          rowTcsList.forEach(tcs => {
+            tcs.forEach(tc => {
+              const paras = tc.match(/<w:p[ >][\s\S]*?<\/w:p>/g) || [];
+              paras.forEach(p => {
+                const ph = parseSimpleParagraph(p);
+                if (ph) outParts.push(ph);
+              });
+            });
+          });
+          return outParts.join("\n");
         }
 
+        // Kiểm tra chính xác xem bảng trong Word có kẻ khung (border) hay là bảng ẩn khung (layout/signature)
         const tblPr = (tblXml.match(/<w:tblPr>([\s\S]*?)<\/w:tblPr>/) || [])[1] || "";
-        const hasNoBorder = /<w:tblBorders>[\s\S]*?<w:top w:val="(?:none|nil)"/.test(tblPr);
-        const borderCss = hasNoBorder ? "border:none;" : "border:1px solid #000;";
+        const explicitTblNoBorder = /<w:tblBorders>[\s\S]*?<w:(?:top|insideH|bottom) w:val="(?:none|nil)"/.test(tblPr);
+        const explicitTcNoBorder = /<w:tcBorders>[\s\S]*?<w:(?:top|bottom) w:val="(?:none|nil)"/.test(tblXml);
+        const explicitTblHasBorder = /<w:tblBorders>[\s\S]*?<w:(?:top|insideH|bottom) w:val="(?!none|nil)[a-zA-Z]+"/.test(tblPr);
+        const explicitTcHasBorder = /<w:tcBorders>[\s\S]*?<w:(?:top|bottom) w:val="(?!none|nil)[a-zA-Z]+"/.test(tblXml);
+        const hasGridStyle = /<w:tblStyle w:val="[^"]*Grid[^"]*"/i.test(tblPr);
+
+        const hasVisibleBorder = !explicitTblNoBorder && (explicitTblHasBorder || explicitTcHasBorder || (hasGridStyle && !explicitTcNoBorder));
+        const borderCss = hasVisibleBorder ? "border:1px solid #000;" : "border:none;";
 
         const totalW = gridCols.reduce((a, b) => a + b, 0) || 1;
         const colPercents = gridCols.map(w => ((w / totalW) * 100).toFixed(2) + "%");
 
-        const trs = tblXml.match(/<w:tr[ >][\s\S]*?<\/w:tr>/g) || [];
-        const rowsHtml = trs.map((tr, rIdx) => {
-          const tcs = tr.match(/<w:tc[ >][\s\S]*?<\/w:tc>/g) || [];
-          const cellsHtml = tcs.map((tc, cIdx) => {
+        // Xây dựng ma trận 2 chiều các ô để nhận diện chính xác {{SO_CONT}} và {{SO_SEAL}} ở ô ngay bên dưới hoặc bên cạnh
+        const cellMatrix = rowTcsList.map(tcs => {
+          return tcs.map(tc => {
             const paras = tc.match(/<w:p[ >][\s\S]*?<\/w:p>/g) || [];
             const cellInner = paras.map(p => parseSimpleParagraph(p)).filter(Boolean).join("") || "";
+            const plain = cellInner.replace(/<[^>]+>/g, " ").replace(/&nbsp;|&emsp;/g, " ").trim();
+            return { html: cellInner, plain };
+          });
+        });
+
+        for (let r = 0; r < cellMatrix.length; r++) {
+          for (let c = 0; c < cellMatrix[r].length; c++) {
+            const cell = cellMatrix[r][c];
+            if (/\b([A-Z]{3}[UJZ]\s*\d{6,7})\b/.test(cell.html)) {
+              cell.html = cell.html.replace(/\b([A-Z]{3}[UJZ]\s*\d{6,7})\b/g, "{{SO_CONT}}");
+              if (/seal\s*:/i.test(cell.html)) {
+                cell.html = cell.html.replace(/(seal\s*:\s*(?:<[^>]+>|\s|&nbsp;)*)([A-Za-z0-9]{5,12})/gi, "$1{{SO_SEAL}}");
+              } else if (cellMatrix[r + 1] && cellMatrix[r + 1][c]) {
+                const belowCell = cellMatrix[r + 1][c];
+                if (/^[A-Za-z0-9]{5,12}$/.test(belowCell.plain)) {
+                  belowCell.html = belowCell.html.replace(belowCell.plain, "{{SO_SEAL}}");
+                }
+              } else if (cellMatrix[r][c + 1] && cellMatrix[0] && cellMatrix[0][c + 1] && /seal/i.test(cellMatrix[0][c + 1].plain)) {
+                const rightCell = cellMatrix[r][c + 1];
+                if (/^[A-Za-z0-9]{5,12}$/.test(rightCell.plain)) {
+                  rightCell.html = rightCell.html.replace(rightCell.plain, "{{SO_SEAL}}");
+                }
+              }
+            }
+          }
+        }
+
+        const rowsHtml = cellMatrix.map((rowCells, rIdx) => {
+          const cellsHtml = rowCells.map((cell, cIdx) => {
             const wStyle = colPercents[cIdx] ? `width:${colPercents[cIdx]};` : "";
-            const tag = (!hasNoBorder && rIdx === 0) ? "th" : "td";
-            return `<${tag} style="${wStyle}${borderCss}padding:5px 6px;vertical-align:middle;">${cellInner}</${tag}>`;
+            const tag = (hasVisibleBorder && rIdx === 0) ? "th" : "td";
+            return `<${tag} style="${wStyle}${borderCss}padding:5px 6px;vertical-align:middle;">${cell.html}</${tag}>`;
           }).join("");
           return `<tr>${cellsHtml}</tr>`;
         }).join("");
 
-        const tblClass = hasNoBorder ? "" : ' class="thna-table"';
+        const tblClass = hasVisibleBorder ? ' class="thna-table"' : "";
         return `<table${tblClass} style="width:100%;border-collapse:collapse;margin:12px 0;">${rowsHtml}</table>`;
       }
 
