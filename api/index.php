@@ -195,12 +195,13 @@ function ensure_schema($pdo) {
             $pdo->exec("ALTER TABLE `tms_pending_approvals` ADD COLUMN `cont_size` VARCHAR(10) NOT NULL DEFAULT '' AFTER `xuat_nhap`");
         }
 
-        // Bảng lưu cấu hình các Mẫu Biên Bản Giao Nhận (BB Templates) theo Kho Nhận
+        // Bảng lưu cấu hình các Mẫu Biên Bản Giao Nhận (BB Templates) theo Khách Hàng & Kho Nhận
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS `tms_bb_templates` (
                 `id` VARCHAR(64) PRIMARY KEY,
                 `name` VARCHAR(255) NOT NULL,
                 `short_badge` VARCHAR(64) NOT NULL DEFAULT 'Form Riêng',
+                `customer_keywords` TEXT NULL,
                 `keywords` TEXT NOT NULL,
                 `html_content` MEDIUMTEXT NOT NULL,
                 `is_active` TINYINT(1) NOT NULL DEFAULT 1,
@@ -208,6 +209,10 @@ function ensure_schema($pdo) {
                 `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         ");
+        $colCustChk = $pdo->query("SHOW COLUMNS FROM `tms_bb_templates` LIKE 'customer_keywords'")->fetch();
+        if (!$colCustChk) {
+            $pdo->exec("ALTER TABLE `tms_bb_templates` ADD COLUMN `customer_keywords` TEXT NULL AFTER `short_badge`");
+        }
     } catch (Exception $e) {}
 
     // 2. Nâng cấp cấu trúc các bảng phụ (chạy một lần)
@@ -1408,9 +1413,9 @@ try {
         exit;
     }
 
-    // Quản lý các Mẫu Biên Bản Giao Nhận (BB Templates) theo Kho Nhận
+    // Quản lý các Mẫu Biên Bản Giao Nhận (BB Templates) theo Khách Hàng & Kho Nhận
     if ($route === 'bb_templates' || $route === 'api/bb_templates') {
-        $stmt = $pdo->query("SELECT `id`, `name`, `short_badge`, `keywords`, `html_content`, `is_active`, `sort_order`, `updated_at` FROM `tms_bb_templates` ORDER BY `sort_order` ASC, `updated_at` DESC");
+        $stmt = $pdo->query("SELECT `id`, `name`, `short_badge`, COALESCE(`customer_keywords`, '') AS `customer_keywords`, `keywords`, `html_content`, `is_active`, `sort_order`, `updated_at` FROM `tms_bb_templates` ORDER BY `sort_order` ASC, `updated_at` DESC");
         $rows = $stmt->fetchAll();
         echo json_encode(['ok' => true, 'templates' => $rows]);
         exit;
@@ -1419,6 +1424,7 @@ try {
         $id = trim((string)($jsonBody['id'] ?? ''));
         $name = trim((string)($jsonBody['name'] ?? ''));
         $shortBadge = trim((string)($jsonBody['short_badge'] ?? 'Form Riêng'));
+        $customerKeywords = trim((string)($jsonBody['customer_keywords'] ?? ''));
         $keywords = trim((string)($jsonBody['keywords'] ?? ''));
         $htmlContent = (string)($jsonBody['html_content'] ?? '');
         $isActive = isset($jsonBody['is_active']) ? (int)$jsonBody['is_active'] : 1;
@@ -1430,18 +1436,19 @@ try {
             exit;
         }
         $stmt = $pdo->prepare("
-            INSERT INTO `tms_bb_templates` (`id`, `name`, `short_badge`, `keywords`, `html_content`, `is_active`, `sort_order`)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO `tms_bb_templates` (`id`, `name`, `short_badge`, `customer_keywords`, `keywords`, `html_content`, `is_active`, `sort_order`)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 `name` = VALUES(`name`),
                 `short_badge` = VALUES(`short_badge`),
+                `customer_keywords` = VALUES(`customer_keywords`),
                 `keywords` = VALUES(`keywords`),
                 `html_content` = VALUES(`html_content`),
                 `is_active` = VALUES(`is_active`),
                 `sort_order` = VALUES(`sort_order`),
                 `updated_at` = CURRENT_TIMESTAMP
         ");
-        $stmt->execute([$id, $name, $shortBadge, $keywords, $htmlContent, $isActive, $sortOrder]);
+        $stmt->execute([$id, $name, $shortBadge, $customerKeywords, $keywords, $htmlContent, $isActive, $sortOrder]);
         echo json_encode(['ok' => true, 'id' => $id]);
         exit;
     }

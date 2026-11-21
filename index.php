@@ -1617,6 +1617,46 @@ if (isset(['api']) || isset(['route'])) {
       font-weight: 600;
       color: #0f172a;
     }
+    .bb-ac-wrap {
+      position: relative;
+      display: flex;
+      flex: 1;
+    }
+    .bb-ac-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      max-height: 240px;
+      overflow-y: auto;
+      background: #ffffff;
+      border: 1.5px solid #0d9488;
+      border-radius: 9px;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22);
+      z-index: 10050;
+      padding: 4px;
+    }
+    .bb-ac-dropdown.open {
+      display: block;
+    }
+    .bb-ac-item {
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #0f172a;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      transition: background 0.12s;
+    }
+    .bb-ac-item:hover {
+      background: #ccfbf1;
+      color: #0f766e;
+    }
     .bb-mgr-toolbar {
       background: #f8fafc;
       border-bottom: 1px solid #cbd5e1;
@@ -2589,12 +2629,16 @@ if (isset(['api']) || isset(['route'])) {
         <!-- Cột trái: Danh sách Mẫu BB -->
         <div class="bb-mgr-sidebar">
           <div style="padding:10px;border-bottom:1px solid #cbd5e1;display:flex;flex-direction:column;gap:6px;">
+            <button type="button" class="btn-bulk-execute" style="width:100%;justify-content:center;background:linear-gradient(135deg,#1d4ed8,#2563eb);" onclick="triggerBbWordDocxUpload(true)">
+              📄 Tạo Form Từ File Word (.docx)
+            </button>
             <button type="button" class="btn-bulk-execute" style="width:100%;justify-content:center;background:linear-gradient(135deg,#0f766e,#0d9488);" onclick="createNewBbTemplate()">
-              ➕ Tạo Form Kho Mới
+              ➕ Tạo Form Kho Mới (Mẫu trống)
             </button>
             <button type="button" class="bb-tool-btn" style="width:100%;justify-content:center;padding:6px;" onclick="cloneCurrentBbTemplate()">
               📋 Nhân bản từ Form đang chọn
             </button>
+            <input type="file" id="bbWordDocxInput" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none;" onchange="handleBbWordDocxSelected(this)" />
           </div>
           <div class="bb-mgr-list" id="bbTemplateSidebarList">
             <!-- Populated dynamically -->
@@ -2603,29 +2647,41 @@ if (isset(['api']) || isset(['route'])) {
 
         <!-- Cột phải: Cấu hình Từ khóa + Thanh công cụ Word + Trang giấy A4 -->
         <div class="bb-mgr-main">
-          <!-- Hàng 1: Tên Form, Nhãn nút, Từ khóa KHO NHẬN -->
+          <!-- Hàng 1: Tên Form, Nhãn nút, Khách Hàng (TMS), Kho Nhận (TMS) -->
           <div class="bb-mgr-meta-bar">
-            <div class="bb-meta-field" style="width:220px;">
+            <div class="bb-meta-field" style="width:195px;">
               <label>Tên Mẫu Biên Bản</label>
               <input type="text" id="bbTplName" class="bb-meta-inp" placeholder="VD: Form Kho 4 Oranges" />
             </div>
-            <div class="bb-meta-field" style="width:115px;">
+            <div class="bb-meta-field" style="width:105px;">
               <label>Nhãn nút bảng</label>
               <input type="text" id="bbTplBadge" class="bb-meta-inp" placeholder="VD: 4Oranges" maxlength="16" />
             </div>
-            <div class="bb-meta-field" style="flex:1;min-width:240px;">
-              <label>Từ khóa nhận diện KHO NHẬN (Cách nhau dấu phẩy)</label>
-              <div style="display:flex;gap:6px;">
-                <input type="text" id="bbTplKeywords" class="bb-meta-inp" style="flex:1;" placeholder="VD: 4 ORANGES, 4ORANGES" />
-                <select id="bbQuickKhoSelect" class="bb-meta-inp" style="max-width:175px;background:#f0fdfa;color:#0f766e;border-color:#99f6e4;cursor:pointer;" onchange="addKhoKeywordFromSelect(this)">
-                  <option value="">+ Chọn Kho từ TMS...</option>
-                </select>
+            <div class="bb-meta-field" style="flex:1;min-width:210px;">
+              <label>Khách Hàng từ TMS (Gõ để tìm • Để trống = Mọi KH)</label>
+              <div class="bb-ac-wrap">
+                <input type="text" id="bbTplCustomerKeywords" class="bb-meta-inp" style="width:100%;" autocomplete="off"
+                  placeholder="Gõ tìm tên Khách hàng (VD: Á Châu)..."
+                  onfocus="openBbMetaAc('cust')"
+                  oninput="openBbMetaAc('cust')" />
+                <div class="bb-ac-dropdown" id="bbAcCustDropdown"></div>
+              </div>
+            </div>
+            <div class="bb-meta-field" style="flex:1.15;min-width:230px;">
+              <label>Từ khóa KHO NHẬN từ TMS (Gõ để tìm • Cách dấu phẩy)</label>
+              <div class="bb-ac-wrap">
+                <input type="text" id="bbTplKeywords" class="bb-meta-inp" style="width:100%;" autocomplete="off"
+                  placeholder="Gõ tìm tên Kho nhận (VD: 4 Oranges)..."
+                  onfocus="openBbMetaAc('kho')"
+                  oninput="openBbMetaAc('kho')" />
+                <div class="bb-ac-dropdown" id="bbAcKhoDropdown"></div>
               </div>
             </div>
           </div>
 
           <!-- Hàng 2: Thanh công cụ định dạng & Chèn Biến Tự Động -->
           <div class="bb-mgr-toolbar">
+            <button type="button" class="bb-tool-btn" style="background:#eff6ff;color:#1d4ed8;border-color:#93c5fd;" onclick="triggerBbWordDocxUpload(false)" title="Tải file Word (.docx) đè vào mẫu đang mở">📄 Nhập từ Word (.docx)</button>
             <button type="button" class="bb-tool-btn" onmousedown="event.preventDefault(); execBbEditorCmd('bold')" title="In đậm (Ctrl+B)"><b>B</b></button>
             <button type="button" class="bb-tool-btn" onmousedown="event.preventDefault(); execBbEditorCmd('italic')" title="In nghiêng (Ctrl+I)"><i>I</i></button>
             <button type="button" class="bb-tool-btn" onmousedown="event.preventDefault(); execBbEditorCmd('underline')" title="Gạch chân (Ctrl+U)"><u>U</u></button>
@@ -6406,32 +6462,57 @@ if (isset(['api']) || isset(['route'])) {
     function detectBbTemplate(po) {
       if (!bbTemplatesList || bbTemplatesList.length === 0) initBbTemplatesLocal();
       const rawKho = (po && po.khoNhanHangPo ? String(po.khoNhanHangPo) : "").trim();
-      if (bbTemplateCacheByKho.has(rawKho)) {
-        return bbTemplateCacheByKho.get(rawKho);
+      const rawKhach = (po && po.tenKhachPo ? String(po.tenKhachPo) : "").trim();
+      const cacheKey = `${rawKhach}|||${rawKho}`;
+      if (bbTemplateCacheByKho.has(cacheKey)) {
+        return bbTemplateCacheByKho.get(cacheKey);
       }
       const cleanKho = toCleanUpperCode(rawKho);
+      const cleanKhach = toCleanUpperCode(rawKhach);
 
-      if (cleanKho) {
+      if (cleanKho || cleanKhach) {
         for (const tpl of bbTemplatesList) {
           if (tpl.id === "STANDARD" || !Number(tpl.is_active ?? 1)) continue;
-          const kwList = String(tpl.keywords || "")
+
+          const custKwList = String(tpl.customer_keywords || "")
             .split(",")
             .map(k => k.trim())
-            .filter(Boolean);
-          for (const kw of kwList) {
-            if (kw === "*") continue;
-            const cleanKw = toCleanUpperCode(kw);
-            if (cleanKw && (cleanKho.includes(cleanKw) || rawKho.toUpperCase().includes(kw.toUpperCase()))) {
-              const res = {
-                id: tpl.id,
-                code: tpl.id,
-                name: tpl.name,
-                shortBadge: tpl.short_badge || "Form Riêng",
-                html_content: tpl.html_content
-              };
-              bbTemplateCacheByKho.set(rawKho, res);
-              return res;
-            }
+            .filter(k => k && k !== "*");
+          const khoKwList = String(tpl.keywords || "")
+            .split(",")
+            .map(k => k.trim())
+            .filter(k => k && k !== "*");
+
+          if (custKwList.length === 0 && khoKwList.length === 0) continue;
+
+          // Kiểm tra khớp Khách Hàng (nếu Form có khai báo Từ khóa Khách Hàng)
+          let custMatch = true;
+          if (custKwList.length > 0) {
+            custMatch = custKwList.some(kw => {
+              const cKw = toCleanUpperCode(kw);
+              return cKw && (cleanKhach.includes(cKw) || rawKhach.toUpperCase().includes(kw.toUpperCase()));
+            });
+          }
+
+          // Kiểm tra khớp Kho Nhận (nếu Form có khai báo Từ khóa Kho Nhận)
+          let khoMatch = true;
+          if (khoKwList.length > 0) {
+            khoMatch = khoKwList.some(kw => {
+              const cKw = toCleanUpperCode(kw);
+              return cKw && (cleanKho.includes(cKw) || rawKho.toUpperCase().includes(kw.toUpperCase()));
+            });
+          }
+
+          if (custMatch && khoMatch) {
+            const res = {
+              id: tpl.id,
+              code: tpl.id,
+              name: tpl.name,
+              shortBadge: tpl.short_badge || "Form Riêng",
+              html_content: tpl.html_content
+            };
+            bbTemplateCacheByKho.set(cacheKey, res);
+            return res;
           }
         }
       }
@@ -6444,7 +6525,7 @@ if (isset(['api']) || isset(['route'])) {
         shortBadge: stdTpl.short_badge || "BB",
         html_content: stdTpl.html_content
       };
-      bbTemplateCacheByKho.set(rawKho, stdRes);
+      bbTemplateCacheByKho.set(cacheKey, stdRes);
       return stdRes;
     }
 
@@ -6508,7 +6589,6 @@ if (isset(['api']) || isset(['route'])) {
     // =========================================================================
     function openBbTemplateManager(selectId) {
       if (!bbTemplatesList || bbTemplatesList.length === 0) initBbTemplatesLocal();
-      populateQuickKhoDropdown();
       const targetId = selectId || currentEditingBbTplId || (bbTemplatesList[0] && bbTemplatesList[0].id) || "4ORANGES";
       selectBbTemplateInEditor(targetId);
       const modal = document.getElementById("bbTemplateModal");
@@ -6516,6 +6596,7 @@ if (isset(['api']) || isset(['route'])) {
     }
 
     function closeBbTemplateManager() {
+      closeAllBbMetaAc();
       const modal = document.getElementById("bbTemplateModal");
       if (modal) modal.classList.remove("open");
       if (isBbLivePreviewMode) {
@@ -6523,33 +6604,128 @@ if (isset(['api']) || isset(['route'])) {
       }
     }
 
-    function populateQuickKhoDropdown() {
-      const sel = document.getElementById("bbQuickKhoSelect");
-      if (!sel) return;
-      const khoSet = new Set();
-      allShipments.forEach(item => {
-        if (item.xuatNhapPo === "N" && item.khoNhanHangPo && item.khoNhanHangPo !== ".") {
-          khoSet.add(item.khoNhanHangPo.trim());
-        }
-      });
-      const sorted = Array.from(khoSet).sort((a, b) => a.localeCompare(b, "vi"));
-      sel.innerHTML = `<option value="">+ Chọn Kho từ TMS (${sorted.length})...</option>` +
-        sorted.map(k => `<option value="${escapeAttr(k)}">${escapeAttr(k)}</option>`).join("");
+    function closeAllBbMetaAc() {
+      const d1 = document.getElementById("bbAcCustDropdown");
+      const d2 = document.getElementById("bbAcKhoDropdown");
+      if (d1) d1.classList.remove("open");
+      if (d2) d2.classList.remove("open");
     }
 
-    function addKhoKeywordFromSelect(selectEl) {
-      const val = (selectEl.value || "").trim();
-      if (!val) return;
-      const kwInp = document.getElementById("bbTplKeywords");
-      if (kwInp && !kwInp.disabled) {
-        const cur = kwInp.value.split(",").map(s => s.trim()).filter(Boolean);
-        if (!cur.includes(val)) {
-          cur.push(val);
-          kwInp.value = cur.join(", ");
+    // Gõ tìm kiếm trực tiếp Khách Hàng & Kho Nhận từ TMS (Hỗ trợ gõ có dấu / không dấu ở bất kỳ vị trí nào)
+    function openBbMetaAc(type) {
+      const isCust = type === "cust";
+      const inp = document.getElementById(isCust ? "bbTplCustomerKeywords" : "bbTplKeywords");
+      const drop = document.getElementById(isCust ? "bbAcCustDropdown" : "bbAcKhoDropdown");
+      const otherDrop = document.getElementById(isCust ? "bbAcKhoDropdown" : "bbAcCustDropdown");
+      if (otherDrop) otherDrop.classList.remove("open");
+      if (!inp || !drop || inp.disabled) return;
+
+      // Lấy từ khóa đang gõ sau dấu phẩy cuối cùng
+      const parts = inp.value.split(",");
+      const lastSeg = (parts[parts.length - 1] || "").trim();
+      const qClean = toCleanUpperCode(lastSeg);
+      const qLower = lastSeg.toLowerCase();
+
+      // Danh sách Khách hàng đang chọn (để ưu tiên gợi ý Kho nhận thuộc Khách hàng đó)
+      const selectedCustKws = (document.getElementById("bbTplCustomerKeywords")?.value || "")
+        .split(",")
+        .map(k => toCleanUpperCode(k.trim()))
+        .filter(Boolean);
+
+      const countMap = new Map();
+      const prioritySet = new Set();
+
+      allShipments.forEach(item => {
+        if (item.xuatNhapPo !== "N") return;
+        const val = (isCust ? item.tenKhachPo : item.khoNhanHangPo || "").trim();
+        if (!val || val === ".") return;
+        countMap.set(val, (countMap.get(val) || 0) + 1);
+
+        if (!isCust && selectedCustKws.length > 0) {
+          const itemCustClean = toCleanUpperCode(item.tenKhachPo || "");
+          if (selectedCustKws.some(ck => itemCustClean.includes(ck))) {
+            prioritySet.add(val);
+          }
+        }
+      });
+
+      let candidates = Array.from(countMap.keys());
+      if (qClean || qLower) {
+        candidates = candidates.filter(name => {
+          return name.toLowerCase().includes(qLower) || toCleanUpperCode(name).includes(qClean);
+        });
+      }
+
+      candidates.sort((a, b) => {
+        const pA = prioritySet.has(a) ? 1 : 0;
+        const pB = prioritySet.has(b) ? 1 : 0;
+        if (pA !== pB) return pB - pA;
+        return a.localeCompare(b, "vi");
+      });
+
+      if (candidates.length === 0) {
+        drop.innerHTML = `<div style="padding:8px 10px;font-size:12px;color:#64748b;">Không tìm thấy ${isCust ? 'Khách hàng' : 'Kho nhận'} khớp "${escapeAttr(lastSeg)}" trên TMS (Bạn vẫn có thể tự gõ từ khóa)</div>`;
+        drop.classList.add("open");
+        return;
+      }
+
+      drop.innerHTML = candidates.slice(0, 60).map(name => {
+        const cnt = countMap.get(name) || 0;
+        const isPrio = prioritySet.has(name);
+        return `
+          <div class="bb-ac-item" onmousedown="event.preventDefault(); selectBbMetaAcItem('${type}', '${escapeAttr(name)}')">
+            <span>${isPrio ? '⭐ ' : (isCust ? '👤 ' : '🏭 ')}${escapeAttr(name)}</span>
+            <span style="font-size:11px;color:${isPrio ? '#b45309' : '#64748b'};background:${isPrio ? '#fef3c7' : '#f1f5f9'};padding:1px 6px;border-radius:4px;">
+              ${isPrio ? 'Kho của KH đang chọn • ' : ''}${cnt} lô
+            </span>
+          </div>
+        `;
+      }).join("");
+      drop.classList.add("open");
+    }
+
+    function selectBbMetaAcItem(type, chosenName) {
+      const isCust = type === "cust";
+      const inp = document.getElementById(isCust ? "bbTplCustomerKeywords" : "bbTplKeywords");
+      const drop = document.getElementById(isCust ? "bbAcCustDropdown" : "bbAcKhoDropdown");
+      if (!inp) return;
+
+      const parts = inp.value.split(",").map(s => s.trim()).filter(Boolean);
+      // Thay thế phần tử đang gõ dở cuối cùng bằng tên đã chọn (và thêm dấu phẩy chờ nếu muốn chọn tiếp)
+      if (parts.length <= 1) {
+        inp.value = chosenName;
+      } else {
+        parts[parts.length - 1] = chosenName;
+        // Loại bỏ trùng lặp
+        inp.value = Array.from(new Set(parts)).join(", ");
+      }
+      if (drop) drop.classList.remove("open");
+
+      // Nếu đang tạo Form Kho Mới mà tên Form vẫn là mặc định, tự động điền gợi ý Tên Form & Nhãn nút
+      if (!isCust) {
+        const nameInp = document.getElementById("bbTplName");
+        const badgeInp = document.getElementById("bbTplBadge");
+        if (nameInp && (!nameInp.value || nameInp.value === "Form Kho Mới")) {
+          nameInp.value = `Form ${chosenName}`;
+        }
+        if (badgeInp && (!badgeInp.value || badgeInp.value === "FormRiêng")) {
+          badgeInp.value = chosenName.replace(/^(Cty|Công ty|Kho|CN)\s+/i, "").trim().slice(0, 12);
         }
       }
-      selectEl.value = "";
     }
+
+    document.addEventListener("mousedown", function(e) {
+      const cInp = document.getElementById("bbTplCustomerKeywords");
+      const cDrop = document.getElementById("bbAcCustDropdown");
+      const kInp = document.getElementById("bbTplKeywords");
+      const kDrop = document.getElementById("bbAcKhoDropdown");
+      if (cDrop && cDrop.classList.contains("open") && !cDrop.contains(e.target) && e.target !== cInp) {
+        cDrop.classList.remove("open");
+      }
+      if (kDrop && kDrop.classList.contains("open") && !kDrop.contains(e.target) && e.target !== kInp) {
+        kDrop.classList.remove("open");
+      }
+    });
 
     function renderBbTemplateSidebar() {
       const listEl = document.getElementById("bbTemplateSidebarList");
@@ -6557,7 +6733,13 @@ if (isset(['api']) || isset(['route'])) {
       listEl.innerHTML = bbTemplatesList.map(tpl => {
         const isAct = tpl.id === currentEditingBbTplId;
         const isStd = tpl.id === "STANDARD";
-        const kwText = isStd ? "Mặc định cho tất cả kho còn lại" : `Kho nhận: ${tpl.keywords || "(Chưa gán)"}`;
+        let kwText = "Mặc định cho tất cả kho còn lại";
+        if (!isStd) {
+          const parts = [];
+          if (tpl.customer_keywords) parts.push(`👤 KH: ${tpl.customer_keywords}`);
+          parts.push(`🏭 Kho: ${tpl.keywords || "(Chưa gán)"}`);
+          kwText = parts.join(" • ");
+        }
         return `
           <div class="bb-tpl-card ${isAct ? 'active' : ''}" onclick="selectBbTemplateInEditor('${escapeAttr(tpl.id)}')">
             <div class="bb-tpl-card-title">
@@ -6573,7 +6755,12 @@ if (isset(['api']) || isset(['route'])) {
     function selectBbTemplateInEditor(id) {
       isBbLivePreviewMode = false;
       const btnPrev = document.getElementById("btnBbTogglePreview");
-      if (btnPrev) btnPrev.innerHTML = "👁️ Xem thử với dữ liệu thật";
+      if (btnPrev) {
+        btnPrev.innerHTML = "👁️ Xem thử với dữ liệu thật";
+        btnPrev.style.background = "#eff6ff";
+        btnPrev.style.color = "#1d4ed8";
+        btnPrev.style.borderColor = "#93c5fd";
+      }
 
       const tpl = bbTemplatesList.find(t => t.id === id) || bbTemplatesList[0];
       if (!tpl) return;
@@ -6582,6 +6769,7 @@ if (isset(['api']) || isset(['route'])) {
 
       const nameInp = document.getElementById("bbTplName");
       const badgeInp = document.getElementById("bbTplBadge");
+      const custInp = document.getElementById("bbTplCustomerKeywords");
       const kwInp = document.getElementById("bbTplKeywords");
       const canvas = document.getElementById("bbVisualEditorCanvas");
       const btnDel = document.getElementById("btnBbDeleteTpl");
@@ -6589,8 +6777,12 @@ if (isset(['api']) || isset(['route'])) {
 
       if (nameInp) nameInp.value = tpl.name || "";
       if (badgeInp) badgeInp.value = tpl.short_badge || "BB";
+      if (custInp) {
+        custInp.value = tpl.id === "STANDARD" ? "* (Mọi Khách Hàng)" : (tpl.customer_keywords || "");
+        custInp.disabled = tpl.id === "STANDARD";
+      }
       if (kwInp) {
-        kwInp.value = tpl.id === "STANDARD" ? "* (Áp dụng mặc định cho mọi Kho Nhận khác)" : (tpl.keywords || "");
+        kwInp.value = tpl.id === "STANDARD" ? "* (Mọi Kho Nhận)" : (tpl.keywords || "");
         kwInp.disabled = tpl.id === "STANDARD";
       }
       if (canvas) {
@@ -6612,6 +6804,7 @@ if (isset(['api']) || isset(['route'])) {
         id: newId,
         name: "Form Kho Mới",
         short_badge: "FormRiêng",
+        customer_keywords: "",
         keywords: "",
         is_active: 1,
         sort_order: bbTemplatesList.length + 1,
@@ -6622,7 +6815,7 @@ if (isset(['api']) || isset(['route'])) {
     </div>
     <div class="thna-info-col">
       <div class="thna-title" style="color:#1e3a8a;">TÊN ĐƠN VỊ / CHỦ HÀNG</div>
-      <div class="thna-line">Địa chỉ: Nhập địa chỉ công ty hoặc dán (Ctrl+V) từ file Word vào đây</div>
+      <div class="thna-line">Địa chỉ: Nhập địa chỉ công ty hoặc bấm nút "📄 Nhập từ Word (.docx)" ở trên</div>
       <div class="thna-line">Điện thoại: .................................</div>
     </div>
   </div>
@@ -6679,15 +6872,14 @@ if (isset(['api']) || isset(['route'])) {
   </div>
 </div>`
       };
-      // Chèn trước STANDARD
       const stdIdx = bbTemplatesList.findIndex(t => t.id === "STANDARD");
       if (stdIdx >= 0) bbTemplatesList.splice(stdIdx, 0, newTpl);
       else bbTemplatesList.push(newTpl);
 
       selectBbTemplateInEditor(newId);
-      const nameInp = document.getElementById("bbTplName");
-      if (nameInp) { nameInp.focus(); nameInp.select(); }
-      showToast("Đã tạo sườn Form mới! Hãy nhập Tên Form, Từ khóa Kho Nhận và chỉnh sửa nội dung.", "info");
+      const kwInp = document.getElementById("bbTplKeywords");
+      if (kwInp) kwInp.focus();
+      showToast("Đã tạo Form mới! Hãy gõ tìm Kho Nhận / Khách Hàng hoặc Upload file Word (.docx).", "info");
     }
 
     function cloneCurrentBbTemplate() {
@@ -6700,6 +6892,7 @@ if (isset(['api']) || isset(['route'])) {
         id: newId,
         name: cur.name + " (Bản sao)",
         short_badge: (cur.short_badge || "Form").slice(0, 12) + "2",
+        customer_keywords: cur.customer_keywords || "",
         keywords: "",
         is_active: 1,
         sort_order: bbTemplatesList.length + 1,
@@ -6711,6 +6904,361 @@ if (isset(['api']) || isset(['route'])) {
 
       selectBbTemplateInEditor(newId);
       showToast("Đã nhân bản Form! Hãy gán Từ khóa Kho Nhận mới và bấm Lưu.", "success");
+    }
+
+    // =========================================================================
+    // BỘ ĐỌC & NHẬN DIỆN FILE WORD (.DOCX) TRỰC TIẾP TRÊN TRÌNH DUYỆT
+    // =========================================================================
+    let isUploadingDocxAsNewTemplate = false;
+
+    function triggerBbWordDocxUpload(asNewTemplate) {
+      isUploadingDocxAsNewTemplate = !!asNewTemplate;
+      const inp = document.getElementById("bbWordDocxInput");
+      if (inp) {
+        inp.value = "";
+        inp.click();
+      }
+    }
+
+    function uint8ToBase64(u8Arr) {
+      let binary = "";
+      const chunkSize = 8192;
+      for (let i = 0; i < u8Arr.length; i += chunkSize) {
+        binary += String.fromCharCode.apply(null, u8Arr.subarray(i, i + chunkSize));
+      }
+      return btoa(binary);
+    }
+
+    async function unzipDocxBuffer(arrayBuffer) {
+      const view = new DataView(arrayBuffer);
+      const bytes = new Uint8Array(arrayBuffer);
+      const decoder = new TextDecoder("utf-8");
+
+      let eocdOffset = -1;
+      for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65557); i--) {
+        if (view.getUint32(i, true) === 0x06054b50) {
+          eocdOffset = i;
+          break;
+        }
+      }
+      if (eocdOffset < 0) throw new Error("File không đúng định dạng Word (.docx)!");
+
+      const cdCount = view.getUint16(eocdOffset + 10, true);
+      let cdOffset = view.getUint32(eocdOffset + 16, true);
+      const files = {};
+
+      for (let i = 0; i < cdCount; i++) {
+        if (view.getUint32(cdOffset, true) !== 0x02014b50) break;
+        const method = view.getUint16(cdOffset + 10, true);
+        const compSize = view.getUint32(cdOffset + 20, true);
+        const nameLen = view.getUint16(cdOffset + 28, true);
+        const extraLen = view.getUint16(cdOffset + 30, true);
+        const commentLen = view.getUint16(cdOffset + 32, true);
+        const localHeaderOffset = view.getUint32(cdOffset + 42, true);
+
+        const fileName = decoder.decode(bytes.subarray(cdOffset + 46, cdOffset + 46 + nameLen));
+        cdOffset += 46 + nameLen + extraLen + commentLen;
+
+        if (view.getUint32(localHeaderOffset, true) !== 0x04034b50) continue;
+        const localNameLen = view.getUint16(localHeaderOffset + 26, true);
+        const localExtraLen = view.getUint16(localHeaderOffset + 28, true);
+        const dataStart = localHeaderOffset + 30 + localNameLen + localExtraLen;
+        const compBytes = bytes.subarray(dataStart, dataStart + compSize);
+
+        if (method === 0) {
+          files[fileName] = compBytes;
+        } else if (method === 8) {
+          const ds = new DecompressionStream("deflate-raw");
+          const writer = ds.writable.getWriter();
+          writer.write(compBytes);
+          writer.close();
+          const resp = new Response(ds.readable);
+          const ab = await resp.arrayBuffer();
+          files[fileName] = new Uint8Array(ab);
+        }
+      }
+      return files;
+    }
+
+    function parseDocxXmlToHtml(rawDocXml, rawRelsXml, mediaBase64Map) {
+      const relsMap = {};
+      const relMatches = (rawRelsXml || "").match(/<Relationship [^>]+>/g) || [];
+      relMatches.forEach(r => {
+        const id = (r.match(/Id="([^"]+)"/) || [])[1];
+        const target = (r.match(/Target="([^"]+)"/) || [])[1];
+        if (id && target) relsMap[id] = target;
+      });
+
+      const cleanXml = rawDocXml.replace(/<mc:Fallback>[\s\S]*?<\/mc:Fallback>/g, "");
+      const bodyMatch = cleanXml.match(/<w:body>([\s\S]*?)<\/w:body>/);
+      const bodyXml = bodyMatch ? bodyMatch[1] : cleanXml;
+
+      function escHtml(s) {
+        return String(s || "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      function extractRunInfo(rXml, defaultSzHalfPt) {
+        const tMatches = rXml.match(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g) || [];
+        const tabCount = (rXml.match(/<w:tab\/>/g) || []).length;
+        const brCount = (rXml.match(/<w:br\/>/g) || []).length;
+        const text = tMatches.map(t => t.replace(/<[^>]+>/g, "")).join("");
+        if (!text && !tabCount && !brCount) return null;
+
+        let htmlText = escHtml(text);
+        if (tabCount > 0) htmlText += "\t".repeat(tabCount);
+        if (brCount > 0) htmlText += "\n".repeat(brCount);
+
+        const rPr = (rXml.match(/<w:rPr>([\s\S]*?)<\/w:rPr>/) || [])[1] || "";
+        const isBold = /<w:b\/>|<w:b w:val="(?!false|0)/.test(rPr);
+        const isItalic = /<w:i\/>|<w:i w:val="(?!false|0)/.test(rPr);
+        const isUnderline = /<w:u w:val="(?!none)/.test(rPr);
+        const vertAlign = (rPr.match(/<w:vertAlign w:val="([^"]+)"/) || [])[1] || "";
+        const color = (rPr.match(/<w:color w:val="([^"]+)"/) || [])[1] || "";
+        const szHalf = (rPr.match(/<w:sz w:val="(\d+)"/) || [])[1] || defaultSzHalfPt || "";
+        const fontAscii = (rPr.match(/<w:rFonts[^>]*w:ascii="([^"]+)"/) || [])[1] || "";
+
+        const styles = [];
+        if (isBold) styles.push("font-weight:700");
+        if (isItalic) styles.push("font-style:italic");
+        if (isUnderline) styles.push("text-decoration:underline");
+        if (color && color !== "auto" && color !== "000000") styles.push(`color:#${color}`);
+        if (szHalf) styles.push(`font-size:${(Number(szHalf) / 2).toFixed(1).replace(/\.0$/, "")}pt`);
+        if (fontAscii && /arial/i.test(fontAscii)) styles.push("font-family:Arial,Helvetica,sans-serif");
+
+        return { text: htmlText, vertAlign, styleStr: styles.join(";") };
+      }
+
+      function parseSimpleParagraph(pXml) {
+        const pWithoutDrawings = pXml.replace(/<w:drawing>[\s\S]*?<\/w:drawing>/g, "");
+        const pPr = (pWithoutDrawings.match(/<w:pPr>([\s\S]*?)<\/w:pPr>/) || [])[1] || "";
+        const jc = (pPr.match(/<w:jc w:val="([^"]+)"/) || [])[1] || "left";
+        const defSz = (pPr.match(/<w:sz w:val="(\d+)"/) || [])[1] || "";
+        const indLeft = (pPr.match(/<w:ind[^>]*w:left="(\d+)"/) || [])[1] || "";
+        const indFirst = (pPr.match(/<w:ind[^>]*w:firstLine="(\d+)"/) || [])[1] || "";
+
+        const runs = pWithoutDrawings.match(/<w:r[ >][\s\S]*?<\/w:r>/g) || [];
+        const merged = [];
+        runs.forEach(r => {
+          const info = extractRunInfo(r, defSz);
+          if (!info) return;
+          const prev = merged[merged.length - 1];
+          if (prev && prev.styleStr === info.styleStr && prev.vertAlign === info.vertAlign) {
+            prev.text += info.text;
+          } else {
+            merged.push(info);
+          }
+        });
+
+        const inner = merged.map(m => {
+          let t = m.text
+            .replace(/  /g, " &nbsp;")
+            .replace(/\t/g, "&emsp;&emsp;&emsp;")
+            .replace(/\n/g, "<br/>");
+          if (m.vertAlign === "superscript") t = `<sup>${t}</sup>`;
+          else if (m.vertAlign === "subscript") t = `<sub>${t}</sub>`;
+          return m.styleStr ? `<span style="${m.styleStr}">${t}</span>` : t;
+        }).join("");
+
+        if (!inner.replace(/&nbsp;|&emsp;|\s|<[^>]+>/g, "")) return "";
+
+        const pStyles = ["margin:3px 0", "line-height:1.55"];
+        if (jc === "center") pStyles.push("text-align:center");
+        else if (jc === "right") pStyles.push("text-align:right;padding-right:24px");
+        else if (jc === "both") pStyles.push("text-align:justify");
+
+        const totalIndentTwips = Number(indLeft || 0) + Number(indFirst || 0);
+        if (totalIndentTwips > 200 && jc === "left") {
+          const px = Math.min(120, Math.round(totalIndentTwips / 18));
+          pStyles.push(`padding-left:${px}px`);
+        }
+
+        return `<div style="${pStyles.join(";")}">${inner}</div>`;
+      }
+
+      function parseDrawings(xmlChunk) {
+        const drawings = xmlChunk.match(/<w:drawing>[\s\S]*?<\/w:drawing>/g) || [];
+        if (drawings.length === 0) return "";
+
+        let htmlOut = "";
+        drawings.forEach(drw => {
+          const blips = [...drw.matchAll(/<a:blip[^>]*r:embed="([^"]+)"/g)].map(m => m[1]);
+          const txbxMatches = [...drw.matchAll(/<w:txbxContent>([\s\S]*?)<\/w:txbxContent>/g)].map(m => m[1]);
+
+          const imgsHtml = blips.map(rId => {
+            const target = relsMap[rId] || "";
+            const b64 = mediaBase64Map[target] || mediaBase64Map["word/" + target] || "";
+            return b64 ? `<img src="${b64}" class="thna-logo-img" style="max-width:165px;max-height:95px;width:auto;height:auto;display:block;" />` : "";
+          }).filter(Boolean).join("");
+
+          const txbxHtml = txbxMatches.map(tb => {
+            const paras = tb.match(/<w:p[ >][\s\S]*?<\/w:p>/g) || [];
+            return paras.map(p => parseSimpleParagraph(p)).filter(Boolean).join("");
+          }).filter(Boolean).join("");
+
+          if (imgsHtml && txbxHtml) {
+            htmlOut += `<div class="thna-header" style="display:flex;align-items:flex-start;gap:16px;padding-left:8px;margin-bottom:6px;">
+              <div class="thna-logo-col" style="flex-shrink:0;">${imgsHtml}</div>
+              <div class="thna-info-col" style="flex:1;line-height:1.38;">${txbxHtml}</div>
+            </div>`;
+          } else if (imgsHtml) {
+            htmlOut += `<div style="margin:6px 0;">${imgsHtml}</div>`;
+          } else if (txbxHtml) {
+            htmlOut += `<div style="margin:6px 0;">${txbxHtml}</div>`;
+          }
+        });
+        return htmlOut;
+      }
+
+      function parseTable(tblXml) {
+        const gridCols = [...tblXml.matchAll(/<w:gridCol w:w="(\d+)"\/>/g)].map(m => Number(m[1]));
+        if (gridCols.length <= 1 && /<w:drawing>/.test(tblXml)) {
+          return parseDrawings(tblXml);
+        }
+
+        const totalW = gridCols.reduce((a, b) => a + b, 0) || 1;
+        const colPercents = gridCols.map(w => ((w / totalW) * 100).toFixed(2) + "%");
+
+        const trs = tblXml.match(/<w:tr[ >][\s\S]*?<\/w:tr>/g) || [];
+        const rowsHtml = trs.map((tr, rIdx) => {
+          const tcs = tr.match(/<w:tc[ >][\s\S]*?<\/w:tc>/g) || [];
+          const cellsHtml = tcs.map((tc, cIdx) => {
+            const paras = tc.match(/<w:p[ >][\s\S]*?<\/w:p>/g) || [];
+            const cellInner = paras.map(p => parseSimpleParagraph(p)).filter(Boolean).join("") || "";
+            const wStyle = colPercents[cIdx] ? `width:${colPercents[cIdx]};` : "";
+            const tag = rIdx === 0 ? "th" : "td";
+            return `<${tag} style="${wStyle}border:1px solid #000;padding:6px 8px;vertical-align:middle;">${cellInner}</${tag}>`;
+          }).join("");
+          return `<tr>${cellsHtml}</tr>`;
+        }).join("");
+
+        return `<table class="thna-table" style="width:100%;border-collapse:collapse;margin:14px 0;">${rowsHtml}</table>`;
+      }
+
+      const topTokens = [];
+      let pos = 0;
+      while (pos < bodyXml.length) {
+        const nextTbl = bodyXml.indexOf("<w:tbl>", pos);
+        const nextP = bodyXml.slice(pos).search(/<w:p[ >]/);
+        const absNextP = nextP >= 0 ? pos + nextP : -1;
+
+        if (nextTbl >= 0 && (absNextP < 0 || nextTbl < absNextP)) {
+          const endTbl = bodyXml.indexOf("</w:tbl>", nextTbl);
+          if (endTbl < 0) break;
+          topTokens.push({ type: "tbl", xml: bodyXml.slice(nextTbl, endTbl + 8) });
+          pos = endTbl + 8;
+        } else if (absNextP >= 0) {
+          const endP = bodyXml.indexOf("</w:p>", absNextP);
+          if (endP < 0) break;
+          topTokens.push({ type: "p", xml: bodyXml.slice(absNextP, endP + 6) });
+          pos = endP + 6;
+        } else {
+          break;
+        }
+      }
+
+      const parts = [];
+      topTokens.forEach(tok => {
+        if (tok.type === "tbl") {
+          const h = parseTable(tok.xml);
+          if (h) parts.push(h);
+        } else if (tok.type === "p") {
+          if (/<w:drawing>/.test(tok.xml)) {
+            const dh = parseDrawings(tok.xml);
+            if (dh) parts.push(dh);
+          }
+          const ph = parseSimpleParagraph(tok.xml);
+          if (ph) parts.push(ph);
+        }
+      });
+
+      let finalHtml = `<div class="bb-4oranges">${parts.join("\n")}</div>`;
+
+      // Tự động nhận diện và chuyển Ngày giao, Số Cont, Số Seal thành biến động {{...}}
+      finalHtml = finalHtml.replace(
+        /(Ngày(?:\s|&nbsp;)*)(\d{1,2}|\.{2,})((?:\s|&nbsp;)*tháng(?:\s|&nbsp;)*)(\d{1,2}|\.{2,})((?:\s|&nbsp;)*năm(?:\s|&nbsp;)*)(\d{4}|\.{2,})/gi,
+        "$1{{NGAY}}$3{{THANG}}$5{{NAM}}"
+      );
+
+      let foundCont = false;
+      finalHtml = finalHtml.replace(/\b([A-Z]{3}U\s*\d{6,7})\b/g, () => {
+        foundCont = true;
+        return "{{SO_CONT}}";
+      });
+
+      if (foundCont) {
+        finalHtml = finalHtml.replace(
+          /(<td[^>]*>\s*<div[^>]*>\s*(?:<span[^>]*>)?2(?:<\/span>)?\s*<\/div>\s*<\/td>\s*<td[^>]*>\s*<div[^>]*>\s*(?:<span[^>]*>)?(?:\s|&nbsp;)*)([A-Za-z0-9]{5,10})((?:<\/span>)?\s*<\/div>\s*<\/td>)/i,
+          "$1{{SO_SEAL}}$3"
+        );
+      }
+
+      return finalHtml;
+    }
+
+    async function handleBbWordDocxSelected(inputEl) {
+      const file = inputEl.files && inputEl.files[0];
+      if (!file) return;
+
+      try {
+        showToast("⏳ Đang đọc và nhận diện bố cục từ file Word (.docx)...", "info");
+        const ab = await file.arrayBuffer();
+        const filesMap = await unzipDocxBuffer(ab);
+        const decoder = new TextDecoder("utf-8");
+
+        const docXmlBytes = filesMap["word/document.xml"];
+        if (!docXmlBytes) throw new Error("Không tìm thấy nội dung word/document.xml trong file!");
+        const docXml = decoder.decode(docXmlBytes);
+        const relsXml = filesMap["word/_rels/document.xml.rels"]
+          ? decoder.decode(filesMap["word/_rels/document.xml.rels"])
+          : "";
+
+        const mediaBase64Map = {};
+        for (const [fName, fBytes] of Object.entries(filesMap)) {
+          if (fName.startsWith("word/media/")) {
+            const ext = (fName.split(".").pop() || "png").toLowerCase();
+            const mime = ext === "jpg" || ext === "jpeg" ? "image/jpeg" : "image/png";
+            const dataUri = `data:${mime};base64,${uint8ToBase64(fBytes)}`;
+            mediaBase64Map[fName] = dataUri;
+            mediaBase64Map[fName.replace(/^word\//, "")] = dataUri;
+          }
+        }
+
+        const parsedHtml = parseDocxXmlToHtml(docXml, relsXml, mediaBase64Map);
+        const cleanFileTitle = file.name.replace(/\.docx$/i, "").trim();
+
+        if (isUploadingDocxAsNewTemplate || currentEditingBbTplId === "STANDARD") {
+          const newId = "TPL_" + Date.now();
+          const newTpl = {
+            id: newId,
+            name: `Form ${cleanFileTitle}`,
+            short_badge: cleanFileTitle.slice(0, 12),
+            customer_keywords: "",
+            keywords: "",
+            is_active: 1,
+            sort_order: bbTemplatesList.length + 1,
+            html_content: parsedHtml
+          };
+          const stdIdx = bbTemplatesList.findIndex(t => t.id === "STANDARD");
+          if (stdIdx >= 0) bbTemplatesList.splice(stdIdx, 0, newTpl);
+          else bbTemplatesList.push(newTpl);
+          selectBbTemplateInEditor(newId);
+        } else {
+          isBbLivePreviewMode = false;
+          const canvas = document.getElementById("bbVisualEditorCanvas");
+          if (canvas) {
+            canvas.contentEditable = "true";
+            canvas.innerHTML = parsedHtml;
+          }
+        }
+
+        showToast("✅ Đã nhận diện Form từ file Word (.docx) và tự động gắn biến {{SO_CONT}}, {{SO_SEAL}}, {{NGAY}}! Hãy chọn Kho Nhận và bấm Lưu.", "success");
+      } catch (err) {
+        console.error("DOCX Parse Error:", err);
+        showToast("⚠️ Không thể đọc file Word: " + (err?.message || "Vui lòng chọn đúng file .docx"), "error");
+      }
     }
 
     function execBbEditorCmd(cmd, val = null) {
@@ -6791,7 +7339,6 @@ if (isset(['api']) || isset(['route'])) {
         const dataUrl = e.target.result;
         const canvas = document.getElementById("bbVisualEditorCanvas");
         if (!canvas) return;
-        // Nếu trong mẫu đang có ảnh logo đầu tiên (.thna-logo-img hoặc img trong header), thay thế luôn
         const existingLogo = canvas.querySelector(".thna-logo-img") || canvas.querySelector(".vs-header-table img") || canvas.querySelector("img");
         if (existingLogo) {
           existingLogo.src = dataUrl;
@@ -6806,14 +7353,19 @@ if (isset(['api']) || isset(['route'])) {
     }
 
     function getSamplePoForBbPreview() {
+      const custInp = document.getElementById("bbTplCustomerKeywords");
       const kwInp = document.getElementById("bbTplKeywords");
+      const custList = ((custInp && custInp.value) || "").split(",").map(k => k.trim()).filter(k => k && !k.startsWith("*"));
       const kwList = ((kwInp && kwInp.value) || "").split(",").map(k => k.trim()).filter(k => k && !k.startsWith("*"));
       let matchedPo = null;
-      if (kwList.length > 0) {
+      if (custList.length > 0 || kwList.length > 0) {
         matchedPo = allShipments.find(i => {
           if (i.xuatNhapPo !== "N") return false;
           const cKho = toCleanUpperCode(i.khoNhanHangPo || "");
-          return kwList.some(k => cKho.includes(toCleanUpperCode(k)));
+          const cKhach = toCleanUpperCode(i.tenKhachPo || "");
+          const okCust = custList.length === 0 || custList.some(k => cKhach.includes(toCleanUpperCode(k)));
+          const okKho = kwList.length === 0 || kwList.some(k => cKho.includes(toCleanUpperCode(k)));
+          return okCust && okKho;
         });
       }
       if (!matchedPo) {
@@ -6825,7 +7377,7 @@ if (isset(['api']) || isset(['route'])) {
         soSealPo: "693903",
         ngayTraHang: getTodayISO(),
         khoNhanHangPo: kwList[0] || "Cty 4 Oranges",
-        tenKhachPo: "Cty KS Á Châu",
+        tenKhachPo: custList[0] || "Cty KS Á Châu",
         diaChiNhanPo: "Lô C-02-1, KCN Đức Hòa 1, Ấp 5, Xã Mỹ Hạnh",
         tinhNhanPo: "TAY NINH",
         soXePo: "50H10208",
@@ -6854,7 +7406,7 @@ if (isset(['api']) || isset(['route'])) {
           btnPrev.style.color = "#b45309";
           btnPrev.style.borderColor = "#fcd34d";
         }
-        showToast(`Đang xem thử với dữ liệu lô #${samplePo.idPo} (${samplePo.khoNhanHangPo})`, "info");
+        showToast(`Đang xem thử với dữ liệu lô #${samplePo.idPo} (${samplePo.tenKhachPo} ➔ ${samplePo.khoNhanHangPo})`, "info");
       } else {
         canvas.innerHTML = rawDraftBbHtmlBeforePreview;
         canvas.contentEditable = "true";
@@ -6874,6 +7426,7 @@ if (isset(['api']) || isset(['route'])) {
 
       const nameVal = (document.getElementById("bbTplName")?.value || "").trim();
       const badgeVal = (document.getElementById("bbTplBadge")?.value || "BB").trim();
+      const custVal = tpl.id === "STANDARD" ? "" : (document.getElementById("bbTplCustomerKeywords")?.value || "").trim();
       const kwVal = tpl.id === "STANDARD" ? "*" : (document.getElementById("bbTplKeywords")?.value || "").trim();
       const canvas = document.getElementById("bbVisualEditorCanvas");
       const htmlVal = isBbLivePreviewMode ? rawDraftBbHtmlBeforePreview : (canvas ? canvas.innerHTML : tpl.html_content);
@@ -6882,13 +7435,14 @@ if (isset(['api']) || isset(['route'])) {
         showToast("⚠️ Vui lòng nhập Tên Mẫu Biên Bản!", "warning");
         return;
       }
-      if (tpl.id !== "STANDARD" && !kwVal) {
-        showToast("⚠️ Vui lòng nhập ít nhất 1 từ khóa KHO NHẬN để hệ thống tự động nhận diện!", "warning");
+      if (tpl.id !== "STANDARD" && !kwVal && !custVal) {
+        showToast("⚠️ Vui lòng chọn ít nhất 1 từ khóa KHO NHẬN hoặc KHÁCH HÀNG để hệ thống tự động nhận diện!", "warning");
         return;
       }
 
       tpl.name = nameVal;
       tpl.short_badge = badgeVal || "FormRiêng";
+      tpl.customer_keywords = custVal;
       tpl.keywords = kwVal;
       tpl.html_content = htmlVal;
       tpl.is_active = 1;
