@@ -1883,7 +1883,7 @@ if (isset(['api']) || isset(['route'])) {
         </div>
       </div>
 
-      <!-- State 2: Active Filter & Print All Bar -->
+      <!-- State 2: Active Filter & Print All Bar (Tab Hàng Xuất) -->
       <div class="bulk-active-bar" id="bulkActiveBar" style="display:none;">
         <div class="bulk-tag-carrier" id="bulkTagCarrier" onclick="toggleBulkDropdown(event)" title="Bấm đổi lọc ĐVVT">
           <span id="bulkCarrierIcon">🚛</span>
@@ -1895,6 +1895,15 @@ if (isset(['api']) || isset(['route'])) {
           <span>Print All (<strong id="bulkSelectedCount">0</strong>)</span>
         </button>
         <button type="button" class="btn-bulk-exit" onclick="exitBulkPrintMode()" title="Hủy & trở về bảng bình thường">✕ Hủy</button>
+      </div>
+
+      <!-- State 3: Direct Print Biên Bản Button (Tab Hàng Nhập - Thực thi in luôn không cần sổ ĐVVT) -->
+      <div class="bulk-active-bar" id="bulkNhapDirectBar" style="display:none;border-color:#0d9488;box-shadow:0 2px 8px rgba(13,148,136,0.18);">
+        <button type="button" class="btn-bulk-execute" id="btnBulkNhapPrint" onclick="executeBulkPrint()" style="background:linear-gradient(135deg, #0f766e 0%, #0d9488 100%);" title="In ngay các Biên Bản đã tick chọn (Tự nhận diện Form theo Kho Nhận)">
+          <span style="font-size:15px;">🖨️</span>
+          <span>In Biên Bản (<strong id="bulkNhapSelectedCount">0</strong>)</span>
+        </button>
+        <button type="button" class="btn-bulk-exit" id="btnBulkNhapClear" onclick="clearAllBulkSelection()" style="display:none;" title="Bỏ tick tất cả">✕ Bỏ chọn</button>
       </div>
     </div>
   </div>
@@ -3299,7 +3308,9 @@ if (isset(['api']) || isset(['route'])) {
       updateSummaryCards(filteredShipments);
       updateActiveFilterBadge();
 
-      renderLimit = state.bulkMode ? Math.max(500, filteredShipments.length) : (state.viewMode === "table" ? 300 : 60);
+      renderLimit = (state.bulkMode || (state.viewMode === "table" && state.xuatNhap === "N"))
+        ? Math.max(500, filteredShipments.length)
+        : (state.viewMode === "table" ? 300 : 60);
       renderShipmentList();
       updateBulkControlsUI();
     }
@@ -3438,7 +3449,8 @@ if (isset(['api']) || isset(['route'])) {
     }
 
     function renderDesktopTableView(slice, hasMore) {
-      const isBulk = !!state.bulkMode;
+      // Tab Hàng Nhập (N) bỏ luôn cột Xóa, luôn hiển thị cột Tick chọn
+      const isBulk = !!state.bulkMode || state.xuatNhap === "N";
       const allSelected = slice.length > 0 && slice.every(i => state.bulkSelectedIds && state.bulkSelectedIds.has(String(i.idPo)));
 
       const rowsHtml = slice.map((item, idx) => {
@@ -5872,9 +5884,32 @@ if (isset(['api']) || isset(['route'])) {
       headerCb.checked = Array.from(checkboxes).every(cb => cb.checked);
     }
 
+    function getVisibleSelectedCount() {
+      if (!state.bulkSelectedIds || state.bulkSelectedIds.size === 0) return 0;
+      let cnt = 0;
+      filteredShipments.forEach(item => {
+        if (state.bulkSelectedIds.has(String(item.idPo))) cnt++;
+      });
+      return cnt;
+    }
+
+    function clearAllBulkSelection() {
+      if (state.bulkSelectedIds) state.bulkSelectedIds.clear();
+      const checkboxes = document.querySelectorAll(".chk-bulk-item");
+      checkboxes.forEach(cb => { cb.checked = false; });
+      const headerCb = document.getElementById("chkBulkPrintAll");
+      if (headerCb) headerCb.checked = false;
+      updateBulkSelectedCount();
+    }
+
     function updateBulkSelectedCount() {
+      const cnt = getVisibleSelectedCount();
       const countEl = document.getElementById("bulkSelectedCount");
-      if (countEl) countEl.textContent = state.bulkSelectedIds ? state.bulkSelectedIds.size : 0;
+      if (countEl) countEl.textContent = cnt;
+      const nhapCountEl = document.getElementById("bulkNhapSelectedCount");
+      if (nhapCountEl) nhapCountEl.textContent = cnt;
+      const nhapClearBtn = document.getElementById("btnBulkNhapClear");
+      if (nhapClearBtn) nhapClearBtn.style.display = cnt > 0 ? "inline-block" : "none";
     }
 
     function updateBulkControlsUI() {
@@ -5894,20 +5929,30 @@ if (isset(['api']) || isset(['route'])) {
       ctrl.style.display = "flex";
       const wrap = document.getElementById("bulkDropdownWrap");
       const activeBar = document.getElementById("bulkActiveBar");
+      const nhapDirectBar = document.getElementById("bulkNhapDirectBar");
+      const cnt = getVisibleSelectedCount();
+
+      // Đối với Tab Hàng Nhập (N): Hiển thị luôn nút Thực Thi In Biên Bản (không sổ dropdown ĐVVT)
+      if (isNhap) {
+        if (wrap) wrap.style.display = "none";
+        if (activeBar) activeBar.style.display = "none";
+        if (nhapDirectBar) nhapDirectBar.style.display = "inline-flex";
+        const nhapCountEl = document.getElementById("bulkNhapSelectedCount");
+        if (nhapCountEl) nhapCountEl.textContent = cnt;
+        const nhapClearBtn = document.getElementById("btnBulkNhapClear");
+        if (nhapClearBtn) nhapClearBtn.style.display = cnt > 0 ? "inline-block" : "none";
+        return;
+      }
+
+      // Đối với Tab Hàng Xuất (X): Sổ dropdown chọn VIETSUN / VENDOR rồi mới hiện Print All
+      if (nhapDirectBar) nhapDirectBar.style.display = "none";
       const lblAction = document.getElementById("lblBulkAction");
       const mainBtn = document.getElementById("btnBulkPrintMain");
-
-      if (lblAction) {
-        lblAction.textContent = isNhap ? "In Biên Bản hàng loạt" : "In PKL hàng loạt";
-      }
+      if (lblAction) lblAction.textContent = "In PKL hàng loạt";
       if (mainBtn) {
-        mainBtn.title = isNhap
-          ? "In Biên Bản giao nhận hàng loạt theo ĐVVT (Tự nhận diện Form theo Kho Nhận)"
-          : "In PKL hàng loạt theo ĐVVT";
-        mainBtn.style.background = isNhap
-          ? "linear-gradient(135deg, #0f766e 0%, #0d9488 100%)"
-          : "linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)";
-        mainBtn.style.borderColor = isNhap ? "#0f766e" : "#1d4ed8";
+        mainBtn.title = "In PKL hàng loạt theo ĐVVT";
+        mainBtn.style.background = "linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)";
+        mainBtn.style.borderColor = "#1d4ed8";
       }
 
       if (state.bulkMode) {
@@ -5918,7 +5963,7 @@ if (isset(['api']) || isset(['route'])) {
         const countEl = document.getElementById("bulkSelectedCount");
         if (iconEl) iconEl.textContent = state.bulkCarrier === "VIETSUN" ? "🚛" : "🚚";
         if (textEl) textEl.textContent = state.bulkCarrier;
-        if (countEl) countEl.textContent = state.bulkSelectedIds ? state.bulkSelectedIds.size : 0;
+        if (countEl) countEl.textContent = cnt;
       } else {
         if (wrap) wrap.style.display = "inline-block";
         if (activeBar) activeBar.style.display = "none";
