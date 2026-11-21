@@ -3515,10 +3515,15 @@
               ${isXuat ? `
                 <button type="button" class="pc-act-btn" onclick="copyPoInfoById('${item.idPo}', 1)" title="Copy Thông tin xe đóng hàng">🚛 TT Xe</button>
                 <button type="button" class="pc-act-btn" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0;" onclick="openPklModal('${item.idPo}')" title="Phiếu PKL">📄 PKL</button>
-              ` : `
-                <button type="button" class="pc-act-btn" onclick="copyPoInfoById('${item.idPo}', 2)" title="Copy Thông tin giao hàng">🚛 Giao hàng</button>
-                <button type="button" class="pc-act-btn" onclick="copyPoInfoById('${item.idPo}', 1)" title="Copy Thông báo hàng đến">💬 TB</button>
-              `}
+              ` : (() => {
+                const bbTpl = detectBbTemplate(item);
+                const isCustomBb = bbTpl.code !== "STANDARD";
+                return `
+                  <button type="button" class="pc-act-btn" onclick="copyPoInfoById('${item.idPo}', 2)" title="Copy Thông tin giao hàng">🚛 Giao</button>
+                  <button type="button" class="pc-act-btn" onclick="copyPoInfoById('${item.idPo}', 1)" title="Copy Thông báo hàng đến">💬 TB</button>
+                  <button type="button" class="pc-act-btn" style="${isCustomBb ? 'background:#fffbeb;color:#b45309;border-color:#fcd34d;' : 'background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe;'}" onclick="printSingleBienBan('${item.idPo}')" title="In Biên Bản (${bbTpl.name})">📄 ${isCustomBb ? bbTpl.shortBadge : 'BB'}</button>
+                `;
+              })()}
             </td>
           </tr>
         `;
@@ -3556,7 +3561,7 @@
                 <th style="width:75px;text-align:center;">CẢNG ĐẾN</th>
                 <th style="background:#a5f3fc;color:#0f172a;min-width:120px;">ĐƠN VỊ V/C ⚡</th>
                 <th style="background:#a5f3fc;color:#0f172a;min-width:110px;">SỐ XE ⚡</th>
-                <th style="width:125px;text-align:center;">THAO TÁC</th>
+                <th style="width:155px;text-align:center;">THAO TÁC</th>
               </tr>
             </thead>
             <tbody>
@@ -4139,7 +4144,7 @@
               <button class="btn-card btn-zalo" onclick="copyPoInfoById('${item.idPo}', 1)" title="${isXuat ? 'Copy THÔNG TIN XE ĐÓNG HÀNG' : 'Copy THÔNG BÁO HÀNG ĐẾN'}">
                 ${isXuat ? "🚛 Thông tin xe" : "💬 TB"}
               </button>
-              ${isXuat ? `<button class="btn-card btn-zalo" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0;" onclick="openPklModal('${item.idPo}')" title="In / Gửi Phiếu PKL Hạ Cảng">📄 PKL</button>` : ""}
+              ${isXuat ? `<button class="btn-card btn-zalo" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0;" onclick="openPklModal('${item.idPo}')" title="In / Gửi Phiếu PKL Hạ Cảng">📄 PKL</button>` : `<button class="btn-card btn-zalo" style="background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe;" onclick="printSingleBienBan('${item.idPo}')" title="In Biên Bản Giao Nhận Hàng">📄 BB</button>`}
               ${cleanPhone ? `<a href="tel:${cleanPhone}" class="btn-card btn-call" title="Gọi liên hệ kho">📞</a>` : ""}
             </div>
           </div>
@@ -4331,8 +4336,11 @@
     }
 
     function setXuatNhapFilter(xn) {
-      if (state.bulkMode && xn !== "X") {
-        exitBulkPrintMode();
+      if (state.bulkMode && xn !== state.xuatNhap) {
+        state.bulkMode = false;
+        state.bulkCarrier = null;
+        if (state.bulkSelectedIds) state.bulkSelectedIds.clear();
+        closeBulkDropdown();
       }
       state.xuatNhap = xn;
       document.querySelectorAll(".bottom-nav .nav-item").forEach(btn => {
@@ -5714,8 +5722,61 @@
     }
 
     // =========================================================================
-    // 9C. BULK PKL PRINTING (DESKTOP MODE - TAB HÀNG XUẤT)
+    // 9C. BULK PRINTING: PKL (TAB HÀNG XUẤT) & BIÊN BẢN (TAB HÀNG NHẬP)
+    //     Tự động nhận diện Form Biên Bản theo KHO NHẬN (khoNhanHangPo)
     // =========================================================================
+    const PROVINCE_VN_LABEL = {
+      "HO CHI MINH": "Tp. Hồ Chí Minh",
+      "BINH DUONG": "Bình Dương",
+      "DONG NAI": "Đồng Nai",
+      "LONG AN": "Long An",
+      "TAY NINH": "Tây Ninh",
+      "BA RIA - VUNG TAU": "Bà Rịa - Vũng Tàu",
+      "BINH PHUOC": "Bình Phước",
+      "BINH THUAN": "Bình Thuận",
+      "LAM DONG": "Lâm Đồng",
+      "TIEN GIANG": "Tiền Giang",
+      "BEN TRE": "Bến Tre",
+      "TRA VINH": "Trà Vinh",
+      "VINH LONG": "Vĩnh Long",
+      "DONG THAP": "Đồng Tháp",
+      "AN GIANG": "An Giang",
+      "KIEN GIANG": "Kiên Giang",
+      "CAN THO": "Cần Thơ",
+      "HAU GIANG": "Hậu Giang",
+      "SOC TRANG": "Sóc Trăng",
+      "BAC LIEU": "Bạc Liêu",
+      "CA MAU": "Cà Mau",
+      "THONG BAO SAU": "Thông báo sau"
+    };
+
+    // Bộ quy tắc nhận diện Form Biên Bản theo KHO NHẬN (Dễ dàng mở rộng thêm nhiều kho/khách hàng)
+    const BB_TEMPLATE_RULES = [
+      {
+        code: "4ORANGES",
+        name: "Form 4 Oranges (THNA Group)",
+        shortBadge: "4Oranges",
+        match: (khoClean, khoRaw) => {
+          return khoClean.includes("4ORANGES") || /4\s*ORANGE/i.test(khoRaw);
+        }
+      }
+    ];
+
+    function detectBbTemplate(po) {
+      const rawKho = (po && po.khoNhanHangPo ? String(po.khoNhanHangPo) : "").trim();
+      const cleanKho = toCleanUpperCode(rawKho);
+      for (const rule of BB_TEMPLATE_RULES) {
+        if (rule.match(cleanKho, rawKho)) {
+          return rule;
+        }
+      }
+      return {
+        code: "STANDARD",
+        name: "Form Chuẩn Vietsun",
+        shortBadge: "Chuẩn"
+      };
+    }
+
     function toggleBulkDropdown(e) {
       if (e) e.stopPropagation();
       const pop = document.getElementById("bulkDropdownPop");
@@ -5732,8 +5793,8 @@
       state.bulkMode = true;
       state.bulkCarrier = carrier;
 
-      // Đảm bảo đang đứng ở tab Hàng Xuất (X)
-      if (state.xuatNhap !== "X") {
+      // Nếu không ở Tab Xuất (X) hoặc Tab Nhập (N) thì mặc định chuyển về Tab Xuất (X)
+      if (state.xuatNhap !== "X" && state.xuatNhap !== "N") {
         state.xuatNhap = "X";
         document.querySelectorAll(".bottom-nav .nav-item").forEach(btn => {
           btn.classList.toggle("active", btn.dataset.xn === "X");
@@ -5752,7 +5813,9 @@
       updateBulkControlsUI();
       updateBulkHeaderCheckbox();
       updateBulkSelectedCount();
-      showToast(`Đã bật chế độ in PKL hàng loạt cho ${carrier} (${filteredShipments.length} lô)!`, "info");
+
+      const docLabel = state.xuatNhap === "N" ? "Biên Bản (BB)" : "PKL";
+      showToast(`Đã bật chế độ in ${docLabel} hàng loạt cho ${carrier} (${filteredShipments.length} lô)!`, "info");
     }
 
     function exitBulkPrintMode() {
@@ -5812,9 +5875,10 @@
       if (!ctrl) return;
       const isTable = state.viewMode === "table";
       const isXuat = state.xuatNhap === "X";
+      const isNhap = state.xuatNhap === "N";
 
-      // Chỉ hiện khi ở chế độ Bảng PC và Tab Hàng Xuất (hoặc đang trong chế độ bulkMode)
-      if (!isTable || (!isXuat && !state.bulkMode)) {
+      // Hiện khi ở chế độ Bảng PC và Tab Hàng Xuất (In PKL) hoặc Tab Hàng Nhập (In BB)
+      if (!isTable || (!isXuat && !isNhap && !state.bulkMode)) {
         ctrl.style.display = "none";
         closeBulkDropdown();
         return;
@@ -5823,6 +5887,21 @@
       ctrl.style.display = "flex";
       const wrap = document.getElementById("bulkDropdownWrap");
       const activeBar = document.getElementById("bulkActiveBar");
+      const lblAction = document.getElementById("lblBulkAction");
+      const mainBtn = document.getElementById("btnBulkPrintMain");
+
+      if (lblAction) {
+        lblAction.textContent = isNhap ? "In Biên Bản hàng loạt" : "In PKL hàng loạt";
+      }
+      if (mainBtn) {
+        mainBtn.title = isNhap
+          ? "In Biên Bản giao nhận hàng loạt theo ĐVVT (Tự nhận diện Form theo Kho Nhận)"
+          : "In PKL hàng loạt theo ĐVVT";
+        mainBtn.style.background = isNhap
+          ? "linear-gradient(135deg, #0f766e 0%, #0d9488 100%)"
+          : "linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)";
+        mainBtn.style.borderColor = isNhap ? "#0f766e" : "#1d4ed8";
+      }
 
       if (state.bulkMode) {
         if (wrap) wrap.style.display = "none";
@@ -5839,9 +5918,609 @@
       }
     }
 
+    function printSingleBienBan(idPo) {
+      const po = allShipments.find(i => String(i.idPo) === String(idPo));
+      if (!po) {
+        showToast("⚠️ Không tìm thấy thông tin lô hàng!", "warning");
+        return;
+      }
+      executeBulkBienBanPrint([po]);
+    }
+
+    function buildBienBanPageHtml(po, isNotFirstPage) {
+      const tpl = detectBbTemplate(po);
+      const baseOrigin = window.location.origin;
+      const soCont = escapeAttr((po.soContPo || "").toUpperCase().trim());
+      const soSeal = escapeAttr((po.soSealPo || "").trim());
+      const hasValidDate = po.ngayTraHang && po.ngayTraHang !== "2021-11-11" && po.ngayTraHang !== "1970-01-01";
+
+      let dd = ".....", mm = ".....", yyyy = String(new Date().getFullYear());
+      if (hasValidDate) {
+        const parts = String(po.ngayTraHang).split("-");
+        if (parts.length === 3) {
+          yyyy = parts[0];
+          mm = parts[1];
+          dd = parts[2];
+        }
+      }
+
+      // 1. FORM ĐẶC THÙ: KHO NHẬN = CTY 4 ORANGES (THNA GROUP)
+      if (tpl.code === "4ORANGES") {
+        return `
+          <div class="bb-page bb-4oranges ${isNotFirstPage ? 'page-break' : ''}">
+            <div class="thna-header">
+              <div class="thna-logo-col">
+                <img src="${baseOrigin}/logoThna.png" alt="THNA Logo" class="thna-logo-img" />
+              </div>
+              <div class="thna-info-col">
+                <div class="thna-title">THNA GROUP</div>
+                <div class="thna-sub"><span style="color:#0000FF;">The No.1 Vietnam </span><span style="color:#222222;">CaCO3 powder</span></div>
+                <div class="thna-line">2<sup>nd</sup> Floor, Trung Hai Nghe An Building, Quy Hop, Nghe An, Vietnam</div>
+                <div class="thna-line">Phone:&nbsp; +84 238 398 2777 &ndash;&nbsp;&nbsp; Email:&nbsp;<span class="thna-link">info@thnagroup.com</span></div>
+                <div class="thna-line">Hotline: +84 97&nbsp; 109 2777 &ndash;&nbsp; Website:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="thna-link">thnagroup.com</span></div>
+              </div>
+            </div>
+
+            <div class="thna-divider">-----------------------------------------------------------------------------------------------------------------------------------------</div>
+
+            <div class="thna-doc-title">BIÊN BẢN GIAO NHẬN HÀNG HÓA</div>
+            <div class="thna-doc-date" contenteditable="true">Ngày ${dd}&nbsp;&nbsp;tháng ${mm}&nbsp;&nbsp;&nbsp;năm ${yyyy}</div>
+
+            <div class="thna-section">
+              <div class="thna-bold-12">BÊN GIAO HÀNG: CÔNG TY CỔ PHẦN TRUNG HẢI- NGHỆ AN GROUP.</div>
+              <div class="thna-bold-12" style="padding-left:28px;">(THNA GROUP)</div>
+              <div class="thna-driver-line" contenteditable="true">
+                <span style="display:inline-block;width:58%;padding-left:48px;">Tên Tài xế:</span>
+                <span>Biển số xe:</span>
+              </div>
+            </div>
+
+            <div class="thna-section" style="margin-top:14px;">
+              <div class="thna-bold-13">BÊN NHẬN HÀNG: CÔNG TY 4ORANGES CO.,LTD</div>
+              <div class="thna-bold-13">Địa chỉ:&nbsp; Lô C-02-1, KCN Đức&nbsp; Hoà 1, Ấp 5, Xã Mỹ Hạnh, Tỉnh Tây Ninh, Việt Nam.</div>
+            </div>
+
+            <table class="thna-table">
+              <thead>
+                <tr>
+                  <th style="width:7.6%;">STT</th>
+                  <th style="width:23.7%;">Số cont/Seal</th>
+                  <th style="width:15.6%;">Số lượng</th>
+                  <th style="width:26.55%;">Khối lượng ( tấn)</th>
+                  <th style="width:26.55%;">Mã Hàng</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="text-align:center;">1</td>
+                  <td style="text-align:center;" contenteditable="true">${soCont}</td>
+                  <td contenteditable="true"></td>
+                  <td contenteditable="true"></td>
+                  <td style="text-align:center;" contenteditable="true">THNA07</td>
+                </tr>
+                <tr>
+                  <td style="text-align:center;">2</td>
+                  <td style="text-align:center;padding-left:22px;" contenteditable="true">${soSeal}</td>
+                  <td contenteditable="true"></td>
+                  <td contenteditable="true"></td>
+                  <td contenteditable="true"></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="thna-weight-words" contenteditable="true">Khối lượng hàng bằng chữ: </div>
+
+            <div class="thna-signatures">
+              <div class="thna-sig-col">
+                <div class="thna-sig-title">Đại diện bên nhận hàng</div>
+                <div class="thna-sig-sub">(Ký và ghi rõ họ tên)</div>
+              </div>
+              <div class="thna-sig-col">
+                <div class="thna-sig-title">Đại diện bên giao hàng</div>
+                <div class="thna-sig-sub">(Ký và ghi rõ họ tên)</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // 2. FORM CHUẨN VIETSUN LOGISTICS (MẶC ĐỊNH CHO ĐA SỐ KHÁCH HÀNG - TRANGIN.PHP?LOAI=98)
+      const vsDateStr = hasValidDate
+        ? `Ngày ${dd} tháng ${mm}  năm ${yyyy} `
+        : `Ngày ..... tháng ..... năm .......`;
+      const khoNhan = (po.khoNhanHangPo || po.tenKhachPo || "").trim();
+      const rawDiaChi = (po.diaChiNhanPo || "").trim();
+      const rawTinh = (po.tinhNhanPo || "").toUpperCase().trim();
+      const tinhLabel = PROVINCE_VN_LABEL[rawTinh] || po.tinhNhanPo || "";
+      const fullDiaChi = [rawDiaChi, tinhLabel].filter(Boolean).join(", ");
+
+      return `
+        <div class="bb-page bb-vietsun ${isNotFirstPage ? 'page-break' : ''}">
+          <div class="vs-div-picture">
+            <img class="vs-watermark-img" src="${baseOrigin}/vietsunwatermark2.png" alt="" />
+            <img class="vs-seal-img" src="${baseOrigin}/seal_vietsun.png" alt="" />
+            <div class="vs-content-layer">
+              <table class="vs-header-table">
+                <tr>
+                  <td style="width:170px;vertical-align:top;text-align:center;">
+                    <img src="${baseOrigin}/logo-vietsunnew.png" alt="Company Logo" style="height:75px;width:auto;" />
+                  </td>
+                  <td style="text-align:center;font-family:Arial,Helvetica,sans-serif;">
+                    <div style="font-size:19px;font-weight:700;line-height:1.2;">VIETSUN LOGISTICS - VIETSUN CORPORATION</div>
+                    <div style="font-size:12.5px;line-height:1.35;margin-top:4px;">
+                      Số 13-15 đường B4, Phường An Khánh, Thành Phố Hồ Chí Minh<br/>
+                      Tel : 08 38269 539 - 38269 540 -38269 541 - Ext :307; Fax: (84.8) 8269542<br/>
+                      Website : www.vietsunlogistic.com<br/><br/>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="2" style="text-align:center;padding-top:4px;">
+                    <span style="font-size:23pt;font-weight:700;">BIÊN BẢN GIAO NHẬN HÀNG</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="2" style="text-align:right;padding-top:2px;">
+                    <span style="font-size:12.5pt;font-style:italic;" contenteditable="true">${vsDateStr}</span>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:8px 0 4px;line-height:1.75;" contenteditable="true">
+                Căn cứ vào hợp đồng vận chuyển (hoặc booking note) số ................... ngày ...... tháng ... năm....<br/>
+                <span style="font-weight:700;text-decoration:underline;">Chúng tôi gồm:</span>
+              </p>
+
+              <table class="vs-info-table">
+                <tbody>
+                  <tr>
+                    <th colspan="4" style="text-align:left;"><span style="text-decoration:underline;">BÊN GIAO</span>: CÔNG TY CỔ PHẦN NHẬT VIỆT</th>
+                  </tr>
+                  <tr>
+                    <td style="width:15%;">Địa chỉ</td>
+                    <td colspan="3">:Số 13-15 đường B4, Phường An Khánh, Thành Phố Hồ Chí Minh</td>
+                  </tr>
+                  <tr>
+                    <td>Điện thoại</td>
+                    <td colspan="3">: 08 38269539 </td>
+                  </tr>
+                  <tr>
+                    <td>Đại diện</td>
+                    <td style="width:53%;" contenteditable="true">: Ông......................................................................</td>
+                    <td style="width:11%;">Chức vụ</td>
+                    <td>: NV Lái xe</td>
+                  </tr>
+                  <tr>
+                    <td>Số xe vận tải</td>
+                    <td colspan="3" contenteditable="true">:..............................................................................</td>
+                  </tr>
+                  <tr>
+                    <th style="text-align:left;text-decoration:underline;vertical-align:top;">BÊN NHẬN</th>
+                    <th colspan="3" style="text-align:left;text-transform:uppercase;" contenteditable="true">: ${escapeAttr(khoNhan)}</th>
+                  </tr>
+                  <tr>
+                    <td style="vertical-align:top;">Địa chỉ</td>
+                    <td colspan="3" contenteditable="true">: ${escapeAttr(fullDiaChi)}</td>
+                  </tr>
+                  <tr>
+                    <td>Đại diện</td>
+                    <td contenteditable="true">: Ông/Bà................................................................</td>
+                    <td>Chức vụ</td>
+                    <td contenteditable="true">:.....................................</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div style="margin:4px 0;">Cùng thống nhất lập biên bản giao nhận hàng hóa trên với nội dung như sau:</div>
+
+              <table class="vs-bangND">
+                <thead>
+                  <tr>
+                    <th style="width:28%;">SỐ CONT</th>
+                    <th style="width:22%;">SỐ SEAL</th>
+                    <th style="width:25%;" contenteditable="true">HÀNG HÓA</th>
+                    <th style="width:25%;" contenteditable="true">GHI CHÚ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td contenteditable="true">${soCont}</td>
+                    <td contenteditable="true">${soSeal}</td>
+                    <td contenteditable="true"></td>
+                    <td contenteditable="true"></td>
+                  </tr>
+                  <tr>
+                    <td contenteditable="true"></td>
+                    <td contenteditable="true"></td>
+                    <td contenteditable="true"></td>
+                    <td contenteditable="true"><span style="color:#ffffff;">.</span></td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <p style="margin:8px 0 12px;line-height:1.8;" contenteditable="true">
+                <span style="font-weight:700;text-decoration:underline;">Hình thức giao nhận: </span> Nguyên Cont, nguyên Seal. Bên giao không chịu trách nhiệm về số lượng, trọng lượng hàng hóa bên trong Cont.<br/>
+                <span style="font-weight:700;text-decoration:underline;">Địa điểm giao, nhận hàng: </span>..............................................................................................................<br/>
+                <span style="font-weight:700;text-decoration:underline;">Chứng từ kèm theo: </span>........................................................................................................................<br/>
+                Hai bên đã kiểm tra kỹ số Cont, số Seal như trên là đúng và cùng thống nhất giao nhận hàng với nội dung như trên. Biên bản được lập thành hai (02) bản, nội dung và giá trị như nhau mỗi bên giữ một (01) bản ./
+              </p>
+
+              <div class="vs-sig-row">
+                <div class="vs-sig-col">ĐẠI DIỆN BÊN GIAO</div>
+                <div class="vs-sig-col"></div>
+                <div class="vs-sig-col">ĐẠI DIỆN BÊN NHẬN</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function executeBulkBienBanPrint(selectedPos) {
+      if (!selectedPos || selectedPos.length === 0) {
+        showToast("⚠️ Vui lòng chọn ít nhất 1 lô hàng Nhập để in Biên Bản!", "warning");
+        return;
+      }
+
+      const tplCounts = {};
+      const pagesHtmlArr = selectedPos.map((po, idx) => {
+        const tpl = detectBbTemplate(po);
+        tplCounts[tpl.name] = (tplCounts[tpl.name] || 0) + 1;
+        return buildBienBanPageHtml(po, idx > 0);
+      });
+
+      const summaryBreakdown = Object.entries(tplCounts)
+        .map(([name, cnt]) => `${cnt} ${name}`)
+        .join(" • ");
+
+      showToast(`Đang mở trang in ${selectedPos.length} Biên Bản (${summaryBreakdown})...`, "success");
+
+      const carrierLabel = state.bulkCarrier ? ` - ${state.bulkCarrier}` : "";
+      const title = `In ${selectedPos.length} Biên Bản Giao Nhận${carrierLabel} (${formatIsoToVN(state.fromDate)})`;
+
+      const printHtml = `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <title>${escapeAttr(title)}</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 10mm 10mm 10mm 10mm;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #f1f5f9;
+      color: #000000;
+      font-family: "Times New Roman", Times, serif;
+    }
+    .no-print-bar {
+      position: sticky;
+      top: 0;
+      z-index: 9999;
+      background: #ffffff;
+      border-bottom: 1px solid #cbd5e1;
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-family: Arial, Helvetica, sans-serif;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+    }
+    .no-print-info {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .no-print-sub {
+      font-size: 12px;
+      color: #0369a1;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+    .no-print-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-top-print {
+      background: #f59e0b;
+      color: #000000;
+      border: 1px solid #d97706;
+      border-radius: 6px;
+      padding: 7px 16px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-top-print:hover {
+      background: #eab308;
+    }
+    .btn-top-close {
+      background: #ffffff;
+      color: #dc2626;
+      border: 1px solid #dc2626;
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-top-close:hover {
+      background: #fee2e2;
+    }
+    .bb-page {
+      width: 190mm;
+      margin: 12px auto;
+      background: #ffffff;
+      padding: 6mm 6mm;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .page-break {
+      page-break-before: always;
+      break-before: page;
+    }
+    @media print {
+      html, body {
+        background: #ffffff;
+      }
+      .no-print-bar {
+        display: none !important;
+      }
+      .bb-page {
+        margin: 0 auto;
+        padding: 0;
+        box-shadow: none;
+        width: 190mm;
+      }
+    }
+
+    /* =====================================================================
+       STYLE 1: FORM CHUẨN VIETSUN LOGISTICS (TRANGIN.PHP?LOAI=98)
+       ===================================================================== */
+    .bb-vietsun {
+      font-family: "Times New Roman", Times, serif;
+      font-size: 13pt;
+      color: #000000;
+    }
+    .vs-div-picture {
+      width: 190mm;
+      min-height: 225mm;
+      position: relative;
+    }
+    .vs-watermark-img {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 82%;
+      max-height: 175mm;
+      object-fit: contain;
+      opacity: 0.22;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .vs-seal-img {
+      position: absolute;
+      top: 18mm;
+      left: 10mm;
+      width: 39mm;
+      height: 39mm;
+      object-fit: contain;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .vs-content-layer {
+      position: relative;
+      z-index: 2;
+    }
+    .vs-header-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .vs-info-table {
+      width: 100%;
+      border-collapse: collapse;
+      line-height: 1.8;
+      vertical-align: top;
+    }
+    .vs-info-table th, .vs-info-table td {
+      padding: 0 2px;
+      vertical-align: top;
+    }
+    .vs-bangND {
+      width: 100%;
+      border-collapse: collapse;
+      line-height: 1.8;
+      margin: 4px 0;
+    }
+    .vs-bangND th, .vs-bangND td {
+      border: 1px solid #000000;
+      padding: 2px 10px;
+      text-align: center;
+    }
+    .vs-sig-row {
+      display: flex;
+      justify-content: space-between;
+      text-align: center;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+    .vs-sig-col {
+      width: 33.33%;
+    }
+
+    /* =====================================================================
+       STYLE 2: FORM CTY 4 ORANGES (THNA GROUP - DOCX TEMPLATE)
+       ===================================================================== */
+    .bb-4oranges {
+      font-family: "Times New Roman", Times, serif;
+      color: #000000;
+      padding-top: 4mm;
+    }
+    .thna-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding-left: 8px;
+    }
+    .thna-logo-col {
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+    .thna-logo-img {
+      width: 160px;
+      height: auto;
+      display: block;
+    }
+    .thna-info-col {
+      font-family: Arial, Helvetica, sans-serif;
+      color: #222222;
+      line-height: 1.38;
+    }
+    .thna-title {
+      font-size: 14pt;
+      font-weight: 700;
+      color: #0000FF;
+      margin-bottom: 3px;
+    }
+    .thna-sub {
+      font-size: 10pt;
+      margin-bottom: 2px;
+    }
+    .thna-line {
+      font-size: 10pt;
+      color: #222222;
+    }
+    .thna-link {
+      color: #0000FF;
+      text-decoration: underline;
+    }
+    .thna-divider {
+      font-family: "Times New Roman", Times, serif;
+      font-size: 11pt;
+      text-align: center;
+      letter-spacing: 0.4px;
+      margin: 12px 0 14px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .thna-doc-title {
+      font-size: 16pt;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 6px;
+    }
+    .thna-doc-date {
+      font-size: 12pt;
+      text-align: right;
+      padding-right: 28px;
+      margin-bottom: 14px;
+    }
+    .thna-section {
+      line-height: 1.85;
+    }
+    .thna-bold-12 {
+      font-size: 12pt;
+      font-weight: 700;
+    }
+    .thna-bold-13 {
+      font-size: 13pt;
+      font-weight: 700;
+    }
+    .thna-driver-line {
+      font-size: 13pt;
+      margin-top: 2px;
+    }
+    .thna-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 16px;
+      font-size: 12pt;
+    }
+    .thna-table th, .thna-table td {
+      border: 1px solid #000000;
+      padding: 6px 8px;
+      vertical-align: middle;
+    }
+    .thna-table thead th {
+      font-weight: 700;
+      text-align: center;
+      height: 26px;
+    }
+    .thna-table tbody td {
+      height: 36px;
+    }
+    .thna-weight-words {
+      font-size: 13pt;
+      padding-left: 24px;
+      margin: 16px 0 22px;
+    }
+    .thna-signatures {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13pt;
+      padding: 0 36px;
+      margin-top: 16px;
+    }
+    .thna-sig-col {
+      text-align: center;
+      width: 45%;
+    }
+    .thna-sig-title {
+      margin-bottom: 68px;
+    }
+    .thna-sig-sub {
+      font-size: 12.5pt;
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print-bar">
+    <div>
+      <div class="no-print-info">🖨️ Danh sách in: ${selectedPos.length} Biên Bản Giao Nhận Hàng Nhập${carrierLabel}</div>
+      <div class="no-print-sub">Tự động nhận diện Form theo Kho Nhận: ${escapeAttr(summaryBreakdown)} (Có thể bấm vào chữ trên phiếu để sửa trực tiếp trước khi in)</div>
+    </div>
+    <div class="no-print-actions">
+      <button type="button" class="btn-top-print" onclick="window.print()">🖨️ In Phiếu (${selectedPos.length})</button>
+      <button type="button" class="btn-top-close" onclick="window.close()">✕ Đóng trang in</button>
+    </div>
+  </div>
+  ${pagesHtmlArr.join("")}
+  <script>
+    window.addEventListener("load", function() {
+      setTimeout(function() {
+        window.focus();
+        window.print();
+      }, 300);
+    });
+  <\/script>
+</body>
+</html>`;
+
+      const w = window.open("", "_blank");
+      if (!w) {
+        showToast("⚠️ Trình duyệt đang chặn cửa sổ In. Vui lòng cho phép Pop-up trên trang này!", "error");
+        return;
+      }
+      w.document.open();
+      w.document.write(printHtml);
+      w.document.close();
+    }
+
     function executeBulkPrint() {
+      const isNhap = state.xuatNhap === "N";
+      const docLabel = isNhap ? "Biên Bản" : "PKL";
+
       if (!state.bulkSelectedIds || state.bulkSelectedIds.size === 0) {
-        showToast("⚠️ Vui lòng tick chọn ít nhất 1 lô hàng để in PKL!", "warning");
+        showToast(`⚠️ Vui lòng tick chọn ít nhất 1 lô hàng để in ${docLabel}!`, "warning");
         return;
       }
 
@@ -5857,6 +6536,13 @@
         return;
       }
 
+      // Nếu đang ở Tab Hàng Nhập (N) -> Chạy bộ In Biên Bản tự nhận diện Form theo Kho Nhận
+      if (isNhap) {
+        executeBulkBienBanPrint(selectedPos);
+        return;
+      }
+
+      // Nếu đang ở Tab Hàng Xuất (X) -> Chạy bộ In PKL hàng loạt
       showToast(`Đang kết xuất ${selectedPos.length} phiếu PKL (${state.bulkCarrier})...`, "info");
 
       const offCanvas = document.createElement("canvas");
