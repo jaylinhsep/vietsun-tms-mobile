@@ -1,6 +1,6 @@
 <?php
 date_default_timezone_set('Asia/Ho_Chi_Minh');
-if (isset($_GET['api']) || isset($_GET['route'])) {
+if (isset(['api']) || isset(['route'])) {
     require_once __DIR__ . '/api/index.php';
     exit;
 }
@@ -1306,10 +1306,199 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
       padding: 4px 10px 84px;
     }
 
-    body.desktop-table-mode .summary-strip,
+    body.desktop-table-mode .summary-strip {
+      display: flex !important;
+      align-items: center;
+      gap: 10px;
+      max-width: 100% !important;
+      padding: 10px 10px 4px;
+    }
+
+    body.desktop-table-mode .summary-strip .stat-card {
+      flex: 1 1 0;
+      min-width: 110px;
+    }
+
     body.desktop-table-mode .filter-section,
     body.desktop-table-mode .chuhang-bar {
       max-width: 100% !important;
+    }
+
+    /* DESKTOP BULK ACTIONS (IN PKL HÀNG LOẠT / IN BB) */
+    .desktop-bulk-ctrl {
+      display: none;
+      position: relative;
+      align-items: center;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    body.desktop-table-mode .desktop-bulk-ctrl {
+      display: flex;
+    }
+
+    .bulk-dropdown-wrap {
+      position: relative;
+      display: inline-block;
+    }
+
+    .btn-bulk-main {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+      color: #ffffff;
+      border: 1px solid #1d4ed8;
+      border-radius: 9px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-bulk-main:hover {
+      background: linear-gradient(135deg, #172554 0%, #1d4ed8 100%);
+      box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .bulk-dropdown-pop {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      min-width: 215px;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      padding: 6px;
+      z-index: 1000;
+    }
+
+    .bulk-dropdown-pop.show {
+      display: block;
+      animation: bulkFadeDown 0.15s ease-out;
+    }
+
+    @keyframes bulkFadeDown {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .bulk-opt-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      user-select: none;
+    }
+
+    .bulk-opt-item:hover {
+      background: #eff6ff;
+    }
+
+    .bulk-opt-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .bulk-opt-info {
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
+
+    .bulk-opt-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #1e3a8a;
+    }
+
+    .bulk-opt-desc {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 1px;
+    }
+
+    /* ACTIVE BAR IN SUMMARY STRIP */
+    .bulk-active-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+      padding: 4px 6px;
+      border: 1.5px solid #3b82f6;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+    }
+
+    .bulk-tag-carrier {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 6px 10px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      border: 1px solid #bae6fd;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .bulk-tag-carrier:hover {
+      background: #bae6fd;
+      color: #0c4a6e;
+    }
+
+    .btn-bulk-execute {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, #15803d 0%, #16a34a 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 7px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(22, 163, 74, 0.3);
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-bulk-execute:hover {
+      background: linear-gradient(135deg, #166534 0%, #15803d 100%);
+      box-shadow: 0 3px 8px rgba(22, 163, 74, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-bulk-exit {
+      background: #ffffff;
+      color: #64748b;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-bulk-exit:hover {
+      background: #fee2e2;
+      color: #dc2626;
+      border-color: #fca5a5;
     }
 
     .pc-table-wrap {
@@ -1665,6 +1854,48 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
     <div class="stat-card" id="statNoTruck" onclick="setTruckQuickFilter('NO_TRUCK')">
       <div class="stat-val" style="color:#d97706;" id="countNoTruck">0</div>
       <div class="stat-lbl">Chưa có xe</div>
+    </div>
+
+    <!-- BULK ACTIONS (DESKTOP MODE - TAB HÀNG XUẤT IN PKL / TAB HÀNG NHẬP IN BB) -->
+    <div class="desktop-bulk-ctrl" id="desktopBulkCtrl" style="display:none;">
+      <!-- State 1: Dropdown Button -->
+      <div class="bulk-dropdown-wrap" id="bulkDropdownWrap">
+        <button type="button" class="btn-bulk-main" id="btnBulkPrintMain" onclick="toggleBulkDropdown(event)" title="In PKL hàng loạt theo ĐVVT">
+          <span style="font-size:15px;">🖨️</span>
+          <span id="lblBulkAction">In PKL hàng loạt</span>
+          <span style="font-size:11px;margin-left:2px;">▾</span>
+        </button>
+        <div class="bulk-dropdown-pop" id="bulkDropdownPop">
+          <div class="bulk-opt-item" onclick="selectBulkCarrier('VIETSUN')">
+            <span class="bulk-opt-icon">🚛</span>
+            <div class="bulk-opt-info">
+              <span class="bulk-opt-title">VIETSUN</span>
+              <span class="bulk-opt-desc">Xe nhà Vietsun</span>
+            </div>
+          </div>
+          <div class="bulk-opt-item" onclick="selectBulkCarrier('VENDOR')">
+            <span class="bulk-opt-icon">🚚</span>
+            <div class="bulk-opt-info">
+              <span class="bulk-opt-title">VENDOR</span>
+              <span class="bulk-opt-desc">Các đội xe còn lại</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- State 2: Active Filter & Print All Bar -->
+      <div class="bulk-active-bar" id="bulkActiveBar" style="display:none;">
+        <div class="bulk-tag-carrier" id="bulkTagCarrier" onclick="toggleBulkDropdown(event)" title="Bấm đổi lọc ĐVVT">
+          <span id="bulkCarrierIcon">🚛</span>
+          <span id="bulkCarrierText">VIETSUN</span>
+          <span style="font-size:10px;margin-left:2px;">▾</span>
+        </div>
+        <button type="button" class="btn-bulk-execute" id="btnBulkExecute" onclick="executeBulkPrint()" title="Bấm để in tất cả phiếu đã chọn">
+          <span style="font-size:15px;">🖨️</span>
+          <span>Print All (<strong id="bulkSelectedCount">0</strong>)</span>
+        </button>
+        <button type="button" class="btn-bulk-exit" onclick="exitBulkPrintMode()" title="Hủy & trở về bảng bình thường">✕ Hủy</button>
+      </div>
     </div>
   </div>
 
@@ -2516,7 +2747,10 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
       vendor: "ALL",
       province: "ALL",
       searchQuery: "",
-      viewMode: safeGetStorage("vs_view_mode", "cards") // "cards" | "table"
+      viewMode: safeGetStorage("vs_view_mode", "cards"), // "cards" | "table"
+      bulkMode: false,
+      bulkCarrier: null, // "VIETSUN" | "VENDOR"
+      bulkSelectedIds: new Set()
     };
 
     let currentEditingPo = null;
@@ -3031,6 +3265,21 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
         return true;
       });
 
+      // Lọc theo đơn vị vận chuyển in hàng loạt (VIETSUN vs VENDOR: các đội còn lại)
+      if (state.bulkMode && state.bulkCarrier) {
+        filteredShipments = filteredShipments.filter(item => {
+          const rawDv = normalizeVendorNameClient(item.donViVcPo || "");
+          if (state.bulkCarrier === "VIETSUN") {
+            return rawDv === "VIETSUN";
+          } else if (state.bulkCarrier === "VENDOR") {
+            if (rawDv === "VIETSUN") return false;
+            const autoV = (knownTruckMap.get(item.soXePo) || {}).vendor;
+            return !!rawDv || (autoV && autoV !== "VIETSUN");
+          }
+          return true;
+        });
+      }
+
       // Ưu tiên các dòng chưa có Đơn vị V/C và Số xe lên top đầu (cho cả hàng Nhập & Xuất)
       filteredShipments.sort((a, b) => {
         const getPriority = (item) => {
@@ -3050,8 +3299,9 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
       updateSummaryCards(filteredShipments);
       updateActiveFilterBadge();
 
-      renderLimit = state.viewMode === "table" ? 300 : 60;
+      renderLimit = state.bulkMode ? Math.max(500, filteredShipments.length) : (state.viewMode === "table" ? 300 : 60);
       renderShipmentList();
+      updateBulkControlsUI();
     }
 
     function applyViewModeUI() {
@@ -3064,6 +3314,7 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
         btn.style.background = isTable ? "#dcfce7" : "#ffffff";
         btn.style.color = isTable ? "#15803d" : "#1e3a8a";
       }
+      updateBulkControlsUI();
     }
 
     function toggleDesktopMode() {
@@ -3187,6 +3438,9 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
     }
 
     function renderDesktopTableView(slice, hasMore) {
+      const isBulk = !!state.bulkMode;
+      const allSelected = slice.length > 0 && slice.every(i => state.bulkSelectedIds && state.bulkSelectedIds.has(String(i.idPo)));
+
       const rowsHtml = slice.map((item, idx) => {
         const isXuat = item.xuatNhapPo === "X";
         const isUnsetDate = !item.ngayTraHang || item.ngayTraHang === "2021-11-11" || item.ngayTraHang === "1970-01-01";
@@ -3195,12 +3449,21 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
         const drvTooltip = drvInfo ? `Tài xế: ${drvInfo.name} - SĐT: ${drvInfo.phone || ""}` : "";
         const cangDenVal = isXuat ? (item.tinhXuatHangPo || item.cangDenPo || "") : (item.cangDenPo || "");
         const rowClass = isXuat ? "pc-row-xuat" : "pc-row-nhap";
+        const isItemChecked = !!(state.bulkSelectedIds && state.bulkSelectedIds.has(String(item.idPo)));
+
+        const actionColTd = isBulk ? `
+          <td style="text-align:center;padding:2px 3px !important;width:40px;background:#eff6ff;" onclick="event.stopPropagation()">
+            <input type="checkbox" class="chk-bulk-item" value="${item.idPo}" ${isItemChecked ? "checked" : ""} onchange="onToggleBulkItem('${item.idPo}', this.checked)" style="width:16px;height:16px;cursor:pointer;vertical-align:middle;" />
+          </td>
+        ` : `
+          <td style="text-align:center;padding:2px 3px !important;width:36px;">
+            <button type="button" class="pc-del-btn" onclick="openDeleteBookingModal('${item.idPo}')" title="Xóa booking thừa #${item.idPo}">🗑️</button>
+          </td>
+        `;
 
         return `
           <tr id="pc-row-${item.idPo}" data-row-idx="${idx}" class="${rowClass}" ondblclick="openEditModal('${item.idPo}')" title="Nhấp đúp chuột để mở chi tiết #${item.idPo}">
-            <td style="text-align:center;padding:2px 3px !important;width:36px;">
-              <button type="button" class="pc-del-btn" onclick="openDeleteBookingModal('${item.idPo}')" title="Xóa booking thừa #${item.idPo}">🗑️</button>
-            </td>
+            ${actionColTd}
             <td style="text-align:center;white-space:nowrap;font-weight:700;color:#2563eb;cursor:pointer;" onclick="openEditModal('${item.idPo}')" title="Bấm mở chi tiết #${item.idPo}">${escapeAttr(item.chuyenPo)}</td>
             <td class="pc-truncate" title="${escapeAttr(item.tenKhachPo)}">${escapeAttr(item.tenKhachPo)}</td>
             <td class="pc-truncate" style="${!isXuat ? 'font-weight:700;color:#0f172a;' : ''}" title="${escapeAttr(item.khoNhanHangPo)}">${escapeAttr(item.khoNhanHangPo)}</td>
@@ -3272,12 +3535,20 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
         ? `<button class="load-more-btn" onclick="loadMoreCards()">Xem thêm (${filteredShipments.length - renderLimit} lô hàng nữa)...</button>`
         : "";
 
+      const actionColTh = isBulk ? `
+        <th style="width:40px;text-align:center;background:#dbeafe;" title="Tick all: Chọn / Bỏ chọn tất cả">
+          <input type="checkbox" id="chkBulkPrintAll" onchange="toggleSelectAllBulk(this.checked)" ${allSelected ? "checked" : ""} style="width:16px;height:16px;cursor:pointer;vertical-align:middle;" />
+        </th>
+      ` : `
+        <th style="width:36px;text-align:center;" title="Xóa booking thừa">XÓA</th>
+      `;
+
       return `
         <div class="pc-table-wrap">
           <table class="pc-table">
             <thead>
               <tr>
-                <th style="width:36px;text-align:center;" title="Xóa booking thừa">XÓA</th>
+                ${actionColTh}
                 <th style="width:72px;text-align:center;">CHUYẾN</th>
                 <th>KHÁCH HÀNG</th>
                 <th>KHO NHẬN/ĐÓNG</th>
@@ -4067,6 +4338,9 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
     }
 
     function setXuatNhapFilter(xn) {
+      if (state.bulkMode && xn !== "X") {
+        exitBulkPrintMode();
+      }
       state.xuatNhap = xn;
       document.querySelectorAll(".bottom-nav .nav-item").forEach(btn => {
         btn.classList.toggle("active", btn.dataset.xn === xn);
@@ -5064,8 +5338,9 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
       ctx.stroke();
     }
 
-    function renderPklToCanvas(po) {
-      const canvas = document.getElementById("pklCanvas");
+    function renderPklToCanvas(po, targetCanvas) {
+      const canvas = targetCanvas || document.getElementById("pklCanvas");
+      if (!canvas) return;
       const W = 1684;
       const H = 1190;
       canvas.width = W;
@@ -5444,6 +5719,238 @@ if (isset($_GET['api']) || isset($_GET['route'])) {
       `);
       w.document.close();
     }
+
+    // =========================================================================
+    // 9C. BULK PKL PRINTING (DESKTOP MODE - TAB HÀNG XUẤT)
+    // =========================================================================
+    function toggleBulkDropdown(e) {
+      if (e) e.stopPropagation();
+      const pop = document.getElementById("bulkDropdownPop");
+      if (pop) pop.classList.toggle("show");
+    }
+
+    function closeBulkDropdown() {
+      const pop = document.getElementById("bulkDropdownPop");
+      if (pop) pop.classList.remove("show");
+    }
+
+    function selectBulkCarrier(carrier) {
+      closeBulkDropdown();
+      state.bulkMode = true;
+      state.bulkCarrier = carrier;
+
+      // Đảm bảo đang đứng ở tab Hàng Xuất (X)
+      if (state.xuatNhap !== "X") {
+        state.xuatNhap = "X";
+        document.querySelectorAll(".bottom-nav .nav-item").forEach(btn => {
+          btn.classList.toggle("active", btn.dataset.xn === "X");
+        });
+      }
+
+      state.bulkSelectedIds = new Set();
+      applyFilters();
+
+      // Mặc định tick chọn tất cả các dòng tìm thấy theo ĐVVT được lọc
+      filteredShipments.forEach(item => {
+        state.bulkSelectedIds.add(String(item.idPo));
+      });
+
+      renderShipmentList();
+      updateBulkControlsUI();
+      updateBulkHeaderCheckbox();
+      updateBulkSelectedCount();
+      showToast(`Đã bật chế độ in PKL hàng loạt cho ${carrier} (${filteredShipments.length} lô)!`, "info");
+    }
+
+    function exitBulkPrintMode() {
+      state.bulkMode = false;
+      state.bulkCarrier = null;
+      if (state.bulkSelectedIds) state.bulkSelectedIds.clear();
+      closeBulkDropdown();
+      updateBulkControlsUI();
+      applyFilters();
+      showToast("Đã thoát chế độ in hàng loạt.", "info");
+    }
+
+    function onToggleBulkItem(idPo, isChecked) {
+      if (!state.bulkSelectedIds) state.bulkSelectedIds = new Set();
+      if (isChecked) {
+        state.bulkSelectedIds.add(String(idPo));
+      } else {
+        state.bulkSelectedIds.delete(String(idPo));
+      }
+      updateBulkHeaderCheckbox();
+      updateBulkSelectedCount();
+    }
+
+    function toggleSelectAllBulk(isChecked) {
+      if (!state.bulkSelectedIds) state.bulkSelectedIds = new Set();
+      const checkboxes = document.querySelectorAll(".chk-bulk-item");
+      checkboxes.forEach(cb => {
+        cb.checked = isChecked;
+        const id = cb.value;
+        if (isChecked) {
+          state.bulkSelectedIds.add(String(id));
+        } else {
+          state.bulkSelectedIds.delete(String(id));
+        }
+      });
+      updateBulkSelectedCount();
+    }
+
+    function updateBulkHeaderCheckbox() {
+      const headerCb = document.getElementById("chkBulkPrintAll");
+      if (!headerCb) return;
+      const checkboxes = document.querySelectorAll(".chk-bulk-item");
+      if (checkboxes.length === 0) {
+        headerCb.checked = false;
+        return;
+      }
+      headerCb.checked = Array.from(checkboxes).every(cb => cb.checked);
+    }
+
+    function updateBulkSelectedCount() {
+      const countEl = document.getElementById("bulkSelectedCount");
+      if (countEl) countEl.textContent = state.bulkSelectedIds ? state.bulkSelectedIds.size : 0;
+    }
+
+    function updateBulkControlsUI() {
+      const ctrl = document.getElementById("desktopBulkCtrl");
+      if (!ctrl) return;
+      const isTable = state.viewMode === "table";
+      const isXuat = state.xuatNhap === "X";
+
+      // Chỉ hiện khi ở chế độ Bảng PC và Tab Hàng Xuất (hoặc đang trong chế độ bulkMode)
+      if (!isTable || (!isXuat && !state.bulkMode)) {
+        ctrl.style.display = "none";
+        closeBulkDropdown();
+        return;
+      }
+
+      ctrl.style.display = "flex";
+      const wrap = document.getElementById("bulkDropdownWrap");
+      const activeBar = document.getElementById("bulkActiveBar");
+
+      if (state.bulkMode) {
+        if (wrap) wrap.style.display = "none";
+        if (activeBar) activeBar.style.display = "inline-flex";
+        const iconEl = document.getElementById("bulkCarrierIcon");
+        const textEl = document.getElementById("bulkCarrierText");
+        const countEl = document.getElementById("bulkSelectedCount");
+        if (iconEl) iconEl.textContent = state.bulkCarrier === "VIETSUN" ? "🚛" : "🚚";
+        if (textEl) textEl.textContent = state.bulkCarrier;
+        if (countEl) countEl.textContent = state.bulkSelectedIds ? state.bulkSelectedIds.size : 0;
+      } else {
+        if (wrap) wrap.style.display = "inline-block";
+        if (activeBar) activeBar.style.display = "none";
+      }
+    }
+
+    function executeBulkPrint() {
+      if (!state.bulkSelectedIds || state.bulkSelectedIds.size === 0) {
+        showToast("⚠️ Vui lòng tick chọn ít nhất 1 lô hàng để in PKL!", "warning");
+        return;
+      }
+
+      const selectedPos = [];
+      filteredShipments.forEach(item => {
+        if (state.bulkSelectedIds.has(String(item.idPo))) {
+          selectedPos.push(item);
+        }
+      });
+
+      if (selectedPos.length === 0) {
+        showToast("⚠️ Không tìm thấy thông tin các lô hàng đã chọn!", "warning");
+        return;
+      }
+
+      showToast(`Đang kết xuất ${selectedPos.length} phiếu PKL (${state.bulkCarrier})...`, "info");
+
+      const offCanvas = document.createElement("canvas");
+      const pagesHtmlArr = [];
+
+      try {
+        for (let i = 0; i < selectedPos.length; i++) {
+          const po = selectedPos[i];
+          renderPklToCanvas(po, offCanvas);
+          const imgData = offCanvas.toDataURL("image/jpeg", 0.96);
+          pagesHtmlArr.push(`
+            <div class="print-page">
+              <img src="${imgData}" alt="PKL #${po.idPo}" />
+            </div>
+          `);
+        }
+      } catch (err) {
+        console.error("Lỗi kết xuất canvas PKL:", err);
+        showToast("⚠️ Lỗi khi xuất hình ảnh PKL: " + (err?.message || err), "error");
+        return;
+      }
+
+      const title = `In ${selectedPos.length} Phiếu PKL - ${state.bulkCarrier} (${formatIsoToVN(state.fromDate)})`;
+      const printHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${escapeAttr(title)}</title>
+  <style>
+    @page {
+      size: A4 landscape;
+      margin: 0;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+    }
+    .print-page {
+      width: 100vw;
+      height: 100vh;
+      page-break-after: always;
+      break-after: page;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .print-page:last-child {
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    .print-page img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+  </style>
+</head>
+<body onload="setTimeout(function(){ window.focus(); window.print(); }, 350);">
+  ${pagesHtmlArr.join("")}
+</body>
+</html>`;
+
+      const w = window.open("", "_blank");
+      if (!w) {
+        showToast("⚠️ Trình duyệt đang chặn cửa sổ In. Vui lòng cho phép Pop-up trên trang này!", "error");
+        return;
+      }
+      w.document.open();
+      w.document.write(printHtml);
+      w.document.close();
+    }
+
+    // Đóng dropdown khi click ra ngoài
+    document.addEventListener("click", function(e) {
+      const pop = document.getElementById("bulkDropdownPop");
+      const mainBtn = document.getElementById("btnBulkPrintMain");
+      const tagBtn = document.getElementById("bulkTagCarrier");
+      if (pop && pop.classList.contains("show")) {
+        if (!pop.contains(e.target) && (!mainBtn || !mainBtn.contains(e.target)) && (!tagBtn || !tagBtn.contains(e.target))) {
+          closeBulkDropdown();
+        }
+      }
+    });
 
     function fetchJsonpFromGas(url) {
       return new Promise((resolve, reject) => {
