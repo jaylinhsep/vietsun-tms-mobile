@@ -3653,9 +3653,9 @@ if (isset(['api']) || isset(['route'])) {
       updateSummaryCards(filteredShipments);
       updateActiveFilterBadge();
 
-      renderLimit = (state.bulkMode || (state.viewMode === "table" && state.xuatNhap === "N"))
-        ? Math.max(500, filteredShipments.length)
-        : (state.viewMode === "table" ? 300 : 60);
+      // Giới hạn số dòng vẽ ra DOM mỗi lượt là 150 dòng (Bảng PC) / 60 thẻ (Mobile)
+      // để khi chọn mục "Tất cả" (3.000+ lô) trình duyệt vẫn mượt tức thì không tốn RAM
+      renderLimit = state.viewMode === "table" ? 150 : 60;
       renderShipmentList();
       updateBulkControlsUI();
     }
@@ -4735,14 +4735,19 @@ if (isset(['api']) || isset(['route'])) {
       applyFilters();
     }
 
+    let searchDebounceTimer = null;
     function onSearchInput() {
       const val = document.getElementById("searchInput").value;
       state.searchQuery = val;
       document.getElementById("btnClearSearch").style.display = val ? "flex" : "none";
-      applyFilters();
+      if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        applyFilters();
+      }, 100);
     }
 
     function clearSearch() {
+      if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
       document.getElementById("searchInput").value = "";
       state.searchQuery = "";
       document.getElementById("btnClearSearch").style.display = "none";
@@ -6386,7 +6391,10 @@ if (isset(['api']) || isset(['route'])) {
       } catch (_) {}
     }
 
+    let bbTemplateCacheByKho = new Map();
+
     function updateBbTplCountBadge() {
+      bbTemplateCacheByKho.clear();
       const el = document.getElementById("bbTplCountBadge");
       if (el) el.textContent = bbTemplatesList.length || 2;
     }
@@ -6398,6 +6406,9 @@ if (isset(['api']) || isset(['route'])) {
     function detectBbTemplate(po) {
       if (!bbTemplatesList || bbTemplatesList.length === 0) initBbTemplatesLocal();
       const rawKho = (po && po.khoNhanHangPo ? String(po.khoNhanHangPo) : "").trim();
+      if (bbTemplateCacheByKho.has(rawKho)) {
+        return bbTemplateCacheByKho.get(rawKho);
+      }
       const cleanKho = toCleanUpperCode(rawKho);
 
       if (cleanKho) {
@@ -6411,26 +6422,30 @@ if (isset(['api']) || isset(['route'])) {
             if (kw === "*") continue;
             const cleanKw = toCleanUpperCode(kw);
             if (cleanKw && (cleanKho.includes(cleanKw) || rawKho.toUpperCase().includes(kw.toUpperCase()))) {
-              return {
+              const res = {
                 id: tpl.id,
                 code: tpl.id,
                 name: tpl.name,
                 shortBadge: tpl.short_badge || "Form Riêng",
                 html_content: tpl.html_content
               };
+              bbTemplateCacheByKho.set(rawKho, res);
+              return res;
             }
           }
         }
       }
 
       const stdTpl = bbTemplatesList.find(t => t.id === "STANDARD") || getBuiltInBbTemplates()[1];
-      return {
+      const stdRes = {
         id: "STANDARD",
         code: "STANDARD",
         name: stdTpl.name || "Form Chuẩn Vietsun",
         shortBadge: stdTpl.short_badge || "BB",
         html_content: stdTpl.html_content
       };
+      bbTemplateCacheByKho.set(rawKho, stdRes);
+      return stdRes;
     }
 
     function renderTemplateWithPoData(htmlContent, po) {
