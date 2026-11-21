@@ -194,6 +194,20 @@ function ensure_schema($pdo) {
         if (!$colChk) {
             $pdo->exec("ALTER TABLE `tms_pending_approvals` ADD COLUMN `cont_size` VARCHAR(10) NOT NULL DEFAULT '' AFTER `xuat_nhap`");
         }
+
+        // Bảng lưu cấu hình các Mẫu Biên Bản Giao Nhận (BB Templates) theo Kho Nhận
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `tms_bb_templates` (
+                `id` VARCHAR(64) PRIMARY KEY,
+                `name` VARCHAR(255) NOT NULL,
+                `short_badge` VARCHAR(64) NOT NULL DEFAULT 'Form Riêng',
+                `keywords` TEXT NOT NULL,
+                `html_content` MEDIUMTEXT NOT NULL,
+                `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+                `sort_order` INT NOT NULL DEFAULT 10,
+                `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
     } catch (Exception $e) {}
 
     // 2. Nâng cấp cấu trúc các bảng phụ (chạy một lần)
@@ -1391,6 +1405,56 @@ try {
     }
     if ($route === 'index-crud' || $route === 'index_crud') {
         echo push_vietsun_crud($_POST ?: $jsonBody);
+        exit;
+    }
+
+    // Quản lý các Mẫu Biên Bản Giao Nhận (BB Templates) theo Kho Nhận
+    if ($route === 'bb_templates' || $route === 'api/bb_templates') {
+        $stmt = $pdo->query("SELECT `id`, `name`, `short_badge`, `keywords`, `html_content`, `is_active`, `sort_order`, `updated_at` FROM `tms_bb_templates` ORDER BY `sort_order` ASC, `updated_at` DESC");
+        $rows = $stmt->fetchAll();
+        echo json_encode(['ok' => true, 'templates' => $rows]);
+        exit;
+    }
+    if ($route === 'bb_templates/save') {
+        $id = trim((string)($jsonBody['id'] ?? ''));
+        $name = trim((string)($jsonBody['name'] ?? ''));
+        $shortBadge = trim((string)($jsonBody['short_badge'] ?? 'Form Riêng'));
+        $keywords = trim((string)($jsonBody['keywords'] ?? ''));
+        $htmlContent = (string)($jsonBody['html_content'] ?? '');
+        $isActive = isset($jsonBody['is_active']) ? (int)$jsonBody['is_active'] : 1;
+        $sortOrder = isset($jsonBody['sort_order']) ? (int)$jsonBody['sort_order'] : 10;
+
+        if ($id === '' || $name === '' || $htmlContent === '') {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Vui lòng nhập đầy đủ Tên Form và Nội dung mẫu Biên bản!']);
+            exit;
+        }
+        $stmt = $pdo->prepare("
+            INSERT INTO `tms_bb_templates` (`id`, `name`, `short_badge`, `keywords`, `html_content`, `is_active`, `sort_order`)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                `name` = VALUES(`name`),
+                `short_badge` = VALUES(`short_badge`),
+                `keywords` = VALUES(`keywords`),
+                `html_content` = VALUES(`html_content`),
+                `is_active` = VALUES(`is_active`),
+                `sort_order` = VALUES(`sort_order`),
+                `updated_at` = CURRENT_TIMESTAMP
+        ");
+        $stmt->execute([$id, $name, $shortBadge, $keywords, $htmlContent, $isActive, $sortOrder]);
+        echo json_encode(['ok' => true, 'id' => $id]);
+        exit;
+    }
+    if ($route === 'bb_templates/delete') {
+        $id = trim((string)($jsonBody['id'] ?? ''));
+        if ($id === '' || $id === 'STANDARD') {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Không thể xóa Form Chuẩn mặc định!']);
+            exit;
+        }
+        $stmt = $pdo->prepare("DELETE FROM `tms_bb_templates` WHERE `id` = ?");
+        $stmt->execute([$id]);
+        echo json_encode(['ok' => true, 'id' => $id]);
         exit;
     }
 

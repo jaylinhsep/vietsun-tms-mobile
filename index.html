@@ -1494,6 +1494,239 @@
       border-color: #fca5a5;
     }
 
+    /* =========================================================================
+       VISUAL BIÊN BẢN (BB) TEMPLATE MANAGER MODAL & A4 WYSIWYG PAPER
+       ========================================================================= */
+    .bb-mgr-box {
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: 0 25px 60px rgba(15, 23, 42, 0.35);
+      width: 96vw;
+      max-width: 1320px;
+      height: 92vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .bb-mgr-header {
+      background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
+      color: #ffffff;
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .bb-mgr-body {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .bb-mgr-sidebar {
+      width: 285px;
+      border-right: 1px solid #cbd5e1;
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .bb-mgr-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .bb-tpl-card {
+      background: #ffffff;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .bb-tpl-card:hover {
+      border-color: #0d9488;
+      background: #f0fdfa;
+    }
+    .bb-tpl-card.active {
+      border-color: #0f766e;
+      background: #ccfbf1;
+      box-shadow: 0 2px 8px rgba(15, 118, 110, 0.15);
+    }
+    .bb-tpl-card-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .bb-tpl-card-kw {
+      font-size: 11px;
+      color: #0f766e;
+      font-weight: 600;
+      margin-top: 4px;
+      word-break: break-word;
+    }
+    .bb-mgr-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: #f1f5f9;
+      overflow: hidden;
+    }
+    .bb-mgr-meta-bar {
+      background: #ffffff;
+      border-bottom: 1px solid #cbd5e1;
+      padding: 10px 14px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .bb-meta-field {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .bb-meta-field label {
+      font-size: 11px;
+      font-weight: 800;
+      color: #334155;
+      text-transform: uppercase;
+    }
+    .bb-meta-inp {
+      border: 1px solid #94a3b8;
+      border-radius: 7px;
+      padding: 6px 10px;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #0f172a;
+    }
+    .bb-mgr-toolbar {
+      background: #f8fafc;
+      border-bottom: 1px solid #cbd5e1;
+      padding: 8px 14px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .bb-tool-btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1e293b;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.12s;
+    }
+    .bb-tool-btn:hover {
+      background: #e2e8f0;
+      border-color: #94a3b8;
+    }
+    .bb-var-chip {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.12s;
+    }
+    .bb-var-chip:hover {
+      background: #dbeafe;
+      border-color: #60a5fa;
+      transform: translateY(-1px);
+    }
+    .bb-mgr-canvas-wrap {
+      flex: 1;
+      overflow: auto;
+      padding: 18px;
+      background: #cbd5e1;
+    }
+    .bb-a4-editor {
+      width: 190mm;
+      min-height: 255mm;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 8mm 8mm;
+      box-shadow: 0 6px 24px rgba(15, 23, 42, 0.22);
+      outline: none;
+      font-family: "Times New Roman", Times, serif;
+      color: #000000;
+      position: relative;
+    }
+    .bb-a4-editor:focus {
+      box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.35), 0 6px 24px rgba(15, 23, 42, 0.22);
+    }
+    .bb-mgr-footer {
+      background: #ffffff;
+      border-top: 1px solid #cbd5e1;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    /* Shared A4 Template Classes for Live Editor & Print */
+    .bb-vietsun { font-family: "Times New Roman", Times, serif; font-size: 13pt; color: #000; }
+    .vs-div-picture { width: 100%; min-height: 225mm; position: relative; }
+    .vs-watermark-img { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 82%; max-height: 175mm; object-fit: contain; opacity: 0.22; pointer-events: none; z-index: 0; }
+    .vs-seal-img { position: absolute; top: 18mm; left: 10mm; width: 39mm; height: 39mm; object-fit: contain; pointer-events: none; z-index: 1; }
+    .vs-content-layer { position: relative; z-index: 2; }
+    .vs-header-table { width: 100%; border-collapse: collapse; }
+    .vs-info-table { width: 100%; border-collapse: collapse; line-height: 1.8; vertical-align: top; }
+    .vs-info-table th, .vs-info-table td { padding: 0 2px; vertical-align: top; }
+    .vs-bangND { width: 100%; border-collapse: collapse; line-height: 1.8; margin: 4px 0; }
+    .vs-bangND th, .vs-bangND td { border: 1px solid #000; padding: 2px 10px; text-align: center; }
+    .vs-sig-row { display: flex; justify-content: space-between; text-align: center; font-weight: 700; margin-top: 8px; }
+    .vs-sig-col { width: 33.33%; }
+    .bb-4oranges { font-family: "Times New Roman", Times, serif; color: #000; padding-top: 4mm; }
+    .thna-header { display: flex; align-items: flex-start; gap: 16px; padding-left: 8px; }
+    .thna-logo-col { flex-shrink: 0; padding-top: 2px; }
+    .thna-logo-img { width: 160px; height: auto; display: block; }
+    .thna-info-col { font-family: Arial, Helvetica, sans-serif; color: #222; line-height: 1.38; }
+    .thna-title { font-size: 14pt; font-weight: 700; color: #0000FF; margin-bottom: 3px; }
+    .thna-sub { font-size: 10pt; margin-bottom: 2px; }
+    .thna-line { font-size: 10pt; color: #222; }
+    .thna-link { color: #0000FF; text-decoration: underline; }
+    .thna-divider { font-family: "Times New Roman", Times, serif; font-size: 11pt; text-align: center; letter-spacing: 0.4px; margin: 12px 0 14px; overflow: hidden; white-space: nowrap; }
+    .thna-doc-title { font-size: 16pt; font-weight: 700; text-align: center; margin-bottom: 6px; }
+    .thna-doc-date { font-size: 12pt; text-align: right; padding-right: 28px; margin-bottom: 14px; }
+    .thna-section { line-height: 1.85; }
+    .thna-bold-12 { font-size: 12pt; font-weight: 700; }
+    .thna-bold-13 { font-size: 13pt; font-weight: 700; }
+    .thna-driver-line { font-size: 13pt; margin-top: 2px; }
+    .thna-table { width: 100%; border-collapse: collapse; margin: 14px 0 16px; font-size: 12pt; }
+    .thna-table th, .thna-table td { border: 1px solid #000; padding: 6px 8px; vertical-align: middle; }
+    .thna-table thead th { font-weight: 700; text-align: center; height: 26px; }
+    .thna-table tbody td { height: 36px; }
+    .thna-weight-words { font-size: 13pt; padding-left: 24px; margin: 16px 0 22px; }
+    .thna-signatures { display: flex; justify-content: space-between; font-size: 13pt; padding: 0 36px; margin-top: 16px; }
+    .thna-sig-col { text-align: center; width: 45%; }
+    .thna-sig-title { margin-bottom: 68px; }
+    .thna-sig-sub { font-size: 12.5pt; }
+
     .pc-table-wrap {
       width: 100%;
       overflow-x: auto;
@@ -1892,6 +2125,9 @@
 
       <!-- State 3: Direct Print Biên Bản Button (Tab Hàng Nhập - Thực thi in luôn không cần sổ ĐVVT) -->
       <div class="bulk-active-bar" id="bulkNhapDirectBar" style="display:none;border-color:#0d9488;box-shadow:0 2px 8px rgba(13,148,136,0.18);">
+        <button type="button" class="btn-bulk-exit" onclick="openBbTemplateManager()" style="background:#f0fdfa;color:#0f766e;border-color:#99f6e4;font-weight:800;" title="Quản lý & Chỉnh sửa trực quan các mẫu Biên Bản theo Kho Nhận">
+          ⚙️ Mẫu BB (<span id="bbTplCountBadge">2</span>)
+        </button>
         <button type="button" class="btn-bulk-execute" id="btnBulkNhapPrint" onclick="executeBulkPrint()" style="background:linear-gradient(135deg, #0f766e 0%, #0d9488 100%);" title="In ngay các Biên Bản đã tick chọn (Tự nhận diện Form theo Kho Nhận)">
           <span style="font-size:15px;">🖨️</span>
           <span>In Biên Bản (<strong id="bulkNhapSelectedCount">0</strong>)</span>
@@ -2327,6 +2563,115 @@
       <div style="display:flex;gap:10px;justify-content:center;">
         <button type="button" class="btn-card" style="padding:8px 16px;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;border-radius:8px;font-weight:600;cursor:pointer;" onclick="closeDeleteModal()">Hủy bỏ</button>
         <button type="button" id="btnConfirmDelete" style="padding:8px 18px;background:#dc2626;color:#ffffff;border:none;border-radius:8px;font-weight:700;opacity:0.35;cursor:not-allowed;transition:all 0.15s ease;" disabled onclick="executeDeleteBooking()">Xác nhận xóa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL QUẢN LÝ & SOẠN THẢO TRỰC QUAN MẪU BIÊN BẢN (BB TEMPLATE MANAGER) -->
+  <div class="modal-backdrop" id="bbTemplateModal" style="align-items:center;justify-content:center;z-index:9998;" onclick="if(event.target===this) closeBbTemplateManager()">
+    <div class="bb-mgr-box">
+      <div class="bb-mgr-header">
+        <div>
+          <div style="font-size:16px;font-weight:800;">⚙️ Quản Lý & Thiết Kế Mẫu Biên Bản Theo Kho Nhận (Visual Editor)</div>
+          <div style="font-size:12px;opacity:0.92;margin-top:2px;">Tự động nhận diện Form khi in hàng loạt theo từ khóa KHO NHẬN • Hỗ trợ chỉnh sửa trực tiếp trên giấy A4 hoặc Copy-Paste từ Word</div>
+        </div>
+        <button type="button" class="sheet-close" style="background:rgba(255,255,255,0.2);color:#fff;" onclick="closeBbTemplateManager()">✕</button>
+      </div>
+
+      <div class="bb-mgr-body">
+        <!-- Cột trái: Danh sách Mẫu BB -->
+        <div class="bb-mgr-sidebar">
+          <div style="padding:10px;border-bottom:1px solid #cbd5e1;display:flex;flex-direction:column;gap:6px;">
+            <button type="button" class="btn-bulk-execute" style="width:100%;justify-content:center;background:linear-gradient(135deg,#0f766e,#0d9488);" onclick="createNewBbTemplate()">
+              ➕ Tạo Form Kho Mới
+            </button>
+            <button type="button" class="bb-tool-btn" style="width:100%;justify-content:center;padding:6px;" onclick="cloneCurrentBbTemplate()">
+              📋 Nhân bản từ Form đang chọn
+            </button>
+          </div>
+          <div class="bb-mgr-list" id="bbTemplateSidebarList">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Cột phải: Cấu hình Từ khóa + Thanh công cụ Word + Trang giấy A4 -->
+        <div class="bb-mgr-main">
+          <!-- Hàng 1: Tên Form, Nhãn nút, Từ khóa KHO NHẬN -->
+          <div class="bb-mgr-meta-bar">
+            <div class="bb-meta-field" style="width:220px;">
+              <label>Tên Mẫu Biên Bản</label>
+              <input type="text" id="bbTplName" class="bb-meta-inp" placeholder="VD: Form Kho 4 Oranges" />
+            </div>
+            <div class="bb-meta-field" style="width:115px;">
+              <label>Nhãn nút bảng</label>
+              <input type="text" id="bbTplBadge" class="bb-meta-inp" placeholder="VD: 4Oranges" maxlength="16" />
+            </div>
+            <div class="bb-meta-field" style="flex:1;min-width:240px;">
+              <label>Từ khóa nhận diện KHO NHẬN (Cách nhau dấu phẩy)</label>
+              <div style="display:flex;gap:6px;">
+                <input type="text" id="bbTplKeywords" class="bb-meta-inp" style="flex:1;" placeholder="VD: 4 ORANGES, 4ORANGES" />
+                <select id="bbQuickKhoSelect" class="bb-meta-inp" style="max-width:175px;background:#f0fdfa;color:#0f766e;border-color:#99f6e4;cursor:pointer;" onchange="addKhoKeywordFromSelect(this)">
+                  <option value="">+ Chọn Kho từ TMS...</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hàng 2: Thanh công cụ định dạng & Chèn Biến Tự Động -->
+          <div class="bb-mgr-toolbar">
+            <button type="button" class="bb-tool-btn" onmousedown="event.preventDefault(); execBbEditorCmd('bold')" title="In đậm (Ctrl+B)"><b>B</b></button>
+            <button type="button" class="bb-tool-btn" onmousedown="event.preventDefault(); execBbEditorCmd('italic')" title="In nghiêng (Ctrl+I)"><i>I</i></button>
+            <button type="button" class="bb-tool-btn" onmousedown="event.preventDefault(); execBbEditorCmd('underline')" title="Gạch chân (Ctrl+U)"><u>U</u></button>
+            <button type="button" class="bb-tool-btn" onmousedown="event.preventDefault(); execBbEditorCmd('justifyLeft')" title="Căn trái">⬅️</button>
+            <button type="button" class="bb-tool-btn" onmousedown="event.preventDefault(); execBbEditorCmd('justifyCenter')" title="Căn giữa">↔️</button>
+            <button type="button" class="bb-tool-btn" onmousedown="event.preventDefault(); execBbEditorCmd('justifyRight')" title="Căn phải">➡️</button>
+            <button type="button" class="bb-tool-btn" onclick="triggerBbLogoUpload()" title="Tải ảnh Logo từ máy tính chèn vào phiếu">🖼️ Chèn/Đổi Logo</button>
+            <input type="file" id="bbLogoFileInput" accept="image/*" style="display:none;" onchange="handleBbLogoFileSelected(this)" />
+            <button type="button" class="bb-tool-btn" onmousedown="event.preventDefault(); insertBbSampleTable()" title="Chèn khung bảng hàng hóa">📊 +Bảng</button>
+
+            <span style="color:#94a3b8;margin:0 2px;">|</span>
+            <span style="font-size:11px;font-weight:800;color:#475569;">CHÈN BIẾN TỰ ĐỘNG:</span>
+            <button type="button" class="bb-var-chip" onmousedown="event.preventDefault(); insertBbVariable('{{SO_CONT}}')" title="Tự thay bằng Số Container">📦 {{SO_CONT}}</button>
+            <button type="button" class="bb-var-chip" onmousedown="event.preventDefault(); insertBbVariable('{{SO_SEAL}}')" title="Tự thay bằng Số Seal">🔒 {{SO_SEAL}}</button>
+            <button type="button" class="bb-var-chip" onmousedown="event.preventDefault(); insertBbVariable('{{NGAY}}')" title="Ngày giao (DD)">📅 {{NGAY}}</button>
+            <button type="button" class="bb-var-chip" onmousedown="event.preventDefault(); insertBbVariable('{{THANG}}')" title="Tháng giao (MM)">📅 {{THANG}}</button>
+            <button type="button" class="bb-var-chip" onmousedown="event.preventDefault(); insertBbVariable('{{NAM}}')" title="Năm giao (YYYY)">📅 {{NAM}}</button>
+            <button type="button" class="bb-var-chip" onmousedown="event.preventDefault(); insertBbVariable('{{KHO_NHAN}}')" title="Tên Kho Nhận">🏭 {{KHO_NHAN}}</button>
+            <button type="button" class="bb-var-chip" onmousedown="event.preventDefault(); insertBbVariable('{{DIA_CHI}}')" title="Địa chỉ giao + Tỉnh">📍 {{DIA_CHI}}</button>
+            <button type="button" class="bb-var-chip" onmousedown="event.preventDefault(); insertBbVariable('{{SO_XE}}')" title="Biển số xe">🚛 {{SO_XE}}</button>
+            <button type="button" class="bb-var-chip" onmousedown="event.preventDefault(); insertBbVariable('{{TRONG_LUONG}}')" title="Trọng lượng (tấn)">⚖️ {{TRONG_LUONG}}</button>
+            <button type="button" class="bb-var-chip" onmousedown="event.preventDefault(); insertBbVariable('{{HANG_HOA}}')" title="Tên hàng hóa">📋 {{HANG_HOA}}</button>
+          </div>
+
+          <!-- Hàng 3: Khung Trang Giấy A4 Trực Quan -->
+          <div class="bb-mgr-canvas-wrap">
+            <div id="bbVisualEditorCanvas" class="bb-a4-editor" contenteditable="true" spellcheck="false"></div>
+          </div>
+
+          <!-- Footer: Nút Xem Thử, In Thử, Khôi phục, Xóa, Lưu -->
+          <div class="bb-mgr-footer">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <button type="button" class="bb-tool-btn" id="btnBbTogglePreview" onclick="toggleBbEditorLivePreview()" style="padding:7px 12px;background:#eff6ff;color:#1d4ed8;border-color:#93c5fd;">
+                👁️ Xem thử với dữ liệu thật
+              </button>
+              <button type="button" class="bb-tool-btn" onclick="testPrintCurrentBbTemplate()" style="padding:7px 12px;">
+                🖨️ In thử mẫu này
+              </button>
+              <button type="button" class="bb-tool-btn" id="btnBbRestoreDefault" onclick="restoreDefaultBbTemplate()" style="padding:7px 12px;color:#b45309;border-color:#fcd34d;background:#fffbeb;">
+                ↺ Khôi phục mẫu gốc
+              </button>
+              <button type="button" class="bb-tool-btn" id="btnBbDeleteTpl" onclick="deleteCurrentBbTemplate()" style="padding:7px 12px;color:#dc2626;border-color:#fca5a5;background:#fef2f2;">
+                🗑️ Xóa Form này
+              </button>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <button type="button" class="btn-bulk-exit" onclick="closeBbTemplateManager()" style="padding:8px 16px;">Đóng</button>
+              <button type="button" class="btn-bulk-execute" onclick="saveCurrentBbTemplate()" style="padding:8px 20px;background:linear-gradient(135deg,#0f766e,#0d9488);">
+                💾 Lưu Mẫu Biên Bản
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -5762,18 +6107,6 @@
       "THONG BAO SAU": "Thông báo sau"
     };
 
-    // Bộ quy tắc nhận diện Form Biên Bản theo KHO NHẬN (Dễ dàng mở rộng thêm nhiều kho/khách hàng)
-    const BB_TEMPLATE_RULES = [
-      {
-        code: "4ORANGES",
-        name: "Form 4 Oranges (THNA Group)",
-        shortBadge: "4Oranges",
-        match: (khoClean, khoRaw) => {
-          return khoClean.includes("4ORANGES") || /4\s*ORANGE/i.test(khoRaw);
-        }
-      }
-    ];
-
     function toCleanUpperCode(str) {
       return String(str || "")
         .normalize("NFD")
@@ -5784,19 +6117,840 @@
         .replace(/[^A-Z0-9]/g, "");
     }
 
+    function getDefault4OrangesHtml() {
+      const baseOrigin = window.location.origin;
+      return `<div class="bb-4oranges">
+  <div class="thna-header">
+    <div class="thna-logo-col">
+      <img src="${baseOrigin}/logoThna.png" alt="THNA Logo" class="thna-logo-img" />
+    </div>
+    <div class="thna-info-col">
+      <div class="thna-title">THNA GROUP</div>
+      <div class="thna-sub"><span style="color:#0000FF;">The No.1 Vietnam </span><span style="color:#222222;">CaCO3 powder</span></div>
+      <div class="thna-line">2<sup>nd</sup> Floor, Trung Hai Nghe An Building, Quy Hop, Nghe An, Vietnam</div>
+      <div class="thna-line">Phone:&nbsp; +84 238 398 2777 &ndash;&nbsp;&nbsp; Email:&nbsp;<span class="thna-link">info@thnagroup.com</span></div>
+      <div class="thna-line">Hotline: +84 97&nbsp; 109 2777 &ndash;&nbsp; Website:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="thna-link">thnagroup.com</span></div>
+    </div>
+  </div>
+  <div class="thna-divider">-----------------------------------------------------------------------------------------------------------------------------------------</div>
+  <div class="thna-doc-title">BIÊN BẢN GIAO NHẬN HÀNG HÓA</div>
+  <div class="thna-doc-date">Ngày {{NGAY}}&nbsp;&nbsp;tháng {{THANG}}&nbsp;&nbsp;&nbsp;năm {{NAM}}</div>
+  <div class="thna-section">
+    <div class="thna-bold-12">BÊN GIAO HÀNG: CÔNG TY CỔ PHẦN TRUNG HẢI- NGHỆ AN GROUP.</div>
+    <div class="thna-bold-12" style="padding-left:28px;">(THNA GROUP)</div>
+    <div class="thna-driver-line">
+      <span style="display:inline-block;width:58%;padding-left:48px;">Tên Tài xế:</span>
+      <span>Biển số xe:</span>
+    </div>
+  </div>
+  <div class="thna-section" style="margin-top:14px;">
+    <div class="thna-bold-13">BÊN NHẬN HÀNG: CÔNG TY 4ORANGES CO.,LTD</div>
+    <div class="thna-bold-13">Địa chỉ:&nbsp; Lô C-02-1, KCN Đức&nbsp; Hoà 1, Ấp 5, Xã Mỹ Hạnh, Tỉnh Tây Ninh, Việt Nam.</div>
+  </div>
+  <table class="thna-table">
+    <thead>
+      <tr>
+        <th style="width:7.6%;">STT</th>
+        <th style="width:23.7%;">Số cont/Seal</th>
+        <th style="width:15.6%;">Số lượng</th>
+        <th style="width:26.55%;">Khối lượng ( tấn)</th>
+        <th style="width:26.55%;">Mã Hàng</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align:center;">1</td>
+        <td style="text-align:center;">{{SO_CONT}}</td>
+        <td></td>
+        <td></td>
+        <td style="text-align:center;">THNA07</td>
+      </tr>
+      <tr>
+        <td style="text-align:center;">2</td>
+        <td style="text-align:center;padding-left:22px;">{{SO_SEAL}}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="thna-weight-words">Khối lượng hàng bằng chữ: </div>
+  <div class="thna-signatures">
+    <div class="thna-sig-col">
+      <div class="thna-sig-title">Đại diện bên nhận hàng</div>
+      <div class="thna-sig-sub">(Ký và ghi rõ họ tên)</div>
+    </div>
+    <div class="thna-sig-col">
+      <div class="thna-sig-title">Đại diện bên giao hàng</div>
+      <div class="thna-sig-sub">(Ký và ghi rõ họ tên)</div>
+    </div>
+  </div>
+</div>`;
+    }
+
+    function getDefaultStandardHtml() {
+      const baseOrigin = window.location.origin;
+      return `<div class="bb-vietsun">
+  <div class="vs-div-picture">
+    <img class="vs-watermark-img" src="${baseOrigin}/vietsunwatermark2.png" alt="" />
+    <img class="vs-seal-img" src="${baseOrigin}/seal_vietsun.png" alt="" />
+    <div class="vs-content-layer">
+      <table class="vs-header-table">
+        <tr>
+          <td style="width:170px;vertical-align:top;text-align:center;">
+            <img src="${baseOrigin}/logo-vietsunnew.png" alt="Company Logo" style="height:75px;width:auto;" />
+          </td>
+          <td style="text-align:center;font-family:Arial,Helvetica,sans-serif;">
+            <div style="font-size:19px;font-weight:700;line-height:1.2;">VIETSUN LOGISTICS - VIETSUN CORPORATION</div>
+            <div style="font-size:12.5px;line-height:1.35;margin-top:4px;">
+              Số 13-15 đường B4, Phường An Khánh, Thành Phố Hồ Chí Minh<br/>
+              Tel : 08 38269 539 - 38269 540 -38269 541 - Ext :307; Fax: (84.8) 8269542<br/>
+              Website : www.vietsunlogistic.com<br/><br/>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2" style="text-align:center;padding-top:4px;">
+            <span style="font-size:23pt;font-weight:700;">BIÊN BẢN GIAO NHẬN HÀNG</span>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2" style="text-align:right;padding-top:2px;">
+            <span style="font-size:12.5pt;font-style:italic;">{{NGAY_THANG_NAM}}</span>
+          </td>
+        </tr>
+      </table>
+      <p style="margin:8px 0 4px;line-height:1.75;">
+        Căn cứ vào hợp đồng vận chuyển (hoặc booking note) số ................... ngày ...... tháng ... năm....<br/>
+        <span style="font-weight:700;text-decoration:underline;">Chúng tôi gồm:</span>
+      </p>
+      <table class="vs-info-table">
+        <tbody>
+          <tr>
+            <th colspan="4" style="text-align:left;"><span style="text-decoration:underline;">BÊN GIAO</span>: CÔNG TY CỔ PHẦN NHẬT VIỆT</th>
+          </tr>
+          <tr>
+            <td style="width:15%;">Địa chỉ</td>
+            <td colspan="3">:Số 13-15 đường B4, Phường An Khánh, Thành Phố Hồ Chí Minh</td>
+          </tr>
+          <tr>
+            <td>Điện thoại</td>
+            <td colspan="3">: 08 38269539 </td>
+          </tr>
+          <tr>
+            <td>Đại diện</td>
+            <td style="width:53%;">: Ông......................................................................</td>
+            <td style="width:11%;">Chức vụ</td>
+            <td>: NV Lái xe</td>
+          </tr>
+          <tr>
+            <td>Số xe vận tải</td>
+            <td colspan="3">:..............................................................................</td>
+          </tr>
+          <tr>
+            <th style="text-align:left;text-decoration:underline;vertical-align:top;">BÊN NHẬN</th>
+            <th colspan="3" style="text-align:left;text-transform:uppercase;">: {{KHO_NHAN}}</th>
+          </tr>
+          <tr>
+            <td style="vertical-align:top;">Địa chỉ</td>
+            <td colspan="3">: {{DIA_CHI}}</td>
+          </tr>
+          <tr>
+            <td>Đại diện</td>
+            <td>: Ông/Bà................................................................</td>
+            <td>Chức vụ</td>
+            <td>:.....................................</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin:4px 0;">Cùng thống nhất lập biên bản giao nhận hàng hóa trên với nội dung như sau:</div>
+      <table class="vs-bangND">
+        <thead>
+          <tr>
+            <th style="width:28%;">SỐ CONT</th>
+            <th style="width:22%;">SỐ SEAL</th>
+            <th style="width:25%;">HÀNG HÓA</th>
+            <th style="width:25%;">GHI CHÚ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{{SO_CONT}}</td>
+            <td>{{SO_SEAL}}</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td><span style="color:#ffffff;">.</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="margin:8px 0 12px;line-height:1.8;">
+        <span style="font-weight:700;text-decoration:underline;">Hình thức giao nhận: </span> Nguyên Cont, nguyên Seal. Bên giao không chịu trách nhiệm về số lượng, trọng lượng hàng hóa bên trong Cont.<br/>
+        <span style="font-weight:700;text-decoration:underline;">Địa điểm giao, nhận hàng: </span>..............................................................................................................<br/>
+        <span style="font-weight:700;text-decoration:underline;">Chứng từ kèm theo: </span>........................................................................................................................<br/>
+        Hai bên đã kiểm tra kỹ số Cont, số Seal như trên là đúng và cùng thống nhất giao nhận hàng với nội dung như trên. Biên bản được lập thành hai (02) bản, nội dung và giá trị như nhau mỗi bên giữ một (01) bản ./
+      </p>
+      <div class="vs-sig-row">
+        <div class="vs-sig-col">ĐẠI DIỆN BÊN GIAO</div>
+        <div class="vs-sig-col"></div>
+        <div class="vs-sig-col">ĐẠI DIỆN BÊN NHẬN</div>
+      </div>
+    </div>
+  </div>
+</div>`;
+    }
+
+    function getBuiltInBbTemplates() {
+      return [
+        {
+          id: "4ORANGES",
+          name: "Form 4 Oranges (THNA Group)",
+          short_badge: "4Oranges",
+          keywords: "4 ORANGES, 4ORANGES",
+          html_content: getDefault4OrangesHtml(),
+          is_active: 1,
+          sort_order: 1
+        },
+        {
+          id: "STANDARD",
+          name: "Form Chuẩn Vietsun",
+          short_badge: "BB",
+          keywords: "*",
+          html_content: getDefaultStandardHtml(),
+          is_active: 1,
+          sort_order: 999
+        }
+      ];
+    }
+
+    let bbTemplatesList = [];
+    let currentEditingBbTplId = "4ORANGES";
+    let isBbLivePreviewMode = false;
+    let rawDraftBbHtmlBeforePreview = "";
+
+    function initBbTemplatesLocal() {
+      const builtIns = getBuiltInBbTemplates();
+      let saved = [];
+      try {
+        saved = JSON.parse(localStorage.getItem("vs_bb_templates_v1") || "[]");
+      } catch (_) {}
+
+      const map = new Map();
+      builtIns.forEach(t => map.set(t.id, { ...t }));
+      if (Array.isArray(saved)) {
+        saved.forEach(t => {
+          if (t && t.id && t.html_content) {
+            map.set(t.id, { ...t, is_active: Number(t.is_active ?? 1) });
+          }
+        });
+      }
+      bbTemplatesList = Array.from(map.values()).sort((a, b) => Number(a.sort_order || 10) - Number(b.sort_order || 10));
+      updateBbTplCountBadge();
+    }
+
+    async function loadBbTemplatesFromServer() {
+      initBbTemplatesLocal();
+      try {
+        const resp = await fetch("/api/index.php?route=bb_templates");
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (data && data.ok && Array.isArray(data.templates) && data.templates.length > 0) {
+          const builtIns = getBuiltInBbTemplates();
+          const map = new Map();
+          builtIns.forEach(t => map.set(t.id, { ...t }));
+          data.templates.forEach(t => {
+            if (t && t.id && t.html_content) {
+              map.set(t.id, { ...t, is_active: Number(t.is_active ?? 1) });
+            }
+          });
+          bbTemplatesList = Array.from(map.values()).sort((a, b) => Number(a.sort_order || 10) - Number(b.sort_order || 10));
+          try {
+            localStorage.setItem("vs_bb_templates_v1", JSON.stringify(bbTemplatesList));
+          } catch (_) {}
+          updateBbTplCountBadge();
+          if (state.viewMode === "table" && state.xuatNhap === "N") {
+            renderShipmentList();
+          }
+        }
+      } catch (_) {}
+    }
+
+    function updateBbTplCountBadge() {
+      const el = document.getElementById("bbTplCountBadge");
+      if (el) el.textContent = bbTemplatesList.length || 2;
+    }
+
+    // Khởi tạo ngay danh sách Form BB khi nạp trang
+    initBbTemplatesLocal();
+    setTimeout(() => { loadBbTemplatesFromServer(); }, 600);
+
     function detectBbTemplate(po) {
+      if (!bbTemplatesList || bbTemplatesList.length === 0) initBbTemplatesLocal();
       const rawKho = (po && po.khoNhanHangPo ? String(po.khoNhanHangPo) : "").trim();
       const cleanKho = toCleanUpperCode(rawKho);
-      for (const rule of BB_TEMPLATE_RULES) {
-        if (rule.match(cleanKho, rawKho)) {
-          return rule;
+
+      if (cleanKho) {
+        for (const tpl of bbTemplatesList) {
+          if (tpl.id === "STANDARD" || !Number(tpl.is_active ?? 1)) continue;
+          const kwList = String(tpl.keywords || "")
+            .split(",")
+            .map(k => k.trim())
+            .filter(Boolean);
+          for (const kw of kwList) {
+            if (kw === "*") continue;
+            const cleanKw = toCleanUpperCode(kw);
+            if (cleanKw && (cleanKho.includes(cleanKw) || rawKho.toUpperCase().includes(kw.toUpperCase()))) {
+              return {
+                id: tpl.id,
+                code: tpl.id,
+                name: tpl.name,
+                shortBadge: tpl.short_badge || "Form Riêng",
+                html_content: tpl.html_content
+              };
+            }
+          }
         }
       }
+
+      const stdTpl = bbTemplatesList.find(t => t.id === "STANDARD") || getBuiltInBbTemplates()[1];
       return {
+        id: "STANDARD",
         code: "STANDARD",
-        name: "Form Chuẩn Vietsun",
-        shortBadge: "Chuẩn"
+        name: stdTpl.name || "Form Chuẩn Vietsun",
+        shortBadge: stdTpl.short_badge || "BB",
+        html_content: stdTpl.html_content
       };
+    }
+
+    function renderTemplateWithPoData(htmlContent, po) {
+      const baseOrigin = window.location.origin;
+      const soCont = escapeAttr((po.soContPo || "").toUpperCase().trim());
+      const soSeal = escapeAttr((po.soSealPo || "").trim());
+      const hasValidDate = po.ngayTraHang && po.ngayTraHang !== "2021-11-11" && po.ngayTraHang !== "1970-01-01";
+
+      let dd = ".....", mm = ".....", yyyy = String(new Date().getFullYear());
+      if (hasValidDate) {
+        const parts = String(po.ngayTraHang).split("-");
+        if (parts.length === 3) {
+          yyyy = parts[0];
+          mm = parts[1];
+          dd = parts[2];
+        }
+      }
+
+      const vsDateStr = hasValidDate
+        ? `Ngày ${dd} tháng ${mm}  năm ${yyyy} `
+        : `Ngày ..... tháng ..... năm .......`;
+      const khoNhan = escapeAttr((po.khoNhanHangPo || po.tenKhachPo || "").trim());
+      const khachHang = escapeAttr((po.tenKhachPo || "").trim());
+      const rawDiaChi = (po.diaChiNhanPo || "").trim();
+      const rawTinh = (po.tinhNhanPo || "").toUpperCase().trim();
+      const tinhLabel = PROVINCE_VN_LABEL[rawTinh] || po.tinhNhanPo || "";
+      const fullDiaChi = escapeAttr([rawDiaChi, tinhLabel].filter(Boolean).join(", "));
+      const soXe = escapeAttr((po.soXePo || "").toUpperCase().trim());
+      const donViVc = escapeAttr((po.donViVcPo || "").toUpperCase().trim());
+      const drvInfo = getDriverForPlate(po.soXePo);
+      const taiXe = escapeAttr(drvInfo && drvInfo.name ? drvInfo.name : "");
+      const sdtTaiXe = escapeAttr(drvInfo && drvInfo.phone ? drvInfo.phone : "");
+      const trongLuong = escapeAttr(po.trongLuongPo ? String(po.trongLuongPo) : "");
+      const hangHoa = escapeAttr((po.tenHangHoaPo || "").trim());
+      const tauChuyen = escapeAttr([po.tauPo, po.chuyenPo].filter(Boolean).join(" / "));
+
+      return String(htmlContent || "")
+        .replace(/\{\{BASE_ORIGIN\}\}/g, baseOrigin)
+        .replace(/\{\{SO_CONT\}\}/g, soCont)
+        .replace(/\{\{SO_SEAL\}\}/g, soSeal)
+        .replace(/\{\{NGAY\}\}/g, dd)
+        .replace(/\{\{THANG\}\}/g, mm)
+        .replace(/\{\{NAM\}\}/g, yyyy)
+        .replace(/\{\{NGAY_THANG_NAM\}\}/g, vsDateStr)
+        .replace(/\{\{KHO_NHAN\}\}/g, khoNhan)
+        .replace(/\{\{KHACH_HANG\}\}/g, khachHang)
+        .replace(/\{\{DIA_CHI\}\}/g, fullDiaChi)
+        .replace(/\{\{TINH\}\}/g, escapeAttr(tinhLabel))
+        .replace(/\{\{SO_XE\}\}/g, soXe)
+        .replace(/\{\{DON_VI_VC\}\}/g, donViVc)
+        .replace(/\{\{TAI_XE\}\}/g, taiXe)
+        .replace(/\{\{SDT_TAI_XE\}\}/g, sdtTaiXe)
+        .replace(/\{\{TRONG_LUONG\}\}/g, trongLuong)
+        .replace(/\{\{HANG_HOA\}\}/g, hangHoa)
+        .replace(/\{\{TAU_CHUYEN\}\}/g, tauChuyen);
+    }
+
+    // =========================================================================
+    // TRÌNH QUẢN LÝ & SOẠN THẢO TRỰC QUAN MẪU BIÊN BẢN (VISUAL BB TEMPLATE MANAGER)
+    // =========================================================================
+    function openBbTemplateManager(selectId) {
+      if (!bbTemplatesList || bbTemplatesList.length === 0) initBbTemplatesLocal();
+      populateQuickKhoDropdown();
+      const targetId = selectId || currentEditingBbTplId || (bbTemplatesList[0] && bbTemplatesList[0].id) || "4ORANGES";
+      selectBbTemplateInEditor(targetId);
+      const modal = document.getElementById("bbTemplateModal");
+      if (modal) modal.classList.add("open");
+    }
+
+    function closeBbTemplateManager() {
+      const modal = document.getElementById("bbTemplateModal");
+      if (modal) modal.classList.remove("open");
+      if (isBbLivePreviewMode) {
+        isBbLivePreviewMode = false;
+      }
+    }
+
+    function populateQuickKhoDropdown() {
+      const sel = document.getElementById("bbQuickKhoSelect");
+      if (!sel) return;
+      const khoSet = new Set();
+      allShipments.forEach(item => {
+        if (item.xuatNhapPo === "N" && item.khoNhanHangPo && item.khoNhanHangPo !== ".") {
+          khoSet.add(item.khoNhanHangPo.trim());
+        }
+      });
+      const sorted = Array.from(khoSet).sort((a, b) => a.localeCompare(b, "vi"));
+      sel.innerHTML = `<option value="">+ Chọn Kho từ TMS (${sorted.length})...</option>` +
+        sorted.map(k => `<option value="${escapeAttr(k)}">${escapeAttr(k)}</option>`).join("");
+    }
+
+    function addKhoKeywordFromSelect(selectEl) {
+      const val = (selectEl.value || "").trim();
+      if (!val) return;
+      const kwInp = document.getElementById("bbTplKeywords");
+      if (kwInp && !kwInp.disabled) {
+        const cur = kwInp.value.split(",").map(s => s.trim()).filter(Boolean);
+        if (!cur.includes(val)) {
+          cur.push(val);
+          kwInp.value = cur.join(", ");
+        }
+      }
+      selectEl.value = "";
+    }
+
+    function renderBbTemplateSidebar() {
+      const listEl = document.getElementById("bbTemplateSidebarList");
+      if (!listEl) return;
+      listEl.innerHTML = bbTemplatesList.map(tpl => {
+        const isAct = tpl.id === currentEditingBbTplId;
+        const isStd = tpl.id === "STANDARD";
+        const kwText = isStd ? "Mặc định cho tất cả kho còn lại" : `Kho nhận: ${tpl.keywords || "(Chưa gán)"}`;
+        return `
+          <div class="bb-tpl-card ${isAct ? 'active' : ''}" onclick="selectBbTemplateInEditor('${escapeAttr(tpl.id)}')">
+            <div class="bb-tpl-card-title">
+              <span>📄 ${escapeAttr(tpl.name)}</span>
+              <span style="font-size:10.5px;background:${isStd ? '#dbeafe' : '#fef3c7'};color:${isStd ? '#1d4ed8' : '#b45309'};padding:2px 6px;border-radius:5px;">${escapeAttr(tpl.short_badge || 'BB')}</span>
+            </div>
+            <div class="bb-tpl-card-kw">${escapeAttr(kwText)}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function selectBbTemplateInEditor(id) {
+      isBbLivePreviewMode = false;
+      const btnPrev = document.getElementById("btnBbTogglePreview");
+      if (btnPrev) btnPrev.innerHTML = "👁️ Xem thử với dữ liệu thật";
+
+      const tpl = bbTemplatesList.find(t => t.id === id) || bbTemplatesList[0];
+      if (!tpl) return;
+      currentEditingBbTplId = tpl.id;
+      renderBbTemplateSidebar();
+
+      const nameInp = document.getElementById("bbTplName");
+      const badgeInp = document.getElementById("bbTplBadge");
+      const kwInp = document.getElementById("bbTplKeywords");
+      const canvas = document.getElementById("bbVisualEditorCanvas");
+      const btnDel = document.getElementById("btnBbDeleteTpl");
+      const btnRest = document.getElementById("btnBbRestoreDefault");
+
+      if (nameInp) nameInp.value = tpl.name || "";
+      if (badgeInp) badgeInp.value = tpl.short_badge || "BB";
+      if (kwInp) {
+        kwInp.value = tpl.id === "STANDARD" ? "* (Áp dụng mặc định cho mọi Kho Nhận khác)" : (tpl.keywords || "");
+        kwInp.disabled = tpl.id === "STANDARD";
+      }
+      if (canvas) {
+        canvas.contentEditable = "true";
+        canvas.innerHTML = tpl.html_content || "";
+      }
+      if (btnDel) {
+        btnDel.style.display = tpl.id === "STANDARD" ? "none" : "inline-flex";
+      }
+      if (btnRest) {
+        btnRest.style.display = (tpl.id === "STANDARD" || tpl.id === "4ORANGES") ? "inline-flex" : "none";
+      }
+    }
+
+    function createNewBbTemplate() {
+      const newId = "TPL_" + Date.now();
+      const baseOrigin = window.location.origin;
+      const newTpl = {
+        id: newId,
+        name: "Form Kho Mới",
+        short_badge: "FormRiêng",
+        keywords: "",
+        is_active: 1,
+        sort_order: bbTemplatesList.length + 1,
+        html_content: `<div class="bb-4oranges">
+  <div class="thna-header">
+    <div class="thna-logo-col">
+      <img src="${baseOrigin}/logo-vietsunnew.png" alt="Logo" class="thna-logo-img" style="max-height:75px;width:auto;" />
+    </div>
+    <div class="thna-info-col">
+      <div class="thna-title" style="color:#1e3a8a;">TÊN ĐƠN VỊ / CHỦ HÀNG</div>
+      <div class="thna-line">Địa chỉ: Nhập địa chỉ công ty hoặc dán (Ctrl+V) từ file Word vào đây</div>
+      <div class="thna-line">Điện thoại: .................................</div>
+    </div>
+  </div>
+  <div class="thna-divider">-----------------------------------------------------------------------------------------------------------------------------------------</div>
+  <div class="thna-doc-title">BIÊN BẢN GIAO NHẬN HÀNG HÓA</div>
+  <div class="thna-doc-date">Ngày {{NGAY}}&nbsp;&nbsp;tháng {{THANG}}&nbsp;&nbsp;&nbsp;năm {{NAM}}</div>
+  <div class="thna-section">
+    <div class="thna-bold-12">BÊN GIAO HÀNG: CÔNG TY CỔ PHẦN NHẬT VIỆT (VIETSUN)</div>
+    <div class="thna-driver-line">
+      <span style="display:inline-block;width:58%;">Tên Tài xế: ...................................................</span>
+      <span>Biển số xe: {{SO_XE}}</span>
+    </div>
+  </div>
+  <div class="thna-section" style="margin-top:12px;">
+    <div class="thna-bold-13">BÊN NHẬN HÀNG: {{KHO_NHAN}}</div>
+    <div class="thna-bold-13">Địa chỉ: {{DIA_CHI}}</div>
+  </div>
+  <table class="thna-table">
+    <thead>
+      <tr>
+        <th style="width:8%;">STT</th>
+        <th style="width:25%;">Số cont/Seal</th>
+        <th style="width:18%;">Số lượng</th>
+        <th style="width:24%;">Khối lượng (tấn)</th>
+        <th style="width:25%;">Ghi chú / Mã hàng</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="text-align:center;">1</td>
+        <td style="text-align:center;">{{SO_CONT}}</td>
+        <td></td>
+        <td style="text-align:center;">{{TRONG_LUONG}}</td>
+        <td style="text-align:center;">{{HANG_HOA}}</td>
+      </tr>
+      <tr>
+        <td style="text-align:center;">2</td>
+        <td style="text-align:center;">{{SO_SEAL}}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="thna-signatures">
+    <div class="thna-sig-col">
+      <div class="thna-sig-title">Đại diện bên nhận hàng</div>
+      <div class="thna-sig-sub">(Ký và ghi rõ họ tên)</div>
+    </div>
+    <div class="thna-sig-col">
+      <div class="thna-sig-title">Đại diện bên giao hàng</div>
+      <div class="thna-sig-sub">(Ký và ghi rõ họ tên)</div>
+    </div>
+  </div>
+</div>`
+      };
+      // Chèn trước STANDARD
+      const stdIdx = bbTemplatesList.findIndex(t => t.id === "STANDARD");
+      if (stdIdx >= 0) bbTemplatesList.splice(stdIdx, 0, newTpl);
+      else bbTemplatesList.push(newTpl);
+
+      selectBbTemplateInEditor(newId);
+      const nameInp = document.getElementById("bbTplName");
+      if (nameInp) { nameInp.focus(); nameInp.select(); }
+      showToast("Đã tạo sườn Form mới! Hãy nhập Tên Form, Từ khóa Kho Nhận và chỉnh sửa nội dung.", "info");
+    }
+
+    function cloneCurrentBbTemplate() {
+      const cur = bbTemplatesList.find(t => t.id === currentEditingBbTplId);
+      if (!cur) return;
+      const canvas = document.getElementById("bbVisualEditorCanvas");
+      const currentHtml = isBbLivePreviewMode ? rawDraftBbHtmlBeforePreview : (canvas ? canvas.innerHTML : cur.html_content);
+      const newId = "TPL_" + Date.now();
+      const cloned = {
+        id: newId,
+        name: cur.name + " (Bản sao)",
+        short_badge: (cur.short_badge || "Form").slice(0, 12) + "2",
+        keywords: "",
+        is_active: 1,
+        sort_order: bbTemplatesList.length + 1,
+        html_content: currentHtml
+      };
+      const stdIdx = bbTemplatesList.findIndex(t => t.id === "STANDARD");
+      if (stdIdx >= 0) bbTemplatesList.splice(stdIdx, 0, cloned);
+      else bbTemplatesList.push(cloned);
+
+      selectBbTemplateInEditor(newId);
+      showToast("Đã nhân bản Form! Hãy gán Từ khóa Kho Nhận mới và bấm Lưu.", "success");
+    }
+
+    function execBbEditorCmd(cmd, val = null) {
+      if (isBbLivePreviewMode) {
+        showToast("Đang ở chế độ Xem thử. Hãy bấm 'Quay lại Chế độ Soạn Mẫu' để chỉnh sửa!", "warning");
+        return;
+      }
+      const canvas = document.getElementById("bbVisualEditorCanvas");
+      if (canvas) canvas.focus();
+      document.execCommand(cmd, false, val);
+    }
+
+    function insertBbVariable(varToken) {
+      if (isBbLivePreviewMode) {
+        showToast("Hãy tắt chế độ Xem thử trước khi chèn biến!", "warning");
+        return;
+      }
+      const canvas = document.getElementById("bbVisualEditorCanvas");
+      if (!canvas) return;
+      canvas.focus();
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0 && canvas.contains(sel.anchorNode)) {
+        document.execCommand("insertText", false, varToken);
+      } else {
+        canvas.innerHTML += ` <span>${varToken}</span>`;
+      }
+    }
+
+    function insertBbSampleTable() {
+      if (isBbLivePreviewMode) return;
+      const tblHtml = `<table class="thna-table" style="width:100%;border-collapse:collapse;margin:12px 0;">
+        <thead>
+          <tr>
+            <th style="border:1px solid #000;padding:6px;">STT</th>
+            <th style="border:1px solid #000;padding:6px;">Số cont/Seal</th>
+            <th style="border:1px solid #000;padding:6px;">Số lượng</th>
+            <th style="border:1px solid #000;padding:6px;">Khối lượng (tấn)</th>
+            <th style="border:1px solid #000;padding:6px;">Mã Hàng / Ghi chú</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="border:1px solid #000;padding:6px;text-align:center;">1</td>
+            <td style="border:1px solid #000;padding:6px;text-align:center;">{{SO_CONT}}</td>
+            <td style="border:1px solid #000;padding:6px;"></td>
+            <td style="border:1px solid #000;padding:6px;text-align:center;">{{TRONG_LUONG}}</td>
+            <td style="border:1px solid #000;padding:6px;text-align:center;">{{HANG_HOA}}</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #000;padding:6px;text-align:center;">2</td>
+            <td style="border:1px solid #000;padding:6px;text-align:center;">{{SO_SEAL}}</td>
+            <td style="border:1px solid #000;padding:6px;"></td>
+            <td style="border:1px solid #000;padding:6px;"></td>
+            <td style="border:1px solid #000;padding:6px;"></td>
+          </tr>
+        </tbody>
+      </table>`;
+      const canvas = document.getElementById("bbVisualEditorCanvas");
+      if (!canvas) return;
+      canvas.focus();
+      document.execCommand("insertHTML", false, tblHtml);
+    }
+
+    function triggerBbLogoUpload() {
+      if (isBbLivePreviewMode) {
+        showToast("Hãy tắt chế độ Xem thử trước khi đổi Logo!", "warning");
+        return;
+      }
+      const inp = document.getElementById("bbLogoFileInput");
+      if (inp) { inp.value = ""; inp.click(); }
+    }
+
+    function handleBbLogoFileSelected(inputEl) {
+      const file = inputEl.files && inputEl.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const dataUrl = e.target.result;
+        const canvas = document.getElementById("bbVisualEditorCanvas");
+        if (!canvas) return;
+        // Nếu trong mẫu đang có ảnh logo đầu tiên (.thna-logo-img hoặc img trong header), thay thế luôn
+        const existingLogo = canvas.querySelector(".thna-logo-img") || canvas.querySelector(".vs-header-table img") || canvas.querySelector("img");
+        if (existingLogo) {
+          existingLogo.src = dataUrl;
+          showToast("Đã cập nhật ảnh Logo trên mẫu Biên Bản!", "success");
+        } else {
+          canvas.focus();
+          document.execCommand("insertHTML", false, `<img src="${dataUrl}" style="max-width:165px;height:auto;" />`);
+          showToast("Đã chèn ảnh Logo vào mẫu Biên Bản!", "success");
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function getSamplePoForBbPreview() {
+      const kwInp = document.getElementById("bbTplKeywords");
+      const kwList = ((kwInp && kwInp.value) || "").split(",").map(k => k.trim()).filter(k => k && !k.startsWith("*"));
+      let matchedPo = null;
+      if (kwList.length > 0) {
+        matchedPo = allShipments.find(i => {
+          if (i.xuatNhapPo !== "N") return false;
+          const cKho = toCleanUpperCode(i.khoNhanHangPo || "");
+          return kwList.some(k => cKho.includes(toCleanUpperCode(k)));
+        });
+      }
+      if (!matchedPo) {
+        matchedPo = filteredShipments.find(i => i.xuatNhapPo === "N") || allShipments.find(i => i.xuatNhapPo === "N");
+      }
+      return matchedPo || {
+        idPo: "999999",
+        soContPo: "VSGU2250272",
+        soSealPo: "693903",
+        ngayTraHang: getTodayISO(),
+        khoNhanHangPo: kwList[0] || "Cty 4 Oranges",
+        tenKhachPo: "Cty KS Á Châu",
+        diaChiNhanPo: "Lô C-02-1, KCN Đức Hòa 1, Ấp 5, Xã Mỹ Hạnh",
+        tinhNhanPo: "TAY NINH",
+        soXePo: "50H10208",
+        donViVcPo: "VIETSUN",
+        trongLuongPo: "27.00",
+        tenHangHoaPo: "Bột đá",
+        tauPo: "VIETSUN RELIANCE",
+        chuyenPo: "2639S"
+      };
+    }
+
+    function toggleBbEditorLivePreview() {
+      const canvas = document.getElementById("bbVisualEditorCanvas");
+      const btnPrev = document.getElementById("btnBbTogglePreview");
+      if (!canvas) return;
+
+      if (!isBbLivePreviewMode) {
+        rawDraftBbHtmlBeforePreview = canvas.innerHTML;
+        const samplePo = getSamplePoForBbPreview();
+        canvas.innerHTML = renderTemplateWithPoData(rawDraftBbHtmlBeforePreview, samplePo);
+        canvas.contentEditable = "false";
+        isBbLivePreviewMode = true;
+        if (btnPrev) {
+          btnPrev.innerHTML = "✏️ Quay lại Chế độ Soạn Mẫu (Hiện {{...}})";
+          btnPrev.style.background = "#fef3c7";
+          btnPrev.style.color = "#b45309";
+          btnPrev.style.borderColor = "#fcd34d";
+        }
+        showToast(`Đang xem thử với dữ liệu lô #${samplePo.idPo} (${samplePo.khoNhanHangPo})`, "info");
+      } else {
+        canvas.innerHTML = rawDraftBbHtmlBeforePreview;
+        canvas.contentEditable = "true";
+        isBbLivePreviewMode = false;
+        if (btnPrev) {
+          btnPrev.innerHTML = "👁️ Xem thử với dữ liệu thật";
+          btnPrev.style.background = "#eff6ff";
+          btnPrev.style.color = "#1d4ed8";
+          btnPrev.style.borderColor = "#93c5fd";
+        }
+      }
+    }
+
+    async function saveCurrentBbTemplate() {
+      const tpl = bbTemplatesList.find(t => t.id === currentEditingBbTplId);
+      if (!tpl) return;
+
+      const nameVal = (document.getElementById("bbTplName")?.value || "").trim();
+      const badgeVal = (document.getElementById("bbTplBadge")?.value || "BB").trim();
+      const kwVal = tpl.id === "STANDARD" ? "*" : (document.getElementById("bbTplKeywords")?.value || "").trim();
+      const canvas = document.getElementById("bbVisualEditorCanvas");
+      const htmlVal = isBbLivePreviewMode ? rawDraftBbHtmlBeforePreview : (canvas ? canvas.innerHTML : tpl.html_content);
+
+      if (!nameVal) {
+        showToast("⚠️ Vui lòng nhập Tên Mẫu Biên Bản!", "warning");
+        return;
+      }
+      if (tpl.id !== "STANDARD" && !kwVal) {
+        showToast("⚠️ Vui lòng nhập ít nhất 1 từ khóa KHO NHẬN để hệ thống tự động nhận diện!", "warning");
+        return;
+      }
+
+      tpl.name = nameVal;
+      tpl.short_badge = badgeVal || "FormRiêng";
+      tpl.keywords = kwVal;
+      tpl.html_content = htmlVal;
+      tpl.is_active = 1;
+
+      try {
+        localStorage.setItem("vs_bb_templates_v1", JSON.stringify(bbTemplatesList));
+      } catch (_) {}
+
+      renderBbTemplateSidebar();
+      updateBbTplCountBadge();
+      renderShipmentList();
+
+      try {
+        const resp = await fetch("/api/index.php?route=bb_templates/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(tpl)
+        });
+        const res = await resp.json();
+        if (res && res.ok) {
+          showToast(`✅ Đã lưu "${tpl.name}" và đồng bộ lên Server!`, "success");
+        } else {
+          showToast(`Đã lưu "${tpl.name}" trên máy!`, "success");
+        }
+      } catch (_) {
+        showToast(`Đã lưu "${tpl.name}" trên trình duyệt!`, "success");
+      }
+    }
+
+    function restoreDefaultBbTemplate() {
+      const builtIn = getBuiltInBbTemplates().find(t => t.id === currentEditingBbTplId);
+      if (!builtIn) return;
+      if (!confirm(`Bạn có chắc muốn khôi phục "${builtIn.name}" về thiết kế gốc ban đầu không?`)) return;
+
+      const idx = bbTemplatesList.findIndex(t => t.id === currentEditingBbTplId);
+      if (idx >= 0) {
+        bbTemplatesList[idx] = { ...builtIn };
+      }
+      selectBbTemplateInEditor(currentEditingBbTplId);
+      saveCurrentBbTemplate();
+    }
+
+    async function deleteCurrentBbTemplate() {
+      if (currentEditingBbTplId === "STANDARD") {
+        showToast("⚠️ Không thể xóa Form Chuẩn mặc định!", "warning");
+        return;
+      }
+      const tpl = bbTemplatesList.find(t => t.id === currentEditingBbTplId);
+      if (!tpl) return;
+      if (!confirm(`Bạn có chắc muốn xóa "${tpl.name}" không?`)) return;
+
+      const delId = tpl.id;
+      bbTemplatesList = bbTemplatesList.filter(t => t.id !== delId);
+      try {
+        localStorage.setItem("vs_bb_templates_v1", JSON.stringify(bbTemplatesList));
+      } catch (_) {}
+
+      try {
+        await fetch("/api/index.php?route=bb_templates/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: delId })
+        });
+      } catch (_) {}
+
+      updateBbTplCountBadge();
+      selectBbTemplateInEditor(bbTemplatesList[0]?.id || "STANDARD");
+      renderShipmentList();
+      showToast(`Đã xóa mẫu "${tpl.name}"!`, "info");
+    }
+
+    function testPrintCurrentBbTemplate() {
+      const canvas = document.getElementById("bbVisualEditorCanvas");
+      const rawHtml = isBbLivePreviewMode ? rawDraftBbHtmlBeforePreview : (canvas ? canvas.innerHTML : "");
+      const samplePo = getSamplePoForBbPreview();
+      const filledHtml = renderTemplateWithPoData(rawHtml, samplePo);
+      const w = window.open("", "_blank");
+      if (!w) {
+        showToast("⚠️ Trình duyệt chặn pop-up!", "error");
+        return;
+      }
+      w.document.open();
+      w.document.write(buildFullBienBanPrintDocument([`<div class="bb-page">${filledHtml}</div>`], "In thử Mẫu Biên Bản", "1 mẫu thử"));
+      w.document.close();
     }
 
     function toggleBulkDropdown(e) {
@@ -5944,6 +7098,7 @@
         if (nhapCountEl) nhapCountEl.textContent = cnt;
         const nhapClearBtn = document.getElementById("btnBulkNhapClear");
         if (nhapClearBtn) nhapClearBtn.style.display = cnt > 0 ? "inline-block" : "none";
+        updateBbTplCountBadge();
         return;
       }
 
@@ -5984,256 +7139,14 @@
 
     function buildBienBanPageHtml(po, isNotFirstPage) {
       const tpl = detectBbTemplate(po);
-      const baseOrigin = window.location.origin;
-      const soCont = escapeAttr((po.soContPo || "").toUpperCase().trim());
-      const soSeal = escapeAttr((po.soSealPo || "").trim());
-      const hasValidDate = po.ngayTraHang && po.ngayTraHang !== "2021-11-11" && po.ngayTraHang !== "1970-01-01";
-
-      let dd = ".....", mm = ".....", yyyy = String(new Date().getFullYear());
-      if (hasValidDate) {
-        const parts = String(po.ngayTraHang).split("-");
-        if (parts.length === 3) {
-          yyyy = parts[0];
-          mm = parts[1];
-          dd = parts[2];
-        }
-      }
-
-      // 1. FORM ĐẶC THÙ: KHO NHẬN = CTY 4 ORANGES (THNA GROUP)
-      if (tpl.code === "4ORANGES") {
-        return `
-          <div class="bb-page bb-4oranges ${isNotFirstPage ? 'page-break' : ''}">
-            <div class="thna-header">
-              <div class="thna-logo-col">
-                <img src="${baseOrigin}/logoThna.png" alt="THNA Logo" class="thna-logo-img" />
-              </div>
-              <div class="thna-info-col">
-                <div class="thna-title">THNA GROUP</div>
-                <div class="thna-sub"><span style="color:#0000FF;">The No.1 Vietnam </span><span style="color:#222222;">CaCO3 powder</span></div>
-                <div class="thna-line">2<sup>nd</sup> Floor, Trung Hai Nghe An Building, Quy Hop, Nghe An, Vietnam</div>
-                <div class="thna-line">Phone:&nbsp; +84 238 398 2777 &ndash;&nbsp;&nbsp; Email:&nbsp;<span class="thna-link">info@thnagroup.com</span></div>
-                <div class="thna-line">Hotline: +84 97&nbsp; 109 2777 &ndash;&nbsp; Website:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="thna-link">thnagroup.com</span></div>
-              </div>
-            </div>
-
-            <div class="thna-divider">-----------------------------------------------------------------------------------------------------------------------------------------</div>
-
-            <div class="thna-doc-title">BIÊN BẢN GIAO NHẬN HÀNG HÓA</div>
-            <div class="thna-doc-date" contenteditable="true">Ngày ${dd}&nbsp;&nbsp;tháng ${mm}&nbsp;&nbsp;&nbsp;năm ${yyyy}</div>
-
-            <div class="thna-section">
-              <div class="thna-bold-12">BÊN GIAO HÀNG: CÔNG TY CỔ PHẦN TRUNG HẢI- NGHỆ AN GROUP.</div>
-              <div class="thna-bold-12" style="padding-left:28px;">(THNA GROUP)</div>
-              <div class="thna-driver-line" contenteditable="true">
-                <span style="display:inline-block;width:58%;padding-left:48px;">Tên Tài xế:</span>
-                <span>Biển số xe:</span>
-              </div>
-            </div>
-
-            <div class="thna-section" style="margin-top:14px;">
-              <div class="thna-bold-13">BÊN NHẬN HÀNG: CÔNG TY 4ORANGES CO.,LTD</div>
-              <div class="thna-bold-13">Địa chỉ:&nbsp; Lô C-02-1, KCN Đức&nbsp; Hoà 1, Ấp 5, Xã Mỹ Hạnh, Tỉnh Tây Ninh, Việt Nam.</div>
-            </div>
-
-            <table class="thna-table">
-              <thead>
-                <tr>
-                  <th style="width:7.6%;">STT</th>
-                  <th style="width:23.7%;">Số cont/Seal</th>
-                  <th style="width:15.6%;">Số lượng</th>
-                  <th style="width:26.55%;">Khối lượng ( tấn)</th>
-                  <th style="width:26.55%;">Mã Hàng</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style="text-align:center;">1</td>
-                  <td style="text-align:center;" contenteditable="true">${soCont}</td>
-                  <td contenteditable="true"></td>
-                  <td contenteditable="true"></td>
-                  <td style="text-align:center;" contenteditable="true">THNA07</td>
-                </tr>
-                <tr>
-                  <td style="text-align:center;">2</td>
-                  <td style="text-align:center;padding-left:22px;" contenteditable="true">${soSeal}</td>
-                  <td contenteditable="true"></td>
-                  <td contenteditable="true"></td>
-                  <td contenteditable="true"></td>
-                </tr>
-              </tbody>
-            </table>
-
-            <div class="thna-weight-words" contenteditable="true">Khối lượng hàng bằng chữ: </div>
-
-            <div class="thna-signatures">
-              <div class="thna-sig-col">
-                <div class="thna-sig-title">Đại diện bên nhận hàng</div>
-                <div class="thna-sig-sub">(Ký và ghi rõ họ tên)</div>
-              </div>
-              <div class="thna-sig-col">
-                <div class="thna-sig-title">Đại diện bên giao hàng</div>
-                <div class="thna-sig-sub">(Ký và ghi rõ họ tên)</div>
-              </div>
-            </div>
-          </div>
-        `;
-      }
-
-      // 2. FORM CHUẨN VIETSUN LOGISTICS (MẶC ĐỊNH CHO ĐA SỐ KHÁCH HÀNG - TRANGIN.PHP?LOAI=98)
-      const vsDateStr = hasValidDate
-        ? `Ngày ${dd} tháng ${mm}  năm ${yyyy} `
-        : `Ngày ..... tháng ..... năm .......`;
-      const khoNhan = (po.khoNhanHangPo || po.tenKhachPo || "").trim();
-      const rawDiaChi = (po.diaChiNhanPo || "").trim();
-      const rawTinh = (po.tinhNhanPo || "").toUpperCase().trim();
-      const tinhLabel = PROVINCE_VN_LABEL[rawTinh] || po.tinhNhanPo || "";
-      const fullDiaChi = [rawDiaChi, tinhLabel].filter(Boolean).join(", ");
-
-      return `
-        <div class="bb-page bb-vietsun ${isNotFirstPage ? 'page-break' : ''}">
-          <div class="vs-div-picture">
-            <img class="vs-watermark-img" src="${baseOrigin}/vietsunwatermark2.png" alt="" />
-            <img class="vs-seal-img" src="${baseOrigin}/seal_vietsun.png" alt="" />
-            <div class="vs-content-layer">
-              <table class="vs-header-table">
-                <tr>
-                  <td style="width:170px;vertical-align:top;text-align:center;">
-                    <img src="${baseOrigin}/logo-vietsunnew.png" alt="Company Logo" style="height:75px;width:auto;" />
-                  </td>
-                  <td style="text-align:center;font-family:Arial,Helvetica,sans-serif;">
-                    <div style="font-size:19px;font-weight:700;line-height:1.2;">VIETSUN LOGISTICS - VIETSUN CORPORATION</div>
-                    <div style="font-size:12.5px;line-height:1.35;margin-top:4px;">
-                      Số 13-15 đường B4, Phường An Khánh, Thành Phố Hồ Chí Minh<br/>
-                      Tel : 08 38269 539 - 38269 540 -38269 541 - Ext :307; Fax: (84.8) 8269542<br/>
-                      Website : www.vietsunlogistic.com<br/><br/>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td colspan="2" style="text-align:center;padding-top:4px;">
-                    <span style="font-size:23pt;font-weight:700;">BIÊN BẢN GIAO NHẬN HÀNG</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td colspan="2" style="text-align:right;padding-top:2px;">
-                    <span style="font-size:12.5pt;font-style:italic;" contenteditable="true">${vsDateStr}</span>
-                  </td>
-                </tr>
-              </table>
-
-              <p style="margin:8px 0 4px;line-height:1.75;" contenteditable="true">
-                Căn cứ vào hợp đồng vận chuyển (hoặc booking note) số ................... ngày ...... tháng ... năm....<br/>
-                <span style="font-weight:700;text-decoration:underline;">Chúng tôi gồm:</span>
-              </p>
-
-              <table class="vs-info-table">
-                <tbody>
-                  <tr>
-                    <th colspan="4" style="text-align:left;"><span style="text-decoration:underline;">BÊN GIAO</span>: CÔNG TY CỔ PHẦN NHẬT VIỆT</th>
-                  </tr>
-                  <tr>
-                    <td style="width:15%;">Địa chỉ</td>
-                    <td colspan="3">:Số 13-15 đường B4, Phường An Khánh, Thành Phố Hồ Chí Minh</td>
-                  </tr>
-                  <tr>
-                    <td>Điện thoại</td>
-                    <td colspan="3">: 08 38269539 </td>
-                  </tr>
-                  <tr>
-                    <td>Đại diện</td>
-                    <td style="width:53%;" contenteditable="true">: Ông......................................................................</td>
-                    <td style="width:11%;">Chức vụ</td>
-                    <td>: NV Lái xe</td>
-                  </tr>
-                  <tr>
-                    <td>Số xe vận tải</td>
-                    <td colspan="3" contenteditable="true">:..............................................................................</td>
-                  </tr>
-                  <tr>
-                    <th style="text-align:left;text-decoration:underline;vertical-align:top;">BÊN NHẬN</th>
-                    <th colspan="3" style="text-align:left;text-transform:uppercase;" contenteditable="true">: ${escapeAttr(khoNhan)}</th>
-                  </tr>
-                  <tr>
-                    <td style="vertical-align:top;">Địa chỉ</td>
-                    <td colspan="3" contenteditable="true">: ${escapeAttr(fullDiaChi)}</td>
-                  </tr>
-                  <tr>
-                    <td>Đại diện</td>
-                    <td contenteditable="true">: Ông/Bà................................................................</td>
-                    <td>Chức vụ</td>
-                    <td contenteditable="true">:.....................................</td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <div style="margin:4px 0;">Cùng thống nhất lập biên bản giao nhận hàng hóa trên với nội dung như sau:</div>
-
-              <table class="vs-bangND">
-                <thead>
-                  <tr>
-                    <th style="width:28%;">SỐ CONT</th>
-                    <th style="width:22%;">SỐ SEAL</th>
-                    <th style="width:25%;" contenteditable="true">HÀNG HÓA</th>
-                    <th style="width:25%;" contenteditable="true">GHI CHÚ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td contenteditable="true">${soCont}</td>
-                    <td contenteditable="true">${soSeal}</td>
-                    <td contenteditable="true"></td>
-                    <td contenteditable="true"></td>
-                  </tr>
-                  <tr>
-                    <td contenteditable="true"></td>
-                    <td contenteditable="true"></td>
-                    <td contenteditable="true"></td>
-                    <td contenteditable="true"><span style="color:#ffffff;">.</span></td>
-                  </tr>
-                </tbody>
-              </table>
-
-              <p style="margin:8px 0 12px;line-height:1.8;" contenteditable="true">
-                <span style="font-weight:700;text-decoration:underline;">Hình thức giao nhận: </span> Nguyên Cont, nguyên Seal. Bên giao không chịu trách nhiệm về số lượng, trọng lượng hàng hóa bên trong Cont.<br/>
-                <span style="font-weight:700;text-decoration:underline;">Địa điểm giao, nhận hàng: </span>..............................................................................................................<br/>
-                <span style="font-weight:700;text-decoration:underline;">Chứng từ kèm theo: </span>........................................................................................................................<br/>
-                Hai bên đã kiểm tra kỹ số Cont, số Seal như trên là đúng và cùng thống nhất giao nhận hàng với nội dung như trên. Biên bản được lập thành hai (02) bản, nội dung và giá trị như nhau mỗi bên giữ một (01) bản ./
-              </p>
-
-              <div class="vs-sig-row">
-                <div class="vs-sig-col">ĐẠI DIỆN BÊN GIAO</div>
-                <div class="vs-sig-col"></div>
-                <div class="vs-sig-col">ĐẠI DIỆN BÊN NHẬN</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
+      const rawHtml = tpl.html_content || getDefaultStandardHtml();
+      const filledInner = renderTemplateWithPoData(rawHtml, po);
+      return `<div class="bb-page ${isNotFirstPage ? 'page-break' : ''}" contenteditable="true">${filledInner}</div>`;
     }
 
-    function executeBulkBienBanPrint(selectedPos) {
-      if (!selectedPos || selectedPos.length === 0) {
-        showToast("⚠️ Vui lòng chọn ít nhất 1 lô hàng Nhập để in Biên Bản!", "warning");
-        return;
-      }
-
-      const tplCounts = {};
-      const pagesHtmlArr = selectedPos.map((po, idx) => {
-        const tpl = detectBbTemplate(po);
-        tplCounts[tpl.name] = (tplCounts[tpl.name] || 0) + 1;
-        return buildBienBanPageHtml(po, idx > 0);
-      });
-
-      const summaryBreakdown = Object.entries(tplCounts)
-        .map(([name, cnt]) => `${cnt} ${name}`)
-        .join(" • ");
-
-      showToast(`Đang mở trang in ${selectedPos.length} Biên Bản (${summaryBreakdown})...`, "success");
-
-      const carrierLabel = state.bulkCarrier ? ` - ${state.bulkCarrier}` : "";
-      const title = `In ${selectedPos.length} Biên Bản Giao Nhận${carrierLabel} (${formatIsoToVN(state.fromDate)})`;
-
-      const printHtml = `<!DOCTYPE html>
+    function buildFullBienBanPrintDocument(pagesHtmlArr, title, summaryBreakdown) {
+      const count = pagesHtmlArr.length;
+      return `<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="utf-8">
@@ -6269,282 +7182,67 @@
       font-family: Arial, Helvetica, sans-serif;
       box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
     }
-    .no-print-info {
-      font-size: 13px;
-      font-weight: 700;
-      color: #0f172a;
-    }
-    .no-print-sub {
-      font-size: 12px;
-      color: #0369a1;
-      font-weight: 600;
-      margin-top: 2px;
-    }
-    .no-print-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .btn-top-print {
-      background: #f59e0b;
-      color: #000000;
-      border: 1px solid #d97706;
-      border-radius: 6px;
-      padding: 7px 16px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .btn-top-print:hover {
-      background: #eab308;
-    }
-    .btn-top-close {
-      background: #ffffff;
-      color: #dc2626;
-      border: 1px solid #dc2626;
-      border-radius: 6px;
-      padding: 7px 14px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .btn-top-close:hover {
-      background: #fee2e2;
-    }
-    .bb-page {
-      width: 190mm;
-      margin: 12px auto;
-      background: #ffffff;
-      padding: 6mm 6mm;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-    .page-break {
-      page-break-before: always;
-      break-before: page;
-    }
+    .no-print-info { font-size: 13px; font-weight: 700; color: #0f172a; }
+    .no-print-sub { font-size: 12px; color: #0369a1; font-weight: 600; margin-top: 2px; }
+    .no-print-actions { display: flex; align-items: center; gap: 8px; }
+    .btn-top-print { background: #f59e0b; color: #000; border: 1px solid #d97706; border-radius: 6px; padding: 7px 16px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-top-print:hover { background: #eab308; }
+    .btn-top-close { background: #fff; color: #dc2626; border: 1px solid #dc2626; border-radius: 6px; padding: 7px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-top-close:hover { background: #fee2e2; }
+    .bb-page { width: 190mm; margin: 12px auto; background: #fff; padding: 6mm 6mm; box-shadow: 0 2px 10px rgba(0,0,0,0.1); outline: none; }
+    .page-break { page-break-before: always; break-before: page; }
     @media print {
-      html, body {
-        background: #ffffff;
-      }
-      .no-print-bar {
-        display: none !important;
-      }
-      .bb-page {
-        margin: 0 auto;
-        padding: 0;
-        box-shadow: none;
-        width: 190mm;
-      }
+      html, body { background: #ffffff; }
+      .no-print-bar { display: none !important; }
+      .bb-page { margin: 0 auto; padding: 0; box-shadow: none; width: 190mm; }
     }
-
-    /* =====================================================================
-       STYLE 1: FORM CHUẨN VIETSUN LOGISTICS (TRANGIN.PHP?LOAI=98)
-       ===================================================================== */
-    .bb-vietsun {
-      font-family: "Times New Roman", Times, serif;
-      font-size: 13pt;
-      color: #000000;
-    }
-    .vs-div-picture {
-      width: 190mm;
-      min-height: 225mm;
-      position: relative;
-    }
-    .vs-watermark-img {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 82%;
-      max-height: 175mm;
-      object-fit: contain;
-      opacity: 0.22;
-      pointer-events: none;
-      z-index: 0;
-    }
-    .vs-seal-img {
-      position: absolute;
-      top: 18mm;
-      left: 10mm;
-      width: 39mm;
-      height: 39mm;
-      object-fit: contain;
-      pointer-events: none;
-      z-index: 1;
-    }
-    .vs-content-layer {
-      position: relative;
-      z-index: 2;
-    }
-    .vs-header-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    .vs-info-table {
-      width: 100%;
-      border-collapse: collapse;
-      line-height: 1.8;
-      vertical-align: top;
-    }
-    .vs-info-table th, .vs-info-table td {
-      padding: 0 2px;
-      vertical-align: top;
-    }
-    .vs-bangND {
-      width: 100%;
-      border-collapse: collapse;
-      line-height: 1.8;
-      margin: 4px 0;
-    }
-    .vs-bangND th, .vs-bangND td {
-      border: 1px solid #000000;
-      padding: 2px 10px;
-      text-align: center;
-    }
-    .vs-sig-row {
-      display: flex;
-      justify-content: space-between;
-      text-align: center;
-      font-weight: 700;
-      margin-top: 8px;
-    }
-    .vs-sig-col {
-      width: 33.33%;
-    }
-
-    /* =====================================================================
-       STYLE 2: FORM CTY 4 ORANGES (THNA GROUP - DOCX TEMPLATE)
-       ===================================================================== */
-    .bb-4oranges {
-      font-family: "Times New Roman", Times, serif;
-      color: #000000;
-      padding-top: 4mm;
-    }
-    .thna-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 16px;
-      padding-left: 8px;
-    }
-    .thna-logo-col {
-      flex-shrink: 0;
-      padding-top: 2px;
-    }
-    .thna-logo-img {
-      width: 160px;
-      height: auto;
-      display: block;
-    }
-    .thna-info-col {
-      font-family: Arial, Helvetica, sans-serif;
-      color: #222222;
-      line-height: 1.38;
-    }
-    .thna-title {
-      font-size: 14pt;
-      font-weight: 700;
-      color: #0000FF;
-      margin-bottom: 3px;
-    }
-    .thna-sub {
-      font-size: 10pt;
-      margin-bottom: 2px;
-    }
-    .thna-line {
-      font-size: 10pt;
-      color: #222222;
-    }
-    .thna-link {
-      color: #0000FF;
-      text-decoration: underline;
-    }
-    .thna-divider {
-      font-family: "Times New Roman", Times, serif;
-      font-size: 11pt;
-      text-align: center;
-      letter-spacing: 0.4px;
-      margin: 12px 0 14px;
-      overflow: hidden;
-      white-space: nowrap;
-    }
-    .thna-doc-title {
-      font-size: 16pt;
-      font-weight: 700;
-      text-align: center;
-      margin-bottom: 6px;
-    }
-    .thna-doc-date {
-      font-size: 12pt;
-      text-align: right;
-      padding-right: 28px;
-      margin-bottom: 14px;
-    }
-    .thna-section {
-      line-height: 1.85;
-    }
-    .thna-bold-12 {
-      font-size: 12pt;
-      font-weight: 700;
-    }
-    .thna-bold-13 {
-      font-size: 13pt;
-      font-weight: 700;
-    }
-    .thna-driver-line {
-      font-size: 13pt;
-      margin-top: 2px;
-    }
-    .thna-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 14px 0 16px;
-      font-size: 12pt;
-    }
-    .thna-table th, .thna-table td {
-      border: 1px solid #000000;
-      padding: 6px 8px;
-      vertical-align: middle;
-    }
-    .thna-table thead th {
-      font-weight: 700;
-      text-align: center;
-      height: 26px;
-    }
-    .thna-table tbody td {
-      height: 36px;
-    }
-    .thna-weight-words {
-      font-size: 13pt;
-      padding-left: 24px;
-      margin: 16px 0 22px;
-    }
-    .thna-signatures {
-      display: flex;
-      justify-content: space-between;
-      font-size: 13pt;
-      padding: 0 36px;
-      margin-top: 16px;
-    }
-    .thna-sig-col {
-      text-align: center;
-      width: 45%;
-    }
-    .thna-sig-title {
-      margin-bottom: 68px;
-    }
-    .thna-sig-sub {
-      font-size: 12.5pt;
-    }
+    .bb-vietsun { font-family: "Times New Roman", Times, serif; font-size: 13pt; color: #000; }
+    .vs-div-picture { width: 190mm; min-height: 225mm; position: relative; }
+    .vs-watermark-img { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 82%; max-height: 175mm; object-fit: contain; opacity: 0.22; pointer-events: none; z-index: 0; }
+    .vs-seal-img { position: absolute; top: 18mm; left: 10mm; width: 39mm; height: 39mm; object-fit: contain; pointer-events: none; z-index: 1; }
+    .vs-content-layer { position: relative; z-index: 2; }
+    .vs-header-table { width: 100%; border-collapse: collapse; }
+    .vs-info-table { width: 100%; border-collapse: collapse; line-height: 1.8; vertical-align: top; }
+    .vs-info-table th, .vs-info-table td { padding: 0 2px; vertical-align: top; }
+    .vs-bangND { width: 100%; border-collapse: collapse; line-height: 1.8; margin: 4px 0; }
+    .vs-bangND th, .vs-bangND td { border: 1px solid #000; padding: 2px 10px; text-align: center; }
+    .vs-sig-row { display: flex; justify-content: space-between; text-align: center; font-weight: 700; margin-top: 8px; }
+    .vs-sig-col { width: 33.33%; }
+    .bb-4oranges { font-family: "Times New Roman", Times, serif; color: #000; padding-top: 4mm; }
+    .thna-header { display: flex; align-items: flex-start; gap: 16px; padding-left: 8px; }
+    .thna-logo-col { flex-shrink: 0; padding-top: 2px; }
+    .thna-logo-img { width: 160px; height: auto; display: block; }
+    .thna-info-col { font-family: Arial, Helvetica, sans-serif; color: #222; line-height: 1.38; }
+    .thna-title { font-size: 14pt; font-weight: 700; color: #0000FF; margin-bottom: 3px; }
+    .thna-sub { font-size: 10pt; margin-bottom: 2px; }
+    .thna-line { font-size: 10pt; color: #222; }
+    .thna-link { color: #0000FF; text-decoration: underline; }
+    .thna-divider { font-family: "Times New Roman", Times, serif; font-size: 11pt; text-align: center; letter-spacing: 0.4px; margin: 12px 0 14px; overflow: hidden; white-space: nowrap; }
+    .thna-doc-title { font-size: 16pt; font-weight: 700; text-align: center; margin-bottom: 6px; }
+    .thna-doc-date { font-size: 12pt; text-align: right; padding-right: 28px; margin-bottom: 14px; }
+    .thna-section { line-height: 1.85; }
+    .thna-bold-12 { font-size: 12pt; font-weight: 700; }
+    .thna-bold-13 { font-size: 13pt; font-weight: 700; }
+    .thna-driver-line { font-size: 13pt; margin-top: 2px; }
+    .thna-table { width: 100%; border-collapse: collapse; margin: 14px 0 16px; font-size: 12pt; }
+    .thna-table th, .thna-table td { border: 1px solid #000; padding: 6px 8px; vertical-align: middle; }
+    .thna-table thead th { font-weight: 700; text-align: center; height: 26px; }
+    .thna-table tbody td { height: 36px; }
+    .thna-weight-words { font-size: 13pt; padding-left: 24px; margin: 16px 0 22px; }
+    .thna-signatures { display: flex; justify-content: space-between; font-size: 13pt; padding: 0 36px; margin-top: 16px; }
+    .thna-sig-col { text-align: center; width: 45%; }
+    .thna-sig-title { margin-bottom: 68px; }
+    .thna-sig-sub { font-size: 12.5pt; }
   </style>
 </head>
 <body>
   <div class="no-print-bar">
     <div>
-      <div class="no-print-info">🖨️ Danh sách in: ${selectedPos.length} Biên Bản Giao Nhận Hàng Nhập${carrierLabel}</div>
+      <div class="no-print-info">🖨️ Danh sách in: ${count} Biên Bản Giao Nhận Hàng Nhập</div>
       <div class="no-print-sub">Tự động nhận diện Form theo Kho Nhận: ${escapeAttr(summaryBreakdown)} (Có thể bấm vào chữ trên phiếu để sửa trực tiếp trước khi in)</div>
     </div>
     <div class="no-print-actions">
-      <button type="button" class="btn-top-print" onclick="window.print()">🖨️ In Phiếu (${selectedPos.length})</button>
+      <button type="button" class="btn-top-print" onclick="window.print()">🖨️ In Phiếu (${count})</button>
       <button type="button" class="btn-top-close" onclick="window.close()">✕ Đóng trang in</button>
     </div>
   </div>
@@ -6559,6 +7257,30 @@
   <\/script>
 </body>
 </html>`;
+    }
+
+    function executeBulkBienBanPrint(selectedPos) {
+      if (!selectedPos || selectedPos.length === 0) {
+        showToast("⚠️ Vui lòng chọn ít nhất 1 lô hàng Nhập để in Biên Bản!", "warning");
+        return;
+      }
+
+      const tplCounts = {};
+      const pagesHtmlArr = selectedPos.map((po, idx) => {
+        const tpl = detectBbTemplate(po);
+        tplCounts[tpl.name] = (tplCounts[tpl.name] || 0) + 1;
+        return buildBienBanPageHtml(po, idx > 0);
+      });
+
+      const summaryBreakdown = Object.entries(tplCounts)
+        .map(([name, cnt]) => `${cnt} ${name}`)
+        .join(" • ");
+
+      showToast(`Đang mở trang in ${selectedPos.length} Biên Bản (${summaryBreakdown})...`, "success");
+
+      const carrierLabel = state.bulkCarrier ? ` - ${state.bulkCarrier}` : "";
+      const title = `In ${selectedPos.length} Biên Bản Giao Nhận${carrierLabel} (${formatIsoToVN(state.fromDate)})`;
+      const printHtml = buildFullBienBanPrintDocument(pagesHtmlArr, title, summaryBreakdown);
 
       const w = window.open("", "_blank");
       if (!w) {
