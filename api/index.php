@@ -167,7 +167,7 @@ function validate_container_iso($contStr) {
 // - Nhiều xe có thể dùng chung SĐT tài xế
 // - Lưu thêm CCCD, GPLX
 function ensure_schema($pdo) {
-    $flagFile = sys_get_temp_dir() . '/vietsun_schema_v11.flag';
+    $flagFile = sys_get_temp_dir() . '/vietsun_schema_v12.flag';
     if (file_exists($flagFile)) {
         return;
     }
@@ -177,10 +177,16 @@ function ensure_schema($pdo) {
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS `tms_tt_status` (
                 `id_po` VARCHAR(32) PRIMARY KEY,
-                `is_checked` TINYINT(1) NOT NULL DEFAULT 1,
+                `is_checked` TINYINT(1) NULL DEFAULT NULL,
+                `note_po` VARCHAR(100) NULL DEFAULT NULL,
                 `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         ");
+        $colNoteChk = $pdo->query("SHOW COLUMNS FROM `tms_tt_status` LIKE 'note_po'")->fetch();
+        if (!$colNoteChk) {
+            $pdo->exec("ALTER TABLE `tms_tt_status` MODIFY `is_checked` TINYINT(1) NULL DEFAULT NULL");
+            $pdo->exec("ALTER TABLE `tms_tt_status` ADD COLUMN `note_po` VARCHAR(100) NULL DEFAULT NULL AFTER `is_checked`");
+        }
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS `tms_pending_approvals` (
                 `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -1273,7 +1279,7 @@ try {
     }
 
     $pdo = get_db();
-    $schemaFlag = sys_get_temp_dir() . '/vietsun_schema_v11.flag';
+    $schemaFlag = sys_get_temp_dir() . '/vietsun_schema_v12.flag';
     if (!file_exists($schemaFlag)) {
         ensure_schema($pdo);
         $drvCnt = (int)$pdo->query("SELECT COUNT(*) FROM drivers")->fetchColumn();
@@ -1450,7 +1456,31 @@ try {
         exit;
     }
     if ($route === 'index-crud' || $route === 'index_crud') {
-        echo push_vietsun_crud($_POST ?: $jsonBody);
+        $payload = $_POST ?: $jsonBody;
+        // Nếu người dùng lưu cột Notes (notePo) từ popup, lưu ngay vào tms_tt_status & file cache để đồng bộ tức thì
+        if (is_array($payload) && isset($payload['cot']) && preg_match('/<<\|(\d+)<<\|notePo<<\|/', (string)$payload['cot'], $mNote)) {
+            $notePid = (string)$mNote[1];
+            $noteVal = trim((string)($payload['thongtin'] ?? ''));
+            try {
+                $stNote = $pdo->prepare("
+                    INSERT INTO `tms_tt_status` (`id_po`, `note_po`)
+                    VALUES (?, ?)
+                    ON DUPLICATE KEY UPDATE `note_po` = VALUES(`note_po`), `updated_at` = CURRENT_TIMESTAMP
+                ");
+                $stNote->execute([$notePid, $noteVal]);
+            } catch (Exception $e) {}
+            $ttCacheFile = sys_get_temp_dir() . '/vietsun_tt_checked_v2.json';
+            if (file_exists($ttCacheFile)) {
+                $cached = json_decode(@file_get_contents($ttCacheFile), true);
+                if (is_array($cached)) {
+                    if (!isset($cached['notesMap']) || !is_array($cached['notesMap'])) $cached['notesMap'] = [];
+                    if ($noteVal !== '') $cached['notesMap'][$notePid] = $noteVal;
+                    else unset($cached['notesMap'][$notePid]);
+                    @file_put_contents($ttCacheFile, json_encode($cached));
+                }
+            }
+        }
+        echo push_vietsun_crud($payload);
         exit;
     }
 
@@ -1506,10 +1536,10 @@ try {
         exit;
     }
 
-    // Đồng bộ & Cập nhật cột TT (trangThaiDieuXePo - Đánh dấu đã in BB hàng nhập, đẩy xuống cuối danh sách & đồng bộ TMS gốc)
+    // Đồng bộ & Cập nhật cột TT (trangThaiDieuXePo) và cột Notes (notePo) của Tab Hàng Nhập từ TMS gốc
     if ($route === 'tt_status' || $route === 'api/tt_status') {
         $force = !empty($_GET['refresh']);
-        $ttCacheFile = sys_get_temp_dir() . '/vietsun_tt_checked_v1.json';
+        $ttCacheFile = sys_get_temp_dir() . '/vietsun_tt_checked_v2.json';
 
         $syncTtFromTms = function($pdo) use ($ttCacheFile, $COOKIE_FILE) {
             if (!file_exists($COOKIE_FILE)) {
@@ -1541,18 +1571,38 @@ try {
                     $set[(string)$pid] = true;
                 }
             }
+            $notesMap = [];
+            if ($html && preg_match_all('/id=["\']notePo(\d+)["\'][^>]*value=["\']([^"\']*)["\']/i', $html, $mn, PREG_SET_ORDER)) {
+                foreach ($mn as $mRow) {
+                    $pid = (string)$mRow[1];
+                    $val = trim(html_entity_decode($mRow[2], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+                    if ($val !== '') {
+                        $notesMap[$pid] = $val;
+                    }
+                }
+            }
             try {
-                $rows = $pdo->query("SELECT `id_po`, `is_checked` FROM `tms_tt_status`")->fetchAll();
+                $rows = $pdo->query("SELECT `id_po`, `is_checked`, `note_po` FROM `tms_tt_status`")->fetchAll();
                 foreach ($rows as $r) {
                     $pid = (string)$r['id_po'];
-                    if ((int)$r['is_checked'] === 1) {
-                        $set[$pid] = true;
-                    } else {
-                        unset($set[$pid]);
+                    if ($r['is_checked'] !== null) {
+                        if ((int)$r['is_checked'] === 1) {
+                            $set[$pid] = true;
+                        } else {
+                            unset($set[$pid]);
+                        }
+                    }
+                    if ($r['note_po'] !== null) {
+                        $nVal = trim((string)$r['note_po']);
+                        if ($nVal !== '') {
+                            $notesMap[$pid] = $nVal;
+                        } else {
+                            unset($notesMap[$pid]);
+                        }
                     }
                 }
             } catch (Exception $e) {}
-            $out = ['ok' => true, 'checkedIds' => array_keys($set)];
+            $out = ['ok' => true, 'checkedIds' => array_keys($set), 'notesMap' => $notesMap];
             @file_put_contents($ttCacheFile, json_encode($out));
             return $out;
         };
@@ -1598,7 +1648,7 @@ try {
         } catch (Exception $e) {}
 
         // Cập nhật ngay file cache để các tab/thiết bị khác thấy tức thì
-        $ttCacheFile = sys_get_temp_dir() . '/vietsun_tt_checked_v1.json';
+        $ttCacheFile = sys_get_temp_dir() . '/vietsun_tt_checked_v2.json';
         if (file_exists($ttCacheFile)) {
             $cached = json_decode(@file_get_contents($ttCacheFile), true);
             if (is_array($cached) && isset($cached['checkedIds']) && is_array($cached['checkedIds'])) {

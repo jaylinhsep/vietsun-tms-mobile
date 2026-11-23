@@ -2484,7 +2484,7 @@
           </div>
 
           <div class="form-section-title">
-            <span>3. Kho Hàng, Địa Chỉ & Liên Hệ</span>
+            <span id="sec3TitleText">3. Kho Hàng, Địa Chỉ & Liên Hệ</span>
           </div>
 
           <div class="form-grid">
@@ -2519,13 +2519,24 @@
               />
             </div>
 
-            <div class="form-group full">
+            <div class="form-group full" id="grp_lienHeNhanPo">
               <label><span>📞 Người liên hệ & SĐT</span></label>
               <input
                 type="text"
                 class="form-control"
                 id="inp_lienHeNhanPo"
                 onchange="onFieldChanged('lienHeNhanPo')"
+              />
+            </div>
+
+            <div class="form-group full" id="grp_notePo" style="display:none;">
+              <label><span>📝 Notes (Ghi chú từ TMS Gốc)</span></label>
+              <input
+                type="text"
+                class="form-control"
+                id="inp_notePo"
+                placeholder="Notes trucking (VD: TRẢ VỎ CHỈ ĐỊNH, 16H...)"
+                onchange="onFieldChanged('notePo')"
               />
             </div>
           </div>
@@ -3847,15 +3858,22 @@
     }
 
     // =========================================================================
-    // ĐỒNG BỘ CỘT TICK TT (ĐÁNH DẤU ĐÃ IN BB HÀNG NHẬP -> ĐẨY XUỐNG DƯỚI CÙNG & ĐẨY VỀ TMS GỐC)
+    // ĐỒNG BỘ CỘT TICK TT & CỘT NOTES (HÀNG NHẬP) TỪ TMS GỐC
     // =========================================================================
     let ttCheckedPoSet = new Set();
+    let tmsNotesMap = {};
 
     function initTtCheckedLocal() {
       try {
         const raw = JSON.parse(localStorage.getItem("vs_tt_checked_ids_v1") || "[]");
         if (Array.isArray(raw)) {
           ttCheckedPoSet = new Set(raw.map(x => String(x)));
+        }
+      } catch (_) {}
+      try {
+        const rawNotes = JSON.parse(localStorage.getItem("vs_tms_notes_map_v1") || "{}");
+        if (rawNotes && typeof rawNotes === "object") {
+          tmsNotesMap = rawNotes;
         }
       } catch (_) {}
     }
@@ -3866,20 +3884,42 @@
         const resp = await fetch(url);
         if (!resp.ok) return;
         const data = await resp.json();
-        if (data && data.ok && Array.isArray(data.checkedIds)) {
-          const nextSet = new Set(data.checkedIds.map(x => String(x)));
-          let changed = nextSet.size !== ttCheckedPoSet.size;
-          if (!changed) {
-            for (const id of nextSet) {
-              if (!ttCheckedPoSet.has(id)) { changed = true; break; }
+        if (data && data.ok) {
+          if (data.notesMap && typeof data.notesMap === "object") {
+            tmsNotesMap = Object.assign({}, tmsNotesMap, data.notesMap);
+            try {
+              localStorage.setItem("vs_tms_notes_map_v1", JSON.stringify(tmsNotesMap));
+            } catch (_) {}
+            allShipments.forEach(s => {
+              const pid = String(s.idPo);
+              if (tmsNotesMap[pid] !== undefined && !s.notePo) {
+                s.notePo = tmsNotesMap[pid];
+              }
+            });
+            if (currentEditingPo && currentEditingPo.xuatNhapPo === "N") {
+              const inpNote = document.getElementById("inp_notePo");
+              const curPid = String(currentEditingPo.idPo);
+              if (inpNote && !dirtyFields.has("notePo") && tmsNotesMap[curPid] !== undefined) {
+                inpNote.value = tmsNotesMap[curPid];
+                currentEditingPo.notePo = tmsNotesMap[curPid];
+              }
             }
           }
-          ttCheckedPoSet = nextSet;
-          try {
-            localStorage.setItem("vs_tt_checked_ids_v1", JSON.stringify(Array.from(ttCheckedPoSet)));
-          } catch (_) {}
-          if (changed && allShipments.length > 0) {
-            applyFilters();
+          if (Array.isArray(data.checkedIds)) {
+            const nextSet = new Set(data.checkedIds.map(x => String(x)));
+            let changed = nextSet.size !== ttCheckedPoSet.size;
+            if (!changed) {
+              for (const id of nextSet) {
+                if (!ttCheckedPoSet.has(id)) { changed = true; break; }
+              }
+            }
+            ttCheckedPoSet = nextSet;
+            try {
+              localStorage.setItem("vs_tt_checked_ids_v1", JSON.stringify(Array.from(ttCheckedPoSet)));
+            } catch (_) {}
+            if (changed && allShipments.length > 0) {
+              applyFilters();
+            }
           }
         }
       } catch (_) {}
@@ -4996,6 +5036,22 @@
       document.getElementById("inp_diaChiNhanPo").value = po.diaChiNhanPo || "";
       document.getElementById("inp_lienHeNhanPo").value = po.lienHeNhanPo || "";
 
+      // Tab Nhập: Ẩn mục "Người liên hệ & SĐT", thay bằng mục "Notes" (cột Notes từ TMS Gốc)
+      const sec3Title = document.getElementById("sec3TitleText");
+      if (sec3Title) {
+        sec3Title.textContent = isXuat ? "3. Kho Hàng, Địa Chỉ & Liên Hệ" : "3. Kho Hàng, Địa Chỉ & Notes";
+      }
+      const grpLienHe = document.getElementById("grp_lienHeNhanPo");
+      const grpNote = document.getElementById("grp_notePo");
+      if (grpLienHe) grpLienHe.style.display = isXuat ? "block" : "none";
+      if (grpNote) grpNote.style.display = isXuat ? "none" : "block";
+      const resolvedNote = (po.notePo !== undefined && po.notePo !== null)
+        ? po.notePo
+        : (tmsNotesMap[String(po.idPo)] || "");
+      po.notePo = resolvedNote;
+      const inpNoteEl = document.getElementById("inp_notePo");
+      if (inpNoteEl) inpNoteEl.value = resolvedNote;
+
       // Clear status styling
       document.querySelectorAll("#editPoForm .form-control").forEach(el => {
         el.classList.remove("saving", "saved", "warn-iso");
@@ -5454,7 +5510,8 @@
             khoNhanHangPo: 150,
             tinhNhanPo: 50,
             diaChiNhanPo: 220,
-            lienHeNhanPo: 150
+            lienHeNhanPo: 150,
+            notePo: 50
           };
           const maxLen = lengthMap[fieldName] || 100;
           await postCrudUpdate({
@@ -5467,6 +5524,13 @@
             thongtin: rawVal
           });
           currentEditingPo[fieldName] = rawVal;
+          if (fieldName === "notePo") {
+            if (rawVal) tmsNotesMap[String(idPo)] = rawVal;
+            else delete tmsNotesMap[String(idPo)];
+            try {
+              localStorage.setItem("vs_tms_notes_map_v1", JSON.stringify(tmsNotesMap));
+            } catch (_) {}
+          }
         }
 
         inpEl.classList.remove("saving");
@@ -5476,7 +5540,7 @@
           localStorage.setItem("vs_cached_shipments", JSON.stringify(allShipments.slice(0, 500)));
         } catch (_) {}
         applyFilters();
-        showToast(`Đã lưu ${fieldName} lên hệ thống TMS!`, "success");
+        showToast(`Đã lưu ${fieldName === "notePo" ? "Notes" : fieldName} lên hệ thống TMS!`, "success");
       } catch (err) {
         console.error(err);
         inpEl.classList.remove("saving");
@@ -5501,7 +5565,7 @@
             ]
           : [
               "ngayTraHang", "soContPo", "soSealPo", "soXePo", "donViVcPo",
-              "khoNhanHangPo", "tinhNhanPo", "diaChiNhanPo", "lienHeNhanPo"
+              "khoNhanHangPo", "tinhNhanPo", "diaChiNhanPo", "notePo"
             ];
 
         for (const f of fieldsToCheck) {
