@@ -3482,6 +3482,7 @@
 
         populateDynamicDropdowns();
         applyFilters();
+        loadTtStatusFromServer(showNotification);
         if (showNotification) {
           showToast(`Đã tải ${allShipments.length} lô hàng từ hệ thống!`, "success");
           syncLiveDriverDatabase(false);
@@ -3683,8 +3684,12 @@
         });
       }
 
-      // Ưu tiên các dòng chưa có Đơn vị V/C và Số xe lên top đầu (cho cả hàng Nhập & Xuất)
+      // Ưu tiên các dòng chưa có Đơn vị V/C và Số xe lên top đầu; các dòng Hàng Nhập đã tick cột TT (đã in BB) nằm dưới cùng giống TMS gốc
       filteredShipments.sort((a, b) => {
+        const ttA = (a.xuatNhapPo === "N" && typeof ttCheckedPoSet !== "undefined" && ttCheckedPoSet.has(String(a.idPo))) ? 1 : 0;
+        const ttB = (b.xuatNhapPo === "N" && typeof ttCheckedPoSet !== "undefined" && ttCheckedPoSet.has(String(b.idPo))) ? 1 : 0;
+        if (ttA !== ttB) return ttA - ttB;
+
         const getPriority = (item) => {
           const hasV = !!(item.donViVcPo && item.donViVcPo.trim());
           const hasX = !!(item.soXePo && item.soXePo.trim());
@@ -3702,9 +3707,8 @@
       updateSummaryCards(filteredShipments);
       updateActiveFilterBadge();
 
-      // Giới hạn số dòng vẽ ra DOM mỗi lượt là 150 dòng (Bảng PC) / 60 thẻ (Mobile)
-      // để khi chọn mục "Tất cả" (3.000+ lô) trình duyệt vẫn mượt tức thì không tốn RAM
-      renderLimit = state.viewMode === "table" ? 150 : 60;
+      // Khi xem theo ngày cụ thể trên Bảng PC, hiển thị tới 500 dòng để thấy luôn các dòng đã tick TT nằm dưới cùng; khi xem "Tất cả" giới hạn 150 dòng để giữ độ mượt
+      renderLimit = state.viewMode === "table" ? (state.dateMode === "all" ? 150 : 500) : 60;
       renderShipmentList();
       updateBulkControlsUI();
     }
@@ -3842,9 +3846,96 @@
       };
     }
 
+    // =========================================================================
+    // ĐỒNG BỘ CỘT TICK TT (ĐÁNH DẤU ĐÃ IN BB HÀNG NHẬP -> ĐẨY XUỐNG DƯỚI CÙNG & ĐẨY VỀ TMS GỐC)
+    // =========================================================================
+    let ttCheckedPoSet = new Set();
+
+    function initTtCheckedLocal() {
+      try {
+        const raw = JSON.parse(localStorage.getItem("vs_tt_checked_ids_v1") || "[]");
+        if (Array.isArray(raw)) {
+          ttCheckedPoSet = new Set(raw.map(x => String(x)));
+        }
+      } catch (_) {}
+    }
+
+    async function loadTtStatusFromServer(force = false) {
+      try {
+        const url = force ? "/api/index.php?route=tt_status&refresh=1" : "/api/index.php?route=tt_status";
+        const resp = await fetch(url);
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (data && data.ok && Array.isArray(data.checkedIds)) {
+          const nextSet = new Set(data.checkedIds.map(x => String(x)));
+          let changed = nextSet.size !== ttCheckedPoSet.size;
+          if (!changed) {
+            for (const id of nextSet) {
+              if (!ttCheckedPoSet.has(id)) { changed = true; break; }
+            }
+          }
+          ttCheckedPoSet = nextSet;
+          try {
+            localStorage.setItem("vs_tt_checked_ids_v1", JSON.stringify(Array.from(ttCheckedPoSet)));
+          } catch (_) {}
+          if (changed && allShipments.length > 0) {
+            applyFilters();
+          }
+        }
+      } catch (_) {}
+    }
+
+    initTtCheckedLocal();
+    setTimeout(() => { loadTtStatusFromServer(false); }, 450);
+
+    async function onToggleTtStatus(idPo, isChecked) {
+      const pid = String(idPo);
+      if (isChecked) {
+        ttCheckedPoSet.add(pid);
+      } else {
+        ttCheckedPoSet.delete(pid);
+      }
+      try {
+        localStorage.setItem("vs_tt_checked_ids_v1", JSON.stringify(Array.from(ttCheckedPoSet)));
+      } catch (_) {}
+
+      // Sắp xếp lại ngay để dòng vừa tick nằm xuống dưới cùng giống TMS gốc
+      applyFilters();
+
+      try {
+        await fetch("/api/index.php?route=tt_status/toggle", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ idPo: pid, checked: !!isChecked })
+        });
+        showToast(
+          isChecked
+            ? `☑️ Đã đánh dấu TT lô #${pid} (Đã chuyển xuống cuối danh sách & đồng bộ TMS gốc)`
+            : `⬜ Đã bỏ đánh dấu TT lô #${pid} trên TMS gốc`,
+          "info"
+        );
+      } catch (_) {
+        // Fallback gọi trực tiếp postCrudUpdate nếu cần
+        try {
+          await postCrudUpdate({
+            TenDangNhap: state.username,
+            userString: state.userString,
+            cv: 5,
+            loai: 20,
+            iddt: "6-trangThaiDieuXePo",
+            cot: pid,
+            thongtin: isChecked ? "1" : "0",
+            minData: 0,
+            maxData: 0
+          });
+        } catch (__) {}
+      }
+    }
+
     function renderDesktopTableView(slice, hasMore) {
       // Tab Hàng Nhập (N) bỏ luôn cột Xóa, luôn hiển thị cột Tick chọn
       const isBulk = !!state.bulkMode || state.xuatNhap === "N";
+      const showTtCol = state.xuatNhap !== "X";
       const allSelected = slice.length > 0 && slice.every(i => state.bulkSelectedIds && state.bulkSelectedIds.has(String(i.idPo)));
 
       const rowsHtml = slice.map((item, idx) => {
@@ -3856,6 +3947,7 @@
         const cangDenVal = isXuat ? (item.tinhXuatHangPo || item.cangDenPo || "") : (item.cangDenPo || "");
         const rowClass = isXuat ? "pc-row-xuat" : "pc-row-nhap";
         const isItemChecked = !!(state.bulkSelectedIds && state.bulkSelectedIds.has(String(item.idPo)));
+        const isTtChecked = !isXuat && ttCheckedPoSet.has(String(item.idPo));
 
         const actionColTd = isBulk ? `
           <td style="text-align:center;padding:2px 3px !important;width:40px;background:#eff6ff;" onclick="event.stopPropagation()">
@@ -3867,8 +3959,16 @@
           </td>
         `;
 
+        const ttColTd = showTtCol ? (
+          !isXuat ? `
+            <td style="text-align:center;padding:2px 4px !important;width:36px;${isTtChecked ? 'background:#dbeafe;' : ''}" onclick="event.stopPropagation()">
+              <input type="checkbox" class="chk-tt-done" id="chk_tt_${item.idPo}" ${isTtChecked ? "checked" : ""} onchange="onToggleTtStatus('${item.idPo}', this.checked)" title="${isTtChecked ? 'Đã in BB (Bấm để bỏ đánh dấu)' : 'Đánh dấu đã in BB (Chuyển xuống dưới cùng & đồng bộ TMS gốc)'}" style="width:16px;height:16px;cursor:pointer;vertical-align:middle;accent-color:#2563eb;" />
+            </td>
+          ` : `<td style="width:36px;"></td>`
+        ) : "";
+
         return `
-          <tr id="pc-row-${item.idPo}" data-row-idx="${idx}" class="${rowClass}" ondblclick="openEditModal('${item.idPo}')" title="Nhấp đúp chuột để mở chi tiết #${item.idPo}">
+          <tr id="pc-row-${item.idPo}" data-row-idx="${idx}" class="${rowClass}" style="${isTtChecked ? 'background:#f1f5f9;opacity:0.88;' : ''}" ondblclick="openEditModal('${item.idPo}')" title="Nhấp đúp chuột để mở chi tiết #${item.idPo}">
             ${actionColTd}
             <td style="text-align:center;white-space:nowrap;font-weight:700;color:#2563eb;cursor:pointer;" onclick="openEditModal('${item.idPo}')" title="Bấm mở chi tiết #${item.idPo}">${escapeAttr(item.chuyenPo)}</td>
             <td class="pc-truncate" title="${escapeAttr(item.tenKhachPo)}">${escapeAttr(item.tenKhachPo)}</td>
@@ -3933,11 +4033,11 @@
                 const isCustomBb = bbTpl.code !== "STANDARD";
                 return `
                   <button type="button" class="pc-act-btn" onclick="copyPoInfoById('${item.idPo}', 2)" title="Copy Thông tin giao hàng">🚛 Giao</button>
-                  <button type="button" class="pc-act-btn" onclick="copyPoInfoById('${item.idPo}', 1)" title="Copy Thông báo hàng đến">💬 TB</button>
                   <button type="button" class="pc-act-btn" style="${isCustomBb ? 'background:#fffbeb;color:#b45309;border-color:#fcd34d;' : 'background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe;'}" onclick="printSingleBienBan('${item.idPo}')" title="In Biên Bản (${bbTpl.name})">📄 ${isCustomBb ? bbTpl.shortBadge : 'BB'}</button>
                 `;
               })()}
             </td>
+            ${ttColTd}
           </tr>
         `;
       }).join("");
@@ -3953,6 +4053,10 @@
       ` : `
         <th style="width:36px;text-align:center;" title="Xóa booking thừa">XÓA</th>
       `;
+
+      const ttColTh = showTtCol ? `
+        <th style="width:36px;text-align:center;" title="Đánh dấu đã in Biên Bản (Sau khi tick sẽ nằm dưới cùng & đồng bộ về TMS gốc)">TT</th>
+      ` : "";
 
       return `
         <div class="pc-table-wrap">
@@ -3974,7 +4078,8 @@
                 <th style="width:75px;text-align:center;">CẢNG ĐẾN</th>
                 <th style="background:#a5f3fc;color:#0f172a;min-width:120px;">ĐƠN VỊ V/C ⚡</th>
                 <th style="background:#a5f3fc;color:#0f172a;min-width:110px;">SỐ XE ⚡</th>
-                <th style="width:155px;text-align:center;">THAO TÁC</th>
+                <th style="width:115px;text-align:center;">THAO TÁC</th>
+                ${ttColTh}
               </tr>
             </thead>
             <tbody>
@@ -4553,10 +4658,11 @@
               <button class="btn-card btn-zalo" onclick="copyPoInfoById('${item.idPo}', 2)" title="Copy THÔNG TIN GIAO HÀNG (Biểu tượng xe)">
                 🚛 Giao hàng
               </button>
-              ` : ""}
-              <button class="btn-card btn-zalo" onclick="copyPoInfoById('${item.idPo}', 1)" title="${isXuat ? 'Copy THÔNG TIN XE ĐÓNG HÀNG' : 'Copy THÔNG BÁO HÀNG ĐẾN'}">
-                ${isXuat ? "🚛 Thông tin xe" : "💬 TB"}
+              ` : `
+              <button class="btn-card btn-zalo" onclick="copyPoInfoById('${item.idPo}', 1)" title="Copy THÔNG TIN XE ĐÓNG HÀNG">
+                🚛 Thông tin xe
               </button>
+              `}
               ${isXuat ? `<button class="btn-card btn-zalo" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0;" onclick="openPklModal('${item.idPo}')" title="In / Gửi Phiếu PKL Hạ Cảng">📄 PKL</button>` : `<button class="btn-card btn-zalo" style="background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe;" onclick="printSingleBienBan('${item.idPo}')" title="In Biên Bản Giao Nhận Hàng">📄 BB</button>`}
               ${cleanPhone ? `<a href="tel:${cleanPhone}" class="btn-card btn-call" title="Gọi liên hệ kho">📞</a>` : ""}
             </div>

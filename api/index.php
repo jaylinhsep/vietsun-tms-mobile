@@ -167,13 +167,20 @@ function validate_container_iso($contStr) {
 // - Nhiều xe có thể dùng chung SĐT tài xế
 // - Lưu thêm CCCD, GPLX
 function ensure_schema($pdo) {
-    $flagFile = sys_get_temp_dir() . '/vietsun_schema_v10.flag';
+    $flagFile = sys_get_temp_dir() . '/vietsun_schema_v11.flag';
     if (file_exists($flagFile)) {
         return;
     }
 
-    // 1. Đảm bảo bảng tms_pending_approvals và tms_bb_templates tồn tại
+    // 1. Đảm bảo bảng tms_pending_approvals, tms_bb_templates và tms_tt_status tồn tại
     try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `tms_tt_status` (
+                `id_po` VARCHAR(32) PRIMARY KEY,
+                `is_checked` TINYINT(1) NOT NULL DEFAULT 1,
+                `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS `tms_pending_approvals` (
                 `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -1266,7 +1273,7 @@ try {
     }
 
     $pdo = get_db();
-    $schemaFlag = sys_get_temp_dir() . '/vietsun_schema_v10.flag';
+    $schemaFlag = sys_get_temp_dir() . '/vietsun_schema_v11.flag';
     if (!file_exists($schemaFlag)) {
         ensure_schema($pdo);
         $drvCnt = (int)$pdo->query("SELECT COUNT(*) FROM drivers")->fetchColumn();
@@ -1496,6 +1503,125 @@ try {
         $stmt = $pdo->prepare("DELETE FROM `tms_bb_templates` WHERE `id` = ?");
         $stmt->execute([$id]);
         echo json_encode(['ok' => true, 'id' => $id]);
+        exit;
+    }
+
+    // Đồng bộ & Cập nhật cột TT (trangThaiDieuXePo - Đánh dấu đã in BB hàng nhập, đẩy xuống cuối danh sách & đồng bộ TMS gốc)
+    if ($route === 'tt_status' || $route === 'api/tt_status') {
+        $force = !empty($_GET['refresh']);
+        $ttCacheFile = sys_get_temp_dir() . '/vietsun_tt_checked_v1.json';
+
+        $syncTtFromTms = function($pdo) use ($ttCacheFile, $COOKIE_FILE) {
+            if (!file_exists($COOKIE_FILE)) {
+                vietsun_login();
+            }
+            $userString = 'trucking14<<|7<<|a0b923820d<<|1<<|0.0.0.0.0.0.1.0.1.1.0.1.0.1.';
+            call_tms_post('index-crud.php', [
+                'TenDangNhap' => 'trucking14',
+                'userString'  => $userString,
+                'cv'          => 3,
+                'loai'        => 1,
+                'iddt'        => 1,
+                'cot'         => 't9<<|1<<|1<<|20<<|kieuXemTrucking',
+                'thongtin'    => '6'
+            ]);
+            $html = call_tms_post('index-ajax.php', [
+                'userString' => $userString,
+                'cv'         => 78,
+                'idxem'      => 7,
+                'kieuxem'    => 0,
+                'loaiload'   => 4,
+                'startDate'  => date('Y-m-d', time() - 25 * 86400),
+                'endDate'    => date('Y-m-d', time() + 5 * 86400),
+                'widthmh'    => 1920
+            ]);
+            $set = [];
+            if ($html && preg_match_all('/id=["\']a-trangThaiDieuXePo-(\d+)["\'][^>]*checked/i', $html, $m)) {
+                foreach ($m[1] as $pid) {
+                    $set[(string)$pid] = true;
+                }
+            }
+            try {
+                $rows = $pdo->query("SELECT `id_po`, `is_checked` FROM `tms_tt_status`")->fetchAll();
+                foreach ($rows as $r) {
+                    $pid = (string)$r['id_po'];
+                    if ((int)$r['is_checked'] === 1) {
+                        $set[$pid] = true;
+                    } else {
+                        unset($set[$pid]);
+                    }
+                }
+            } catch (Exception $e) {}
+            $out = ['ok' => true, 'checkedIds' => array_keys($set)];
+            @file_put_contents($ttCacheFile, json_encode($out));
+            return $out;
+        };
+
+        if (!$force && file_exists($ttCacheFile) && filesize($ttCacheFile) > 5) {
+            $age = time() - filemtime($ttCacheFile);
+            if ($age < 60) {
+                readfile($ttCacheFile);
+                exit;
+            }
+            if ($age < 86400) {
+                @ignore_user_abort(true);
+                readfile($ttCacheFile);
+                if (function_exists('fastcgi_finish_request')) {
+                    fastcgi_finish_request();
+                } else {
+                    @ob_end_flush();
+                    @flush();
+                }
+                $syncTtFromTms($pdo);
+                exit;
+            }
+        }
+        echo json_encode($syncTtFromTms($pdo));
+        exit;
+    }
+
+    if ($route === 'tt_status/toggle' || $route === 'api/tt_status/toggle') {
+        $idPo = preg_replace('/[^0-9]/', '', (string)($jsonBody['idPo'] ?? ''));
+        $isChecked = !empty($jsonBody['checked']) ? 1 : 0;
+        if ($idPo === '') {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Thiếu idPo']);
+            exit;
+        }
+        try {
+            $stmt = $pdo->prepare("
+                INSERT INTO `tms_tt_status` (`id_po`, `is_checked`)
+                VALUES (?, ?)
+                ON DUPLICATE KEY UPDATE `is_checked` = VALUES(`is_checked`), `updated_at` = CURRENT_TIMESTAMP
+            ");
+            $stmt->execute([$idPo, $isChecked]);
+        } catch (Exception $e) {}
+
+        // Cập nhật ngay file cache để các tab/thiết bị khác thấy tức thì
+        $ttCacheFile = sys_get_temp_dir() . '/vietsun_tt_checked_v1.json';
+        if (file_exists($ttCacheFile)) {
+            $cached = json_decode(@file_get_contents($ttCacheFile), true);
+            if (is_array($cached) && isset($cached['checkedIds']) && is_array($cached['checkedIds'])) {
+                $set = array_fill_keys(array_map('strval', $cached['checkedIds']), true);
+                if ($isChecked) $set[$idPo] = true;
+                else unset($set[$idPo]);
+                $cached['checkedIds'] = array_keys($set);
+                @file_put_contents($ttCacheFile, json_encode($cached));
+            }
+        }
+
+        // Đẩy trực tiếp về TMS gốc (index-crud.php: cv=5, loai=20, iddt='6-trangThaiDieuXePo', cot=idPo, thongtin=1|0)
+        push_vietsun_crud([
+            'cv'       => 5,
+            'loai'     => 20,
+            'iddt'     => '6-trangThaiDieuXePo',
+            'cot'      => $idPo,
+            'thongtin' => (string)$isChecked,
+            'minData'  => 0,
+            'maxData'  => 0
+        ]);
+
+        echo json_encode(['ok' => true, 'idPo' => $idPo, 'checked' => (bool)$isChecked]);
         exit;
     }
 
