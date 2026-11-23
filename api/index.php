@@ -167,7 +167,12 @@ function validate_container_iso($contStr) {
 // - Nhiều xe có thể dùng chung SĐT tài xế
 // - Lưu thêm CCCD, GPLX
 function ensure_schema($pdo) {
-    // 1. Luôn đảm bảo bảng tms_pending_approvals và cột cont_size tồn tại
+    $flagFile = sys_get_temp_dir() . '/vietsun_schema_v10.flag';
+    if (file_exists($flagFile)) {
+        return;
+    }
+
+    // 1. Đảm bảo bảng tms_pending_approvals và tms_bb_templates tồn tại
     try {
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS `tms_pending_approvals` (
@@ -189,13 +194,11 @@ function ensure_schema($pdo) {
                 INDEX `idx_status_created` (`status`, `created_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         ");
-        // Kiểm tra trực tiếp cột cont_size, nếu thiếu tự động thêm ngay
         $colChk = $pdo->query("SHOW COLUMNS FROM `tms_pending_approvals` LIKE 'cont_size'")->fetch();
         if (!$colChk) {
             $pdo->exec("ALTER TABLE `tms_pending_approvals` ADD COLUMN `cont_size` VARCHAR(10) NOT NULL DEFAULT '' AFTER `xuat_nhap`");
         }
 
-        // Bảng lưu cấu hình các Mẫu Biên Bản Giao Nhận (BB Templates) theo Khách Hàng & Kho Nhận
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS `tms_bb_templates` (
                 `id` VARCHAR(64) PRIMARY KEY,
@@ -216,25 +219,19 @@ function ensure_schema($pdo) {
     } catch (Exception $e) {}
 
     // 2. Nâng cấp cấu trúc các bảng phụ (chạy một lần)
-    $flagFile = sys_get_temp_dir() . '/vietsun_schema_v7.flag';
-    if (!file_exists($flagFile)) {
-        try { $pdo->exec("ALTER TABLE `drivers` DROP INDEX `phone`"); } catch (Exception $e) {}
-        try { $pdo->exec("ALTER TABLE `drivers` MODIFY `phone` VARCHAR(30) NULL"); } catch (Exception $e) {}
-        try { $pdo->exec("ALTER TABLE `drivers` MODIFY `pin_code` VARCHAR(100) NOT NULL DEFAULT '123456'"); } catch (Exception $e) {}
-        try { $pdo->exec("ALTER TABLE `drivers` ADD COLUMN `cccd` VARCHAR(100) NULL"); } catch (Exception $e) {}
-        try { $pdo->exec("ALTER TABLE `drivers` ADD COLUMN `gplx` VARCHAR(100) NULL"); } catch (Exception $e) {}
-        try { $pdo->exec("ALTER TABLE `drivers` ADD UNIQUE INDEX `idx_assigned_plate` (`assigned_plate`)"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE `drivers` DROP INDEX `phone`"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE `drivers` MODIFY `phone` VARCHAR(30) NULL"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE `drivers` MODIFY `pin_code` VARCHAR(100) NOT NULL DEFAULT '123456'"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE `drivers` ADD COLUMN `cccd` VARCHAR(100) NULL"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE `drivers` ADD COLUMN `gplx` VARCHAR(100) NULL"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE `drivers` ADD UNIQUE INDEX `idx_assigned_plate` (`assigned_plate`)"); } catch (Exception $e) {}
 
-        // Xóa các dòng demo cũ bị lệch mã (HLP -> HOANGLONGPHAT)
-        try {
-            $pdo->exec("DELETE FROM `vendors` WHERE `vendor_code` = 'HLP'");
-            $pdo->exec("UPDATE `vendors` SET `password_hash` = '123456' WHERE `password_hash` IN ('hlp@123', 'tranco@123', 'vp@123')");
-        } catch (Exception $e) {}
+    try {
+        $pdo->exec("DELETE FROM `vendors` WHERE `vendor_code` = 'HLP'");
+        $pdo->exec("UPDATE `vendors` SET `password_hash` = '123456' WHERE `password_hash` IN ('hlp@123', 'tranco@123', 'vp@123')");
+    } catch (Exception $e) {}
 
-        @file_put_contents($flagFile, time());
-    }
-
-    // Luôn luôn dọn sạch vendor và xe nhà VIETSUN nếu còn sót trong DB (chỉ giữ Vendor ngoài)
+    // 3. Dọn sạch vendor và xe nhà VIETSUN nếu còn sót trong DB & chuẩn hóa tên Vendor (chạy một lần)
     try {
         $stFindVietsun = $pdo->query("SELECT id FROM vendors WHERE vendor_code = 'VIETSUN'")->fetchAll(PDO::FETCH_COLUMN);
         if (!empty($stFindVietsun)) {
@@ -242,7 +239,6 @@ function ensure_schema($pdo) {
             $pdo->exec("DELETE FROM drivers WHERE vendor_id IN ($inClause)");
             $pdo->exec("DELETE FROM vendors WHERE id IN ($inClause)");
         }
-        // Chuẩn hóa thống nhất tên toàn bộ Vendor trong DB để không bị xung đột (VD: TUANHUNG -> TUAN HUNG, PHUCTRUONGAN -> PHUC TRUONG AN)
         $vendorFixes = [
             'PHUCTRUONGAN'  => 'PHUC TRUONG AN',
             'TUANHUNG'      => 'TUAN HUNG',
@@ -279,7 +275,6 @@ function ensure_schema($pdo) {
             $stUpdP3->execute(['"' . $vCode . '"', '"' . $vFull . '"']);
         }
 
-        // 1. Quét và chuẩn hóa trực tiếp actor_name và vendor_name trong tms_pending_approvals
         $stPendActor = $pdo->query("SELECT id, actor_name FROM tms_pending_approvals WHERE actor_role = 'VENDOR'")->fetchAll();
         foreach ($stPendActor as $pa) {
             $normActor = normalize_vendor_name($pa['actor_name']);
@@ -288,7 +283,6 @@ function ensure_schema($pdo) {
             }
         }
 
-        // 2. Dọn sạch các trường donViVcPo thừa (khi old == new) trong changes_json của hàng đợi chờ duyệt
         $stPendClean = $pdo->query("SELECT id, changes_json FROM tms_pending_approvals WHERE status = 'PENDING' AND changes_json LIKE '%donViVcPo%'")->fetchAll();
         foreach ($stPendClean as $pc) {
             $cj = json_decode($pc['changes_json'], true);
@@ -302,6 +296,8 @@ function ensure_schema($pdo) {
             }
         }
     } catch (Exception $e) {}
+
+    @file_put_contents($flagFile, time());
 }
 
 // Đồng bộ trực tiếp từ Google Sheet Đội xe Vendor (loại trừ xe nhà VIETSUN)
@@ -1232,13 +1228,51 @@ function update_tms_field($idPo, $codePo, $fieldName, $val) {
 }
 
 try {
-    $pdo = get_db();
-    ensure_schema($pdo);
+    // FAST-PATH CHO return_json THEO CHU KỲ (KHÔNG CẦN KẾT NỐI MYSQL, STREAM TRỰC TIẾP TỪ FILE CACHE + STALE-WHILE-REVALIDATE)
+    if ($route === 'return_json') {
+        $ngay = $_GET['ngay'] ?? ($_GET['date'] ?? null);
+        $force = !empty($_GET['refresh']);
+        if ($ngay && preg_match('/^\d{4}-\d{2}-01$/', $ngay)) {
+            $safeCycle = preg_replace('/[^0-9\-]/', '', $ngay);
+            $cacheFile = sys_get_temp_dir() . '/vietsun_cycle_' . $safeCycle . '.json';
+            if (!$force && file_exists($cacheFile) && filesize($cacheFile) > 10) {
+                $age = time() - filemtime($cacheFile);
+                if ($age < 60) {
+                    readfile($cacheFile);
+                    exit;
+                }
+                if ($age < 86400) {
+                    // Trả ngay dữ liệu cache trong ~5ms cho trình duyệt, sau đó tự làm mới ngầm từ TMS
+                    @ignore_user_abort(true);
+                    readfile($cacheFile);
+                    if (function_exists('fastcgi_finish_request')) {
+                        fastcgi_finish_request();
+                    } else {
+                        @ob_end_flush();
+                        @flush();
+                    }
+                    fetch_single_cycle($ngay, true);
+                    exit;
+                }
+            }
+            $data = fetch_single_cycle($ngay, $force);
+            if (file_exists($cacheFile) && filesize($cacheFile) > 10) {
+                readfile($cacheFile);
+            } else {
+                echo json_encode($data);
+            }
+            exit;
+        }
+    }
 
-    // Tự động đồng bộ lần đầu nếu bảng drivers có ít hơn 10 xe
-    $drvCnt = (int)$pdo->query("SELECT COUNT(*) FROM drivers")->fetchColumn();
-    if ($drvCnt < 10) {
-        sync_from_google_sheet($pdo);
+    $pdo = get_db();
+    $schemaFlag = sys_get_temp_dir() . '/vietsun_schema_v10.flag';
+    if (!file_exists($schemaFlag)) {
+        ensure_schema($pdo);
+        $drvCnt = (int)$pdo->query("SELECT COUNT(*) FROM drivers")->fetchColumn();
+        if ($drvCnt < 10) {
+            sync_from_google_sheet($pdo);
+        }
     }
 
     // ========================================================================
