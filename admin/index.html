@@ -267,6 +267,35 @@
       background: #ffffff !important;
       color: #c2410c !important;
     }
+    .stick-btn-x40 {
+      color: #7c2d12;
+      border-color: #fdba74;
+      background: #fff7ed;
+    }
+    .stick-btn-x40:hover {
+      background: #ffedd5;
+    }
+    .stick-btn-x40.active {
+      background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%) !important;
+      color: #ffffff !important;
+      border-color: #9a3412 !important;
+      box-shadow: 0 2px 8px rgba(234, 88, 12, 0.38);
+    }
+    .stick-btn-x40.active .stick-badge {
+      background: #ffffff !important;
+      color: #c2410c !important;
+    }
+    .tab-btn-x40 {
+      border-color: #fdba74;
+      color: #c2410c;
+      background: #fff7ed;
+    }
+    .tab-btn-x40.active {
+      background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%) !important;
+      color: #ffffff !important;
+      border-color: #c2410c !important;
+      box-shadow: 0 2px 10px rgba(234, 88, 12, 0.3);
+    }
     .stick-badge {
       padding: 1px 6px;
       border-radius: 6px;
@@ -362,10 +391,15 @@
 
   <main class="container">
     <div class="stats-row" id="statsRowContainer">
-      <div class="stat-card" id="statCardApprovals" style="border-left:4px solid var(--warning);cursor:pointer;" onclick="switchAdminTab('APPROVALS')">
-        <div class="stat-title" id="statTitleApprovals">⏳ Chờ duyệt TMS</div>
+      <div class="stat-card" id="statCardApprovals" style="border-left:4px solid var(--warning);cursor:pointer;" onclick="openMainApprovalsView()">
+        <div class="stat-title" id="statTitleApprovals">⏳ Chờ duyệt Main (N20/N40/X20)</div>
         <div class="stat-num" id="statPendingCount" style="color:var(--warning);">0</div>
-        <div class="stat-desc" id="statDescApprovals" style="font-size:12px;color:var(--text-muted);margin-top:4px;">Thông tin Vendor / Tài xế chờ duyệt</div>
+        <div class="stat-desc" id="statDescApprovals" style="font-size:12px;color:var(--text-muted);margin-top:4px;">Nhập Cont 20", Nhập 40" & Xuất 20"</div>
+      </div>
+      <div class="stat-card" id="statCardExport40" style="border-left:4px solid #ea580c;cursor:pointer;" onclick="openExport40ApprovalsView()">
+        <div class="stat-title">📦 Chờ duyệt Xuất 40"</div>
+        <div class="stat-num" id="statExport40PendingCount" style="color:#ea580c;">0</div>
+        <div class="stat-desc" style="font-size:12px;color:var(--text-muted);margin-top:4px;">Tách riêng tránh duyệt nhầm • Bấm để xem</div>
       </div>
       <div class="stat-card" id="statCardVendor" style="cursor:pointer;" onclick="switchAdminTab('VENDORS')">
         <div class="stat-title">🏢 Nhà xe (Vendor)</div>
@@ -380,8 +414,11 @@
     </div>
 
     <div class="tabs" id="adminTabsBar" style="flex-wrap:wrap;">
-      <button class="tab-btn active" id="tabBtnApprovals" onclick="switchAdminTab('APPROVALS')">
+      <button class="tab-btn active" id="tabBtnApprovals" onclick="openMainApprovalsView()">
         ⏳ Duyệt TMS (<span id="tabPendingCount">0</span>)
+      </button>
+      <button class="tab-btn tab-btn-x40" id="tabBtnExport40" onclick="openExport40ApprovalsView()">
+        📦 Xuất 40" (<span id="tabExport40Count">0</span>)
       </button>
       <button class="tab-btn" id="tabBtnVendors" onclick="switchAdminTab('VENDORS')">🏢 Nhà xe / Vendor</button>
       <button class="tab-btn" id="tabBtnDrivers" onclick="switchAdminTab('DRIVERS')">🚛 Xe & Tài xế</button>
@@ -400,20 +437,31 @@
           <input type="text" id="searchApprovalInput" class="form-control" style="flex:2;min-width:160px;max-width:300px;" placeholder="🔍 Tìm PO, số xe, cont, nhà xe..." oninput="renderApprovals()" />
           <button class="btn" style="background:#f1f5f9;border:1px solid var(--border);" onclick="loadOverview()" title="Tải lại dữ liệu">🔄</button>
           
-          <!-- 2 NÚT LỌC STICK: N & X (NHẬP VÀ XUẤT) BÊN GÓC PHẢI -->
+          <!-- 3 NÚT LỌC PHÂN HỆ BÊN GÓC PHẢI: NHẬP (20/40) | XUẤT 20" | XUẤT 40" (TÁCH RIÊNG) -->
           <div class="stick-filter-group" style="margin-left:auto;">
-            <button type="button" class="stick-btn stick-btn-n" id="btnStickN" onclick="toggleApprovalStick('N')" title="Lọc xem Hàng Nhập (N) - Bấm lại để xem Tất cả">
+            <button type="button" class="stick-btn stick-btn-n" id="btnStickN" onclick="toggleApprovalStick('N')" title="Lọc xem Hàng Nhập (Cont 20 & 40) - Bấm lại để xem toàn bộ Main View">
               <span>📥 N</span>
               <span class="stick-badge" id="badgeStickN">0</span>
             </button>
-            <button type="button" class="stick-btn stick-btn-x" id="btnStickX" onclick="toggleApprovalStick('X')" title="Lọc xem Hàng Xuất (X) - Bấm lại để xem Tất cả">
-              <span>📤 X</span>
+            <button type="button" class="stick-btn stick-btn-x" id="btnStickX" onclick="toggleApprovalStick('X')" title="Lọc xem Hàng Xuất Cont 20 - Bấm lại để xem toàn bộ Main View">
+              <span>📤 X 20"</span>
               <span class="stick-badge" id="badgeStickX">0</span>
+            </button>
+            <button type="button" class="stick-btn stick-btn-x40" id="btnStickX40" onclick="toggleApprovalStick('X40')" title="Xem & duyệt riêng phân hệ Cont Hàng Xuất 40 (Tách biệt khỏi Main View)">
+              <span>📦 Xuất 40"</span>
+              <span class="stick-badge" id="badgeStickX40">0</span>
             </button>
           </div>
         </div>
+        <div id="export40ModeBanner" style="display:none;width:100%;background:#fff7ed;border:1.5px solid #fdba74;border-radius:9px;padding:8px 12px;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <div style="font-size:12.5px;font-weight:800;color:#9a3412;display:flex;align-items:center;gap:6px;">
+            <span>📦 ĐANG XEM PHÂN HỆ RIÊNG: HÀNG XUẤT CONT 40"</span>
+            <span style="font-weight:600;color:#c2410c;font-size:12px;">(Đã ẩn Nhập 20", Nhập 40", Xuất 20" để tránh duyệt nhầm)</span>
+          </div>
+          <button type="button" class="btn btn-sm" style="background:#1e40af;color:#fff;font-weight:800;" onclick="openMainApprovalsView()">⬅️ Quay về Main View (Nhập 20/40 & Xuất 20)</button>
+        </div>
         <div style="display:flex;gap:8px;width:100%; sm:width:auto;">
-          <button class="btn btn-success" style="width:100%;justify-content:center;" onclick="approveAllPending()" id="btnApproveAll">✅ Duyệt tất cả chờ duyệt & Đẩy TMS</button>
+          <button class="btn btn-success" style="width:100%;justify-content:center;" onclick="approveAllPending()" id="btnApproveAll">✅ Duyệt tất cả Main View (Nhập 20/40 & Xuất 20) & Đẩy TMS</button>
         </div>
       </div>
 
@@ -639,13 +687,37 @@
       return VENDOR_NAME_NORMALIZE[noSp] || raw;
     }
 
+    function isExport40Row(r) {
+      return Boolean(r && r.xuat_nhap === 'X' && String(r.cont_size || '') === '40');
+    }
+
+    function openMainApprovalsView() {
+      if (currentAdminLevel === 'export_40') {
+        approvalStickFilter = 'X40';
+      } else {
+        approvalStickFilter = 'ALL';
+      }
+      switchAdminTab('APPROVALS');
+      renderApprovals();
+    }
+
+    function openExport40ApprovalsView() {
+      approvalStickFilter = 'X40';
+      switchAdminTab('APPROVALS');
+      renderApprovals();
+    }
+
     function applyAdminRoleUI() {
       const isExport40 = (currentAdminLevel === 'export_40');
       const roleBadge = document.getElementById('adminRoleBadge');
       const titleText = document.getElementById('adminTitleText');
       const subText = document.getElementById('adminSubtitleText');
+      const statCardApprovals = document.getElementById('statCardApprovals');
+      const statCardExport40 = document.getElementById('statCardExport40');
       const statCardVendor = document.getElementById('statCardVendor');
       const statCardDriver = document.getElementById('statCardDriver');
+      const tabBtnApprovals = document.getElementById('tabBtnApprovals');
+      const tabBtnExport40 = document.getElementById('tabBtnExport40');
       const tabBtnVendors = document.getElementById('tabBtnVendors');
       const tabBtnDrivers = document.getElementById('tabBtnDrivers');
       const btnSyncSheet = document.getElementById('btnSyncSheet');
@@ -654,6 +726,7 @@
       const statDescApprovals = document.getElementById('statDescApprovals');
       const btnStickN = document.getElementById('btnStickN');
       const btnStickX = document.getElementById('btnStickX');
+      const btnStickX40 = document.getElementById('btnStickX40');
       const btnApproveAll = document.getElementById('btnApproveAll');
 
       // Tự động gán link sang domain chính khi chạy trên subdomain admin
@@ -673,47 +746,63 @@
         }
         if (titleText) titleText.textContent = 'DUYỆT TMS - CONT XUẤT 40"';
         if (subText) subText.textContent = 'Phân quyền kiểm duyệt cont Hàng Xuất 40"';
-        if (statTitleApprovals) statTitleApprovals.textContent = '⏳ Chờ duyệt Xuất 40"';
-        if (statDescApprovals) statDescApprovals.textContent = 'Yêu cầu cont Xuất 40" chờ phê duyệt';
+        if (statCardApprovals) statCardApprovals.style.display = 'none';
+        if (statCardExport40) statCardExport40.style.display = 'block';
         if (statCardVendor) statCardVendor.style.display = 'none';
         if (statCardDriver) statCardDriver.style.display = 'none';
+        if (tabBtnApprovals) tabBtnApprovals.style.display = 'none';
+        if (tabBtnExport40) {
+          tabBtnExport40.style.display = 'inline-flex';
+          tabBtnExport40.classList.add('active');
+        }
         if (tabBtnVendors) tabBtnVendors.style.display = 'none';
         if (tabBtnDrivers) tabBtnDrivers.style.display = 'none';
         if (btnSyncSheet) btnSyncSheet.style.display = 'none';
         if (linkSheetGoc) linkSheetGoc.style.display = 'none';
         if (btnStickN) btnStickN.style.display = 'none';
-        if (btnStickX) {
-          btnStickX.innerHTML = '<span>📤 XUẤT 40"</span> <span class="stick-badge" id="badgeStickX">0</span>';
-          btnStickX.classList.add('active');
+        if (btnStickX) btnStickX.style.display = 'none';
+        if (btnStickX40) {
+          btnStickX40.style.display = 'inline-flex';
+          btnStickX40.classList.add('active');
         }
-        if (btnApproveAll) btnApproveAll.textContent = '✅ Duyệt tất cả Xuất 40" & Đẩy TMS';
-        approvalStickFilter = 'X';
+        if (btnApproveAll) {
+          btnApproveAll.style.background = 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)';
+          btnApproveAll.textContent = '📦 Duyệt tất cả Xuất 40" & Đẩy TMS';
+        }
+        approvalStickFilter = 'X40';
       } else {
         if (roleBadge) {
           roleBadge.innerHTML = '<span style="background:#fef08a;color:#854d0e;padding:2.5px 8px;border-radius:6px;font-size:11px;font-weight:800;border:1px solid #fde047;">👑 TOÀN QUYỀN</span>';
         }
         if (titleText) titleText.textContent = 'QUẢN TRỊ VENDOR & DUYỆT TMS';
         if (subText) subText.textContent = 'Kiểm duyệt thông tin đẩy TMS & Quản lý đội xe';
-        if (statTitleApprovals) statTitleApprovals.textContent = '⏳ Chờ duyệt TMS';
-        if (statDescApprovals) statDescApprovals.textContent = 'Thông tin Vendor / Tài xế chờ duyệt';
+        if (statTitleApprovals) statTitleApprovals.textContent = '⏳ Chờ duyệt Main (N20/N40/X20)';
+        if (statDescApprovals) statDescApprovals.textContent = 'Nhập Cont 20", Nhập 40" & Xuất 20"';
+        if (statCardApprovals) statCardApprovals.style.display = 'block';
+        if (statCardExport40) statCardExport40.style.display = 'block';
         if (statCardVendor) statCardVendor.style.display = 'block';
         if (statCardDriver) statCardDriver.style.display = 'block';
+        if (tabBtnApprovals) tabBtnApprovals.style.display = 'inline-flex';
+        if (tabBtnExport40) tabBtnExport40.style.display = 'inline-flex';
         if (tabBtnVendors) tabBtnVendors.style.display = 'inline-flex';
         if (tabBtnDrivers) tabBtnDrivers.style.display = 'inline-flex';
         if (btnSyncSheet) btnSyncSheet.style.display = 'inline-flex';
         if (linkSheetGoc) linkSheetGoc.style.display = 'inline-flex';
         if (btnStickN) btnStickN.style.display = 'inline-flex';
         if (btnStickX) {
-          btnStickX.innerHTML = '<span>📤 X</span> <span class="stick-badge" id="badgeStickX">0</span>';
+          btnStickX.style.display = 'inline-flex';
+          btnStickX.innerHTML = '<span>📤 X 20"</span> <span class="stick-badge" id="badgeStickX">0</span>';
         }
-        if (btnApproveAll) btnApproveAll.textContent = '✅ Duyệt tất cả chờ duyệt & Đẩy TMS';
+        if (btnStickX40) {
+          btnStickX40.style.display = 'inline-flex';
+          btnStickX40.innerHTML = '<span>📦 Xuất 40"</span> <span class="stick-badge" id="badgeStickX40">0</span>';
+        }
       }
     }
 
     function toggleApprovalStick(type) {
       if (currentAdminLevel === 'export_40') {
-        // Tài khoản Xuất 40 luôn cố định lọc Xuất 40
-        approvalStickFilter = 'X';
+        approvalStickFilter = 'X40';
         renderApprovals();
         return;
       }
@@ -728,21 +817,14 @@
     function updateApprovalStickUI() {
       const btnN = document.getElementById('btnStickN');
       const btnX = document.getElementById('btnStickX');
-      if (!btnN || !btnX) return;
+      const btnX40 = document.getElementById('btnStickX40');
+      const tabApprovals = document.getElementById('tabBtnApprovals');
+      const tabExport40 = document.getElementById('tabBtnExport40');
+      const bannerX40 = document.getElementById('export40ModeBanner');
+      const btnApproveAll = document.getElementById('btnApproveAll');
+      const sectionApprovalsVisible = document.getElementById('sectionApprovals')?.style.display !== 'none';
 
-      if (currentAdminLevel === 'export_40') {
-        btnN.style.display = 'none';
-        btnX.classList.add('active');
-        const badgeX = document.getElementById('badgeStickX');
-        const pool40 = allApprovals.filter(r => r.status === 'PENDING');
-        if (badgeX) badgeX.textContent = pool40.length;
-        return;
-      }
-
-      btnN.classList.toggle('active', approvalStickFilter === 'N');
-      btnX.classList.toggle('active', approvalStickFilter === 'X');
-
-      // Đếm số lượng N và X dựa theo bộ lọc trạng thái đang chọn
+      // Đếm số lượng theo bộ lọc trạng thái đang chọn
       const stSelect = document.getElementById('filterApprovalStatus');
       const stFilter = stSelect ? stSelect.value : 'PENDING';
       const pool = allApprovals.filter(r => {
@@ -751,12 +833,53 @@
       });
 
       const countN = pool.filter(r => r.xuat_nhap === 'N').length;
-      const countX = pool.filter(r => r.xuat_nhap === 'X').length;
+      const countX20 = pool.filter(r => r.xuat_nhap === 'X' && !isExport40Row(r)).length;
+      const countX40 = pool.filter(r => isExport40Row(r)).length;
 
       const badgeN = document.getElementById('badgeStickN');
       const badgeX = document.getElementById('badgeStickX');
+      const badgeX40 = document.getElementById('badgeStickX40');
       if (badgeN) badgeN.textContent = countN;
-      if (badgeX) badgeX.textContent = countX;
+      if (badgeX) badgeX.textContent = countX20;
+      if (badgeX40) badgeX40.textContent = countX40;
+
+      if (currentAdminLevel === 'export_40') {
+        if (btnN) btnN.style.display = 'none';
+        if (btnX) btnX.style.display = 'none';
+        if (btnX40) btnX40.classList.add('active');
+        if (bannerX40) bannerX40.style.display = 'none';
+        return;
+      }
+
+      const isX40Mode = (approvalStickFilter === 'X40');
+      if (btnN) btnN.classList.toggle('active', approvalStickFilter === 'N');
+      if (btnX) btnX.classList.toggle('active', approvalStickFilter === 'X');
+      if (btnX40) btnX40.classList.toggle('active', isX40Mode);
+
+      if (sectionApprovalsVisible) {
+        if (tabApprovals) tabApprovals.classList.toggle('active', !isX40Mode);
+        if (tabExport40) tabExport40.classList.toggle('active', isX40Mode);
+      }
+
+      if (bannerX40) {
+        bannerX40.style.display = isX40Mode ? 'flex' : 'none';
+      }
+
+      if (btnApproveAll) {
+        if (isX40Mode) {
+          btnApproveAll.style.background = 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)';
+          btnApproveAll.textContent = `📦 Duyệt tất cả Xuất 40" đang chờ & Đẩy TMS`;
+        } else if (approvalStickFilter === 'N') {
+          btnApproveAll.style.background = '';
+          btnApproveAll.textContent = `✅ Duyệt tất cả Hàng Nhập (Cont 20" & 40") đang chờ & Đẩy TMS`;
+        } else if (approvalStickFilter === 'X') {
+          btnApproveAll.style.background = '';
+          btnApproveAll.textContent = `✅ Duyệt tất cả Hàng Xuất Cont 20" đang chờ & Đẩy TMS`;
+        } else {
+          btnApproveAll.style.background = '';
+          btnApproveAll.textContent = `✅ Duyệt tất cả Main View (Nhập 20/40 & Xuất 20) & Đẩy TMS`;
+        }
+      }
     }
 
     // PWA INSTALLATION CHO ADMIN APP
@@ -835,7 +958,7 @@
     window.addEventListener('DOMContentLoaded', () => {
       // Đăng ký Service Worker cho Admin PWA
       if ('serviceWorker' in navigator) {
-        const swPath = window.location.pathname.includes('/admin') ? '/admin/sw.js?v=3' : 'sw.js?v=3';
+        const swPath = window.location.pathname.includes('/admin') ? '/admin/sw.js?v=4' : 'sw.js?v=4';
         navigator.serviceWorker.register(swPath).catch(() => {});
       }
 
@@ -901,9 +1024,11 @@
     }
 
     function switchAdminTab(tab) {
-      document.getElementById('tabBtnApprovals').classList.toggle('active', tab === 'APPROVALS');
-      document.getElementById('tabBtnVendors').classList.toggle('active', tab === 'VENDORS');
-      document.getElementById('tabBtnDrivers').classList.toggle('active', tab === 'DRIVERS');
+      const isX40Mode = (approvalStickFilter === 'X40' || currentAdminLevel === 'export_40');
+      document.getElementById('tabBtnApprovals')?.classList.toggle('active', tab === 'APPROVALS' && !isX40Mode);
+      document.getElementById('tabBtnExport40')?.classList.toggle('active', tab === 'APPROVALS' && isX40Mode);
+      document.getElementById('tabBtnVendors')?.classList.toggle('active', tab === 'VENDORS');
+      document.getElementById('tabBtnDrivers')?.classList.toggle('active', tab === 'DRIVERS');
       document.getElementById('sectionApprovals').style.display = tab === 'APPROVALS' ? 'block' : 'none';
       document.getElementById('sectionVendors').style.display = tab === 'VENDORS' ? 'block' : 'none';
       document.getElementById('sectionDrivers').style.display = tab === 'DRIVERS' ? 'block' : 'none';
@@ -928,9 +1053,21 @@
           allVendors = (data.vendors || []).filter(v => (v.vendor_code || '').toUpperCase() !== 'VIETSUN');
           allDrivers = (data.drivers || []).filter(d => (d.vendor_code || '').toUpperCase() !== 'VIETSUN');
           allApprovals = data.pendingApprovals || [];
-          const pCount = Number(data.pendingCount || 0);
-          document.getElementById('statPendingCount').textContent = pCount;
-          document.getElementById('tabPendingCount').textContent = pCount;
+
+          // Tách riêng số lượng chờ duyệt Main View (Nhập 20", Nhập 40", Xuất 20") và Xuất 40"
+          const mainPendingCount = allApprovals.filter(r => r.status === 'PENDING' && !isExport40Row(r)).length;
+          const x40PendingCount = allApprovals.filter(r => r.status === 'PENDING' && isExport40Row(r)).length;
+
+          const statMainEl = document.getElementById('statPendingCount');
+          const tabMainEl = document.getElementById('tabPendingCount');
+          const statX40El = document.getElementById('statExport40PendingCount');
+          const tabX40El = document.getElementById('tabExport40Count');
+
+          if (statMainEl) statMainEl.textContent = mainPendingCount;
+          if (tabMainEl) tabMainEl.textContent = mainPendingCount;
+          if (statX40El) statX40El.textContent = x40PendingCount;
+          if (tabX40El) tabX40El.textContent = x40PendingCount;
+
           document.getElementById('statVendorCount').textContent = allVendors.length;
           document.getElementById('statDriverCount').textContent = allDrivers.length;
           populateVendorDropdowns();
@@ -948,14 +1085,19 @@
 
       const stFilter = document.getElementById('filterApprovalStatus').value;
       const q = (document.getElementById('searchApprovalInput').value || '').toLowerCase();
+      const isX40Mode = (currentAdminLevel === 'export_40' || approvalStickFilter === 'X40');
 
       const filtered = allApprovals.filter(r => {
         if (stFilter !== 'ALL' && r.status !== stFilter) return false;
-        if (currentAdminLevel === 'export_40') {
-          return r.xuat_nhap === 'X' && String(r.cont_size || '') === '40';
+        // Khi đang ở chế độ Xuất 40": chỉ hiện cont Hàng Xuất 40"
+        if (isX40Mode) {
+          if (!isExport40Row(r)) return false;
+        } else {
+          // Khi ở Main View ban đầu: TUYỆT ĐỐI ẩn toàn bộ cont Hàng Xuất 40" (chỉ hiện Nhập 20", Nhập 40", Xuất 20")
+          if (isExport40Row(r)) return false;
+          if (approvalStickFilter === 'N' && r.xuat_nhap !== 'N') return false;
+          if (approvalStickFilter === 'X' && r.xuat_nhap !== 'X') return false;
         }
-        if (approvalStickFilter === 'N' && r.xuat_nhap !== 'N') return false;
-        if (approvalStickFilter === 'X' && r.xuat_nhap !== 'X') return false;
         if (!q) return true;
         const rawText = `${r.id_po} ${r.actor_name} ${r.vendor_name} ${r.khach_kho} ${r.changes_json}`.toLowerCase();
         return rawText.includes(q);
@@ -963,16 +1105,24 @@
 
       const listEl = document.getElementById('approvalsCardList');
       if (!filtered.length) {
-        let filterHint = '';
-        if (currentAdminLevel === 'export_40') {
-          listEl.innerHTML = '<div style="text-align:center;padding:32px 16px;background:#fff;border-radius:12px;border:1px dashed var(--border);color:var(--text-muted);grid-column:1/-1;">📭 Hiện không có yêu cầu nào cho cont Hàng Xuất 40".</div>';
+        if (isX40Mode) {
+          const backBtn = currentAdminLevel === 'export_40'
+            ? ''
+            : `<div style="margin-top:10px;"><button type="button" class="btn" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font-size:12.5px;padding:6px 14px;" onclick="openMainApprovalsView()">⬅️ Quay về Main View (Nhập 20/40 & Xuất 20)</button></div>`;
+          listEl.innerHTML = `<div style="text-align:center;padding:32px 16px;background:#fff;border-radius:12px;border:1px dashed var(--border);color:var(--text-muted);grid-column:1/-1;">📭 Hiện không có yêu cầu nào trong phân hệ <b>Hàng Xuất Cont 40"</b>.${backBtn}</div>`;
           return;
         }
+        let filterHint = '';
         if (approvalStickFilter !== 'ALL') {
-          const lbl = approvalStickFilter === 'N' ? 'Hàng Nhập (N)' : 'Hàng Xuất (X)';
-          filterHint = `<div style="margin-top:10px;"><button type="button" class="btn" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font-size:12.5px;padding:6px 14px;" onclick="toggleApprovalStick('ALL')">🔄 Đang lọc stick theo <b>${lbl}</b> (0 kết quả) - Bấm để hiển thị Tất cả</button></div>`;
+          const lbl = approvalStickFilter === 'N' ? 'Hàng Nhập (Cont 20" & 40")' : 'Hàng Xuất Cont 20"';
+          filterHint = `<div style="margin-top:10px;"><button type="button" class="btn" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font-size:12.5px;padding:6px 14px;" onclick="toggleApprovalStick('ALL')">🔄 Đang lọc theo <b>${lbl}</b> (0 kết quả) - Bấm để hiển thị toàn bộ Main View</button></div>`;
+        } else {
+          const x40Pending = allApprovals.filter(r => r.status === 'PENDING' && isExport40Row(r)).length;
+          if (x40Pending > 0) {
+            filterHint = `<div style="margin-top:10px;"><button type="button" class="btn" style="background:#fff7ed;color:#c2410c;border:1px solid #fdba74;font-size:12.5px;padding:6px 14px;font-weight:800;" onclick="openExport40ApprovalsView()">📦 Có ${x40Pending} yêu cầu bên phân hệ Hàng Xuất Cont 40" — Bấm để chuyển sang xem</button></div>`;
+          }
         }
-        listEl.innerHTML = `<div style="text-align:center;padding:32px 16px;background:#fff;border-radius:12px;border:1px dashed var(--border);color:var(--text-muted);grid-column:1/-1;">📭 Không có yêu cầu thay đổi nào trong mục này.${filterHint}</div>`;
+        listEl.innerHTML = `<div style="text-align:center;padding:32px 16px;background:#fff;border-radius:12px;border:1px dashed var(--border);color:var(--text-muted);grid-column:1/-1;">📭 Không có yêu cầu chờ duyệt nào trong Main View (Nhập 20", Nhập 40", Xuất 20").${filterHint}</div>`;
         return;
       }
 
@@ -1087,12 +1237,26 @@
     }
 
     async function approveAllPending() {
-      const pendingItems = allApprovals.filter(r => r.status === 'PENDING');
+      const isX40Mode = (currentAdminLevel === 'export_40' || approvalStickFilter === 'X40');
+      const pendingItems = allApprovals.filter(r => {
+        if (r.status !== 'PENDING') return false;
+        if (isX40Mode) return isExport40Row(r);
+        if (isExport40Row(r)) return false;
+        if (approvalStickFilter === 'N' && r.xuat_nhap !== 'N') return false;
+        if (approvalStickFilter === 'X' && r.xuat_nhap !== 'X') return false;
+        return true;
+      });
+      const scopeLabel = isX40Mode
+        ? 'phân hệ HÀNG XUẤT CONT 40"'
+        : (approvalStickFilter === 'N'
+            ? 'HÀNG NHẬP (Cont 20" & 40")'
+            : (approvalStickFilter === 'X' ? 'HÀNG XUẤT CONT 20"' : 'Main View (Nhập 20", Nhập 40", Xuất 20")'));
+
       if (!pendingItems.length) {
-        alert('Hiện không có yêu cầu nào đang chờ duyệt!');
+        alert(`Hiện không có yêu cầu nào đang chờ duyệt trong ${scopeLabel}!`);
         return;
       }
-      if (!confirm(`Bạn có chắc muốn DUYỆT & ĐẨY TẤT CẢ (${pendingItems.length}) yêu cầu đang chờ vào Vietsun TMS?`)) return;
+      if (!confirm(`Bạn có chắc muốn DUYỆT & ĐẨY TẤT CẢ (${pendingItems.length}) yêu cầu của ${scopeLabel} vào Vietsun TMS?`)) return;
       const btn = document.getElementById('btnApproveAll');
       btn.disabled = true;
       btn.textContent = '⏳ Đang đẩy lên TMS...';
@@ -1100,7 +1264,11 @@
         const res = await fetch(`${API_BASE}/admin/approve-update`, {
           method: 'POST',
           headers: getAdminHeaders(),
-          body: JSON.stringify({ approveAll: true })
+          body: JSON.stringify({
+            approveAll: true,
+            scope: isX40Mode ? 'EXPORT_40' : 'MAIN',
+            ids: pendingItems.map(r => r.id)
+          })
         });
         const data = await res.json();
         alert(data.message || 'Đã duyệt tất cả!');
@@ -1109,7 +1277,7 @@
         alert('Lỗi kết nối máy chủ!');
       } finally {
         btn.disabled = false;
-        btn.textContent = '✅ Duyệt tất cả chờ duyệt & Đẩy TMS';
+        updateApprovalStickUI();
       }
     }
 

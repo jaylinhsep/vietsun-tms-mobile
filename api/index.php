@@ -1671,12 +1671,32 @@ try {
         $isExport40 = ($adminLevel === 'export_40');
         $id = isset($jsonBody['id']) ? (int)$jsonBody['id'] : 0;
         $approveAll = !empty($jsonBody['approveAll']);
+        $scope = strtoupper(trim((string)($jsonBody['scope'] ?? '')));
+        $reqIds = isset($jsonBody['ids']) && is_array($jsonBody['ids'])
+            ? array_values(array_filter(array_map('intval', $jsonBody['ids'])))
+            : [];
 
         if ($approveAll) {
-            if ($isExport40) {
-                $rows = $pdo->query("SELECT * FROM tms_pending_approvals WHERE status = 'PENDING' AND xuat_nhap = 'X' AND cont_size = '40' ORDER BY id ASC")->fetchAll();
+            if ($isExport40 || $scope === 'EXPORT_40') {
+                if (!empty($reqIds)) {
+                    $inList = implode(',', $reqIds);
+                    $rows = $pdo->query("SELECT * FROM tms_pending_approvals WHERE status = 'PENDING' AND xuat_nhap = 'X' AND cont_size = '40' AND id IN ($inList) ORDER BY id ASC")->fetchAll();
+                } else {
+                    $rows = $pdo->query("SELECT * FROM tms_pending_approvals WHERE status = 'PENDING' AND xuat_nhap = 'X' AND cont_size = '40' ORDER BY id ASC")->fetchAll();
+                }
+            } elseif ($scope === 'MAIN') {
+                if (!empty($reqIds)) {
+                    $inList = implode(',', $reqIds);
+                    $rows = $pdo->query("SELECT * FROM tms_pending_approvals WHERE status = 'PENDING' AND NOT (xuat_nhap = 'X' AND cont_size = '40') AND id IN ($inList) ORDER BY id ASC")->fetchAll();
+                } else {
+                    $rows = $pdo->query("SELECT * FROM tms_pending_approvals WHERE status = 'PENDING' AND NOT (xuat_nhap = 'X' AND cont_size = '40') ORDER BY id ASC")->fetchAll();
+                }
+            } elseif (!empty($reqIds)) {
+                $inList = implode(',', $reqIds);
+                $rows = $pdo->query("SELECT * FROM tms_pending_approvals WHERE status = 'PENDING' AND id IN ($inList) ORDER BY id ASC")->fetchAll();
             } else {
-                $rows = $pdo->query("SELECT * FROM tms_pending_approvals WHERE status = 'PENDING' ORDER BY id ASC")->fetchAll();
+                // Mặc định Main View chỉ duyệt Nhập 20, Nhập 40, Xuất 20 (tránh duyệt nhầm Xuất 40)
+                $rows = $pdo->query("SELECT * FROM tms_pending_approvals WHERE status = 'PENDING' AND NOT (xuat_nhap = 'X' AND cont_size = '40') ORDER BY id ASC")->fetchAll();
             }
         } else {
             $st = $pdo->prepare("SELECT * FROM tms_pending_approvals WHERE id = ? AND status = 'PENDING' LIMIT 1");
