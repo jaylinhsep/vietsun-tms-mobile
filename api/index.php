@@ -2034,6 +2034,323 @@ try {
     }
 
     // ========================================================================
+    // PHÂN HỆ GIÁ CƯỚC & ĐỊNH DANH TUYẾN ĐƯỜNG / MÃ KHO 2026 (vietsun.site/cuoc)
+    // ========================================================================
+    if (strpos($route, 'cuoc/') === 0) {
+        $ensureCuocTables = function($pdo) {
+            $flagFile = sys_get_temp_dir() . '/vietsun_cuoc_schema_v1.flag';
+            if (file_exists($flagFile)) {
+                return;
+            }
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS tms_pricing_config (
+                    config_key VARCHAR(64) PRIMARY KEY,
+                    config_val TEXT NOT NULL,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ");
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS tms_routes (
+                    route_code VARCHAR(32) PRIMARY KEY,
+                    dia_diem VARCHAR(255) NOT NULL,
+                    tinh VARCHAR(100) NOT NULL DEFAULT '',
+                    base_rates_json TEXT NOT NULL,
+                    notes VARCHAR(255) DEFAULT '',
+                    sort_order INT NOT NULL DEFAULT 0,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ");
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS tms_warehouses_2026 (
+                    wh_code VARCHAR(32) PRIMARY KEY,
+                    kho_name VARCHAR(255) NOT NULL DEFAULT '',
+                    dia_chi TEXT,
+                    tinh_tms VARCHAR(100) DEFAULT '',
+                    customers TEXT,
+                    route_code VARCHAR(32) DEFAULT '',
+                    match_confidence VARCHAR(20) DEFAULT 'NONE',
+                    match_reason VARCHAR(255) DEFAULT '',
+                    total_count INT NOT NULL DEFAULT 0,
+                    nhap_count INT NOT NULL DEFAULT 0,
+                    xuat_count INT NOT NULL DEFAULT 0,
+                    custom_rates_json TEXT NULL,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_route_code (route_code),
+                    INDEX idx_total_count (total_count)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ");
+
+            // Seed from cuoc_seed_2026.json if tms_routes is empty
+            $routeCnt = (int)$pdo->query("SELECT COUNT(*) FROM tms_routes")->fetchColumn();
+            $whCnt = (int)$pdo->query("SELECT COUNT(*) FROM tms_warehouses_2026")->fetchColumn();
+            $seedFile = __DIR__ . '/cuoc_seed_2026.json';
+            if (($routeCnt === 0 || $whCnt === 0) && file_exists($seedFile)) {
+                $seed = json_decode(file_get_contents($seedFile), true);
+                if (is_array($seed)) {
+                    $pdo->beginTransaction();
+                    try {
+                        if ($routeCnt === 0 && !empty($seed['routes'])) {
+                            $stR = $pdo->prepare("
+                                INSERT IGNORE INTO tms_routes (route_code, dia_diem, tinh, base_rates_json, sort_order)
+                                VALUES (?, ?, ?, ?, ?)
+                            ");
+                            foreach ($seed['routes'] as $idx => $r) {
+                                $stR->execute([
+                                    $r['route_code'] ?? '',
+                                    $r['dia_diem'] ?? '',
+                                    $r['tinh'] ?? '',
+                                    json_encode($r['base_rates'] ?? [], JSON_UNESCAPED_UNICODE),
+                                    $idx + 1
+                                ]);
+                            }
+                        }
+                        if ($whCnt === 0 && !empty($seed['warehouses'])) {
+                            $stW = $pdo->prepare("
+                                INSERT IGNORE INTO tms_warehouses_2026
+                                (wh_code, kho_name, dia_chi, tinh_tms, customers, route_code, match_confidence, match_reason, total_count, nhap_count, xuat_count)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            ");
+                            foreach ($seed['warehouses'] as $w) {
+                                $stW->execute([
+                                    $w['wh_code'] ?? '',
+                                    mb_substr((string)($w['kho_name'] ?? ''), 0, 250),
+                                    (string)($w['dia_chi'] ?? ''),
+                                    mb_substr((string)($w['tinh_tms'] ?? ''), 0, 95),
+                                    (string)($w['customers'] ?? ''),
+                                    (string)($w['route_code'] ?? ''),
+                                    (string)($w['match_confidence'] ?? 'NONE'),
+                                    mb_substr((string)($w['match_reason'] ?? ''), 0, 250),
+                                    (int)($w['total_count'] ?? 0),
+                                    (int)($w['nhap_count'] ?? 0),
+                                    (int)($w['xuat_count'] ?? 0)
+                                ]);
+                            }
+                        }
+                        $stCfg = $pdo->prepare("INSERT IGNORE INTO tms_pricing_config (config_key, config_val) VALUES (?, ?)");
+                        $stCfg->execute(['adj_percent', (string)($seed['adj_percent'] ?? 0.032)]);
+                        $stCfg->execute(['do_base_price', '18090']);
+                        $stCfg->execute(['effective_date', '2026-07-21']);
+                        $stCfg->execute(['notes_json', json_encode($seed['notes'] ?? [], JSON_UNESCAPED_UNICODE)]);
+                        $stCfg->execute(['carriers_json', json_encode(['VIETSUN', 'NHAT SON', 'DUONG NGUYEN', 'PHUC TRUONG AN', 'TAN TIEN PHAT', 'TUAN HUNG'], JSON_UNESCAPED_UNICODE)]);
+                        $pdo->commit();
+                    } catch (Exception $ex) {
+                        if ($pdo->inTransaction()) $pdo->rollBack();
+                    }
+                }
+            }
+            @file_put_contents($flagFile, date('c'));
+        };
+
+        $ensureCuocTables($pdo);
+
+        // GET cuoc/overview: Trả về toàn bộ Tuyến đường, Cấu hình % biến động cước & Danh sách Kho 2026
+        if ($route === 'cuoc/overview') {
+            $cfgRows = $pdo->query("SELECT config_key, config_val FROM tms_pricing_config")->fetchAll();
+            $cfg = [];
+            foreach ($cfgRows as $cr) {
+                $cfg[$cr['config_key']] = $cr['config_val'];
+            }
+            $adjPercent = isset($cfg['adj_percent']) ? (float)$cfg['adj_percent'] : 0.032;
+            $carriers = json_decode($cfg['carriers_json'] ?? '[]', true) ?: ['VIETSUN', 'NHAT SON', 'DUONG NGUYEN', 'PHUC TRUONG AN', 'TAN TIEN PHAT', 'TUAN HUNG'];
+            $notes = json_decode($cfg['notes_json'] ?? '[]', true) ?: [];
+
+            $routesRaw = $pdo->query("SELECT * FROM tms_routes ORDER BY sort_order ASC, route_code ASC")->fetchAll();
+            $routes = [];
+            foreach ($routesRaw as $rr) {
+                $routes[] = [
+                    'route_code' => $rr['route_code'],
+                    'dia_diem'   => $rr['dia_diem'],
+                    'tinh'       => $rr['tinh'],
+                    'notes'      => $rr['notes'] ?? '',
+                    'sort_order' => (int)$rr['sort_order'],
+                    'base_rates' => json_decode($rr['base_rates_json'] ?? '{}', true) ?: []
+                ];
+            }
+
+            $whRaw = $pdo->query("SELECT * FROM tms_warehouses_2026 ORDER BY total_count DESC, wh_code ASC")->fetchAll();
+            $warehouses = [];
+            foreach ($whRaw as $wr) {
+                $warehouses[] = [
+                    'wh_code'          => $wr['wh_code'],
+                    'kho_name'         => $wr['kho_name'],
+                    'dia_chi'          => $wr['dia_chi'],
+                    'tinh_tms'         => $wr['tinh_tms'],
+                    'customers'        => $wr['customers'],
+                    'route_code'       => $wr['route_code'] ?? '',
+                    'match_confidence' => $wr['match_confidence'] ?? 'NONE',
+                    'match_reason'     => $wr['match_reason'] ?? '',
+                    'total_count'      => (int)$wr['total_count'],
+                    'nhap_count'       => (int)$wr['nhap_count'],
+                    'xuat_count'       => (int)$wr['xuat_count'],
+                    'custom_rates'     => !empty($wr['custom_rates_json']) ? (json_decode($wr['custom_rates_json'], true) ?: null) : null
+                ];
+            }
+
+            echo json_encode([
+                'ok'         => true,
+                'config'     => [
+                    'adj_percent'    => $adjPercent,
+                    'do_base_price'  => (int)($cfg['do_base_price'] ?? 18090),
+                    'effective_date' => $cfg['effective_date'] ?? '2026-07-21',
+                    'carriers'       => $carriers,
+                    'notes'          => $notes
+                ],
+                'routes'     => $routes,
+                'warehouses' => $warehouses
+            ]);
+            exit;
+        }
+
+        // POST cuoc/save-config: Cập nhật % biến động cước chung, giá dầu cơ sở, danh sách nhà xe
+        if ($route === 'cuoc/save-config') {
+            $st = $pdo->prepare("
+                INSERT INTO tms_pricing_config (config_key, config_val)
+                VALUES (?, ?)
+                ON DUPLICATE KEY UPDATE config_val = VALUES(config_val)
+            ");
+            if (isset($jsonBody['adj_percent'])) {
+                $st->execute(['adj_percent', (string)((float)$jsonBody['adj_percent'])]);
+            }
+            if (isset($jsonBody['do_base_price'])) {
+                $st->execute(['do_base_price', (string)((int)$jsonBody['do_base_price'])]);
+            }
+            if (isset($jsonBody['effective_date'])) {
+                $st->execute(['effective_date', trim((string)$jsonBody['effective_date'])]);
+            }
+            if (isset($jsonBody['carriers']) && is_array($jsonBody['carriers'])) {
+                $st->execute(['carriers_json', json_encode(array_values($jsonBody['carriers']), JSON_UNESCAPED_UNICODE)]);
+            }
+            echo json_encode(['ok' => true, 'message' => 'Đã lưu cấu hình biến động giá cước!']);
+            exit;
+        }
+
+        // POST cuoc/save-route: Thêm mới hoặc cập nhật Mã Tuyến Đường & Bảng giá Vietsun + Vendor
+        if ($route === 'cuoc/save-route') {
+            $routeCode = strtoupper(trim($jsonBody['route_code'] ?? ''));
+            $diaDiem = trim($jsonBody['dia_diem'] ?? '');
+            $tinh = trim($jsonBody['tinh'] ?? '');
+            $baseRates = $jsonBody['base_rates'] ?? [];
+            $notes = trim($jsonBody['notes'] ?? '');
+            if ($routeCode === '' || $diaDiem === '') {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'error' => 'Vui lòng nhập Mã Tuyến Đường và Địa Điểm!']);
+                exit;
+            }
+            $sortOrder = (int)($jsonBody['sort_order'] ?? 0);
+            if ($sortOrder <= 0) {
+                $sortOrder = ((int)$pdo->query("SELECT COALESCE(MAX(sort_order), 0) FROM tms_routes")->fetchColumn()) + 1;
+            }
+            $st = $pdo->prepare("
+                INSERT INTO tms_routes (route_code, dia_diem, tinh, base_rates_json, notes, sort_order)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    dia_diem = VALUES(dia_diem),
+                    tinh = VALUES(tinh),
+                    base_rates_json = VALUES(base_rates_json),
+                    notes = VALUES(notes)
+            ");
+            $st->execute([
+                $routeCode,
+                $diaDiem,
+                $tinh,
+                json_encode($baseRates, JSON_UNESCAPED_UNICODE),
+                $notes,
+                $sortOrder
+            ]);
+            echo json_encode(['ok' => true, 'route_code' => $routeCode, 'message' => "Đã lưu mã tuyến $routeCode ($diaDiem)!"]);
+            exit;
+        }
+
+        // POST cuoc/delete-route: Xóa Mã Tuyến Đường
+        if ($route === 'cuoc/delete-route') {
+            $routeCode = trim($jsonBody['route_code'] ?? '');
+            if ($routeCode !== '') {
+                $st = $pdo->prepare("DELETE FROM tms_routes WHERE route_code = ?");
+                $st->execute([$routeCode]);
+                $stW = $pdo->prepare("UPDATE tms_warehouses_2026 SET route_code = '', match_confidence = 'NONE' WHERE route_code = ?");
+                $stW->execute([$routeCode]);
+            }
+            echo json_encode(['ok' => true, 'message' => "Đã xóa tuyến $routeCode!"]);
+            exit;
+        }
+
+        // POST cuoc/assign-warehouse: Gán 1 hoặc nhiều Mã Kho vào Mã Tuyến Đường (hoặc tạo kho mới)
+        if ($route === 'cuoc/assign-warehouse') {
+            $whCodes = $jsonBody['wh_codes'] ?? [];
+            if (!empty($jsonBody['wh_code']) && empty($whCodes)) {
+                $whCodes = [$jsonBody['wh_code']];
+            }
+            $routeCode = strtoupper(trim($jsonBody['route_code'] ?? ''));
+            $reason = trim($jsonBody['match_reason'] ?? 'Gán thủ công');
+            $conf = $routeCode !== '' ? 'MANUAL' : 'NONE';
+
+            if (empty($whCodes)) {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'error' => 'Chưa chọn Mã Kho để gán tuyến!']);
+                exit;
+            }
+            $st = $pdo->prepare("
+                UPDATE tms_warehouses_2026
+                SET route_code = ?, match_confidence = ?, match_reason = ?
+                WHERE wh_code = ?
+            ");
+            foreach ($whCodes as $wc) {
+                $st->execute([$routeCode, $conf, $reason, trim((string)$wc)]);
+            }
+            echo json_encode([
+                'ok'         => true,
+                'updated'    => count($whCodes),
+                'route_code' => $routeCode,
+                'message'    => 'Đã cập nhật Mã Tuyến Đường cho ' . count($whCodes) . ' kho!'
+            ]);
+            exit;
+        }
+
+        // POST cuoc/save-warehouse: Thêm kho mới hoặc sửa thông tin Kho
+        if ($route === 'cuoc/save-warehouse') {
+            $whCode = strtoupper(trim($jsonBody['wh_code'] ?? ''));
+            $khoName = trim($jsonBody['kho_name'] ?? '');
+            $diaChi = trim($jsonBody['dia_chi'] ?? '');
+            $tinhTms = trim($jsonBody['tinh_tms'] ?? '');
+            $customers = trim($jsonBody['customers'] ?? '');
+            $routeCode = strtoupper(trim($jsonBody['route_code'] ?? ''));
+            if ($khoName === '' && $diaChi === '') {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'error' => 'Vui lòng nhập Tên Kho hoặc Địa chỉ kho!']);
+                exit;
+            }
+            if ($whCode === '') {
+                $maxNum = (int)$pdo->query("SELECT COUNT(*) FROM tms_warehouses_2026")->fetchColumn();
+                $whCode = 'KHO-' . str_pad((string)($maxNum + 1), 4, '0', STR_PAD_LEFT);
+            }
+            $st = $pdo->prepare("
+                INSERT INTO tms_warehouses_2026 (wh_code, kho_name, dia_chi, tinh_tms, customers, route_code, match_confidence, match_reason)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    kho_name = VALUES(kho_name),
+                    dia_chi = VALUES(dia_chi),
+                    tinh_tms = VALUES(tinh_tms),
+                    customers = VALUES(customers),
+                    route_code = VALUES(route_code),
+                    match_confidence = VALUES(match_confidence),
+                    match_reason = VALUES(match_reason)
+            ");
+            $st->execute([
+                $whCode,
+                $khoName,
+                $diaChi,
+                $tinhTms,
+                $customers,
+                $routeCode,
+                $routeCode !== '' ? 'MANUAL' : 'NONE',
+                $routeCode !== '' ? 'Cập nhật trực tiếp' : ''
+            ]);
+            echo json_encode(['ok' => true, 'wh_code' => $whCode, 'message' => "Đã lưu thông tin kho $whCode!"]);
+            exit;
+        }
+    }
+
+    // ========================================================================
     // CÁC ROUTE CẦN TOKEN ĐĂNG NHẬP (TÀI XẾ / VENDOR)
     // ========================================================================
     $user = verify_token($authHeader);
