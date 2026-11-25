@@ -2038,7 +2038,7 @@ try {
     // ========================================================================
     if (strpos($route, 'cuoc/') === 0) {
         $ensureCuocTables = function($pdo) {
-            $flagFile = sys_get_temp_dir() . '/vietsun_cuoc_schema_v1.flag';
+            $flagFile = sys_get_temp_dir() . '/vietsun_cuoc_schema_v2.flag';
             if (file_exists($flagFile)) {
                 return;
             }
@@ -2138,6 +2138,32 @@ try {
                     }
                 }
             }
+
+            // Chuẩn hóa Tỉnh sau sáp nhập trên cả bảng tms_routes & tms_warehouses_2026:
+            // Bình Dương => HCM, BRVT => HCM, Bình Thuận => Lâm Đồng, Đăk Nông => Lâm Đồng,
+            // Bình Phước => Đồng Nai, Long An => Tây Ninh, Tiền Giang => Đồng Tháp,
+            // Trà Vinh => Vĩnh Long, Bến Tre => Vĩnh Long, Hậu Giang => Cần Thơ,
+            // Bạc Liêu => Cà Mau, Kiên Giang => An Giang, Sóc Trăng => Cần Thơ.
+            $mergeSqlMap = [
+                'HCM'       => ['Bình Dương', 'BINH DUONG', 'BRVT', 'Bà Rịa - Vũng Tàu', 'BA RIA VUNG TAU', 'HO CHI MINH', 'TP.HCM', 'TPHCM'],
+                'Lâm Đồng'  => ['Bình Thuận', 'BINH THUAN', 'Đăk Nông', 'Đắk Nông', 'DAK NONG', 'LAM DONG'],
+                'Đồng Nai'  => ['Bình Phước', 'BINH PHUOC', 'DONG NAI'],
+                'Tây Ninh'  => ['Long An', 'LONG AN', 'TAY NINH'],
+                'Đồng Tháp' => ['Tiền Giang', 'TIEN GIANG', 'DONG THAP'],
+                'Vĩnh Long' => ['Trà Vinh', 'TRA VINH', 'Bến Tre', 'BEN TRE', 'VINH LONG'],
+                'Cần Thơ'   => ['Hậu Giang', 'HAU GIANG', 'Sóc Trăng', 'SOC TRANG', 'CAN THO'],
+                'Cà Mau'    => ['Bạc Liêu', 'BAC LIEU', 'CA MAU'],
+                'An Giang'  => ['Kiên Giang', 'KIEN GIANG', 'AN GIANG']
+            ];
+            foreach ($mergeSqlMap as $newProv => $oldList) {
+                $placeholders = implode(',', array_fill(0, count($oldList), '?'));
+                $params = array_merge([$newProv], $oldList);
+                $stUpR = $pdo->prepare("UPDATE tms_routes SET tinh = ? WHERE tinh IN ($placeholders)");
+                $stUpR->execute($params);
+                $stUpW = $pdo->prepare("UPDATE tms_warehouses_2026 SET tinh_tms = ? WHERE tinh_tms IN ($placeholders)");
+                $stUpW->execute($params);
+            }
+
             @file_put_contents($flagFile, date('c'));
         };
 
@@ -2224,6 +2250,92 @@ try {
             exit;
         }
 
+        // POST cuoc/add-or-clone-vendor: Thêm mới Vendor (hoặc áp nhanh giá cước của 1 Vendor có sẵn/mới theo VIETSUN, NHAT SON, DUONG NGUYEN... kèm hệ số % hoặc chênh lệch VNĐ)
+        if ($route === 'cuoc/add-or-clone-vendor') {
+            $vendorName = strtoupper(trim($jsonBody['vendor_name'] ?? ''));
+            $sourceCarrier = strtoupper(trim($jsonBody['source_carrier'] ?? ''));
+            $factorPercent = isset($jsonBody['factor_percent']) ? (float)$jsonBody['factor_percent'] : 100.0;
+            $deltaAmount = isset($jsonBody['delta_amount']) ? (int)$jsonBody['delta_amount'] : 0;
+
+            if ($vendorName === '') {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'error' => 'Vui lòng nhập Tên Vendor / Nhà xe!']);
+                exit;
+            }
+
+            // 1. Cập nhật danh sách carriers_json
+            $rawCarriers = $pdo->query("SELECT config_val FROM tms_pricing_config WHERE config_key = 'carriers_json'")->fetchColumn();
+            $carriers = json_decode($rawCarriers ?: '[]', true) ?: ['VIETSUN', 'NHAT SON', 'DUONG NGUYEN', 'PHUC TRUONG AN', 'TAN TIEN PHAT', 'TUAN HUNG'];
+            if (!in_array($vendorName, $carriers, true)) {
+                $carriers[] = $vendorName;
+                $stCfg = $pdo->prepare("
+                    INSERT INTO tms_pricing_config (config_key, config_val)
+                    VALUES ('carriers_json', ?)
+                    ON DUPLICATE KEY UPDATE config_val = VALUES(config_val)
+                ");
+                $stCfg->execute([json_encode(array_values($carriers), JSON_UNESCAPED_UNICODE)]);
+            }
+
+            // 2. Nếu có chọn source_carrier để áp nhanh giá cước trên toàn bộ 246 tuyến đường
+            $updatedRoutes = 0;
+            if ($sourceCarrier !== '') {
+                $allRoutes = $pdo->query("SELECT route_code, base_rates_json FROM tms_routes")->fetchAll();
+                $stUp = $pdo->prepare("UPDATE tms_routes SET base_rates_json = ? WHERE route_code = ?");
+                $pdo->beginTransaction();
+                try {
+                    foreach ($allRoutes as $rr) {
+                        $br = json_decode($rr['base_rates_json'] ?? '{}', true) ?: [];
+                        $src = $br[$sourceCarrier] ?? ['c20' => 0, 'c40' => 0];
+                        $src20 = (float)($src['c20'] ?? 0);
+                        $src40 = (float)($src['c40'] ?? 0);
+                        $new20 = $src20 > 0 ? max(0, (int)round($src20 * ($factorPercent / 100.0) + $deltaAmount)) : 0;
+                        $new40 = $src40 > 0 ? max(0, (int)round($src40 * ($factorPercent / 100.0) + $deltaAmount)) : 0;
+                        $br[$vendorName] = ['c20' => $new20, 'c40' => $new40];
+                        $stUp->execute([json_encode($br, JSON_UNESCAPED_UNICODE), $rr['route_code']]);
+                        $updatedRoutes++;
+                    }
+                    $pdo->commit();
+                } catch (Exception $ex) {
+                    if ($pdo->inTransaction()) $pdo->rollBack();
+                    throw $ex;
+                }
+            }
+
+            echo json_encode([
+                'ok'             => true,
+                'vendor_name'    => $vendorName,
+                'carriers'       => $carriers,
+                'updated_routes' => $updatedRoutes,
+                'message'        => $sourceCarrier !== ''
+                    ? "Đã lưu Vendor [$vendorName] và áp nhanh giá cước giống [$sourceCarrier] cho $updatedRoutes tuyến đường!"
+                    : "Đã thêm mới Vendor [$vendorName] vào bảng giá!"
+            ]);
+            exit;
+        }
+
+        // POST cuoc/delete-vendor: Xóa 1 cột Vendor khỏi bảng giá
+        if ($route === 'cuoc/delete-vendor') {
+            $vendorName = strtoupper(trim($jsonBody['vendor_name'] ?? ''));
+            if ($vendorName === '' || $vendorName === 'VIETSUN') {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'error' => 'Không thể xóa cột giá chuẩn VIETSUN!']);
+                exit;
+            }
+            $rawCarriers = $pdo->query("SELECT config_val FROM tms_pricing_config WHERE config_key = 'carriers_json'")->fetchColumn();
+            $carriers = json_decode($rawCarriers ?: '[]', true) ?: ['VIETSUN', 'NHAT SON', 'DUONG NGUYEN', 'PHUC TRUONG AN', 'TAN TIEN PHAT', 'TUAN HUNG'];
+            $carriers = array_values(array_filter($carriers, function($c) use ($vendorName) {
+                return strtoupper(trim($c)) !== $vendorName;
+            }));
+            $stCfg = $pdo->prepare("
+                INSERT INTO tms_pricing_config (config_key, config_val)
+                VALUES ('carriers_json', ?)
+                ON DUPLICATE KEY UPDATE config_val = VALUES(config_val)
+            ");
+            $stCfg->execute([json_encode($carriers, JSON_UNESCAPED_UNICODE)]);
+            echo json_encode(['ok' => true, 'carriers' => $carriers, 'message' => "Đã xóa Vendor [$vendorName] khỏi bảng giá!"]);
+            exit;
+        }
+
         // POST cuoc/save-route: Thêm mới hoặc cập nhật Mã Tuyến Đường & Bảng giá Vietsun + Vendor
         if ($route === 'cuoc/save-route') {
             $routeCode = strtoupper(trim($jsonBody['route_code'] ?? ''));
@@ -2274,7 +2386,7 @@ try {
             exit;
         }
 
-        // POST cuoc/assign-warehouse: Gán 1 hoặc nhiều Mã Kho vào Mã Tuyến Đường (hoặc tạo kho mới)
+        // POST cuoc/assign-warehouse: Gán 1 hoặc nhiều Mã Kho vào Mã Tuyến Đường
         if ($route === 'cuoc/assign-warehouse') {
             $whCodes = $jsonBody['wh_codes'] ?? [];
             if (!empty($jsonBody['wh_code']) && empty($whCodes)) {
@@ -2306,7 +2418,7 @@ try {
             exit;
         }
 
-        // POST cuoc/save-warehouse: Thêm kho mới hoặc sửa thông tin Kho
+        // POST cuoc/save-warehouse: Thêm kho mới hoặc tùy chỉnh thông tin Kho
         if ($route === 'cuoc/save-warehouse') {
             $whCode = strtoupper(trim($jsonBody['wh_code'] ?? ''));
             $khoName = trim($jsonBody['kho_name'] ?? '');
@@ -2314,18 +2426,28 @@ try {
             $tinhTms = trim($jsonBody['tinh_tms'] ?? '');
             $customers = trim($jsonBody['customers'] ?? '');
             $routeCode = strtoupper(trim($jsonBody['route_code'] ?? ''));
+            $totalCount = isset($jsonBody['total_count']) ? (int)$jsonBody['total_count'] : 0;
+            $nhapCount = isset($jsonBody['nhap_count']) ? (int)$jsonBody['nhap_count'] : 0;
+            $xuatCount = isset($jsonBody['xuat_count']) ? (int)$jsonBody['xuat_count'] : 0;
+
             if ($khoName === '' && $diaChi === '') {
                 http_response_code(400);
                 echo json_encode(['ok' => false, 'error' => 'Vui lòng nhập Tên Kho hoặc Địa chỉ kho!']);
                 exit;
             }
             if ($whCode === '') {
-                $maxNum = (int)$pdo->query("SELECT COUNT(*) FROM tms_warehouses_2026")->fetchColumn();
-                $whCode = 'KHO-' . str_pad((string)($maxNum + 1), 4, '0', STR_PAD_LEFT);
+                $maxCodeRow = $pdo->query("SELECT wh_code FROM tms_warehouses_2026 WHERE wh_code LIKE 'KHO-%' ORDER BY LENGTH(wh_code) DESC, wh_code DESC LIMIT 1")->fetchColumn();
+                $nextNum = 1;
+                if ($maxCodeRow && preg_match('/KHO-(\d+)/', $maxCodeRow, $m)) {
+                    $nextNum = ((int)$m[1]) + 1;
+                } else {
+                    $nextNum = ((int)$pdo->query("SELECT COUNT(*) FROM tms_warehouses_2026")->fetchColumn()) + 1;
+                }
+                $whCode = 'KHO-' . str_pad((string)$nextNum, 4, '0', STR_PAD_LEFT);
             }
             $st = $pdo->prepare("
-                INSERT INTO tms_warehouses_2026 (wh_code, kho_name, dia_chi, tinh_tms, customers, route_code, match_confidence, match_reason)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO tms_warehouses_2026 (wh_code, kho_name, dia_chi, tinh_tms, customers, route_code, match_confidence, match_reason, total_count, nhap_count, xuat_count)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     kho_name = VALUES(kho_name),
                     dia_chi = VALUES(dia_chi),
@@ -2343,9 +2465,35 @@ try {
                 $customers,
                 $routeCode,
                 $routeCode !== '' ? 'MANUAL' : 'NONE',
-                $routeCode !== '' ? 'Cập nhật trực tiếp' : ''
+                $routeCode !== '' ? 'Cập nhật trực tiếp' : '',
+                $totalCount,
+                $nhapCount,
+                $xuatCount
             ]);
             echo json_encode(['ok' => true, 'wh_code' => $whCode, 'message' => "Đã lưu thông tin kho $whCode!"]);
+            exit;
+        }
+
+        // POST cuoc/delete-warehouse: Xóa 1 hoặc nhiều Mã Kho khỏi bảng định danh kho
+        if ($route === 'cuoc/delete-warehouse') {
+            $whCodes = $jsonBody['wh_codes'] ?? [];
+            if (!empty($jsonBody['wh_code']) && empty($whCodes)) {
+                $whCodes = [$jsonBody['wh_code']];
+            }
+            if (empty($whCodes)) {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'error' => 'Chưa chọn Mã Kho cần xóa!']);
+                exit;
+            }
+            $st = $pdo->prepare("DELETE FROM tms_warehouses_2026 WHERE wh_code = ?");
+            foreach ($whCodes as $wc) {
+                $st->execute([trim((string)$wc)]);
+            }
+            echo json_encode([
+                'ok'      => true,
+                'deleted' => count($whCodes),
+                'message' => 'Đã xóa ' . count($whCodes) . ' mã kho khỏi danh sách!'
+            ]);
             exit;
         }
     }

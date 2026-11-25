@@ -99,10 +99,14 @@
     }
     .btn-primary { background: #0284c7; color: #fff; }
     .btn-primary:hover { background: #0369a1; }
+    .btn-purple { background: #7c3aed; color: #fff; }
+    .btn-purple:hover { background: #6d28d9; }
     .btn-success { background: #16a34a; color: #fff; }
     .btn-success:hover { background: #15803d; }
     .btn-warning { background: #f59e0b; color: #111827; }
     .btn-warning:hover { background: #d97706; color: #fff; }
+    .btn-danger { background: #dc2626; color: #fff; }
+    .btn-danger:hover { background: #b91c1c; }
     .btn-outline { background: rgba(255,255,255,0.12); color: #fff; border-color: rgba(255,255,255,0.25); }
     .btn-outline:hover { background: rgba(255,255,255,0.22); }
     .btn-light { background: #fff; color: #1e293b; border-color: #cbd5e1; }
@@ -111,7 +115,7 @@
 
     /* Container */
     .container {
-      max-width: 1720px;
+      max-width: 1760px;
       margin: 0 auto;
       padding: 16px 20px 60px;
     }
@@ -368,8 +372,9 @@
       border-radius: 99px;
       font-size: 11px;
       font-weight: 700;
-      background: #f1f5f9;
-      color: #334155;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
       white-space: nowrap;
     }
     .status-tag {
@@ -391,7 +396,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      min-width: 250px;
+      min-width: 240px;
     }
     .route-input-picker {
       width: 100%;
@@ -443,7 +448,7 @@
       background: #fff;
       border-radius: 12px;
       width: 100%;
-      max-width: 720px;
+      max-width: 760px;
       max-height: 90vh;
       overflow-y: auto;
       box-shadow: 0 20px 40px rgba(0,0,0,0.25);
@@ -464,7 +469,8 @@
       background: #f8fafc;
       border-top: 1px solid #e2e8f0;
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
+      align-items: center;
       gap: 8px;
       border-radius: 0 0 12px 12px;
     }
@@ -483,6 +489,30 @@
       font-size: 11.5px;
       font-weight: 700;
       color: #334155;
+    }
+
+    .vendor-chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .vendor-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 8px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .vendor-chip.vs {
+      background: #dcfce7;
+      border-color: #86efac;
+      color: #166534;
     }
 
     /* Footnotes Card */
@@ -535,10 +565,11 @@
           PHÂN HỆ QUẢN LÝ GIÁ CƯỚC & ĐỊNH DANH TUYẾN / KHO
           <span class="badge-year">DATA TMS 2026</span>
         </h1>
-        <p>Chuẩn hóa Mã Tuyến Đường (Vietsun & Vendor) ➔ Định danh Mã Kho Khách Hàng 2026 ➔ Tự động áp giá cước Trucking</p>
+        <p>Tỉnh chuẩn sau sáp nhập ➔ Mã Tuyến Đường (Vietsun & Vendor) ➔ Định danh Mã Kho Khách Hàng 2026</p>
       </div>
     </div>
     <div class="top-actions">
+      <button class="btn btn-purple" onclick="openVendorModal()">🚛 Thêm Vendor & Áp Nhanh Giá</button>
       <button class="btn btn-warning" onclick="openRouteModal()">➕ Thêm Mã Tuyến</button>
       <button class="btn btn-success" onclick="openWarehouseModal()">🏭 Thêm Mã Kho</button>
       <button class="btn btn-primary" onclick="exportCuocExcel()">📥 Xuất Excel Bảng Cước & Mã Kho</button>
@@ -552,7 +583,7 @@
       <div class="stat-card">
         <span class="stat-label">🛣️ Tổng Mã Tuyến Đường Chuẩn</span>
         <div class="stat-value" id="statRoutes">246</div>
-        <span class="stat-sub">Bảng giá chuẩn Vietsun & 5 Vendor chính</span>
+        <span class="stat-sub" id="statCarriersSub">Bảng giá chuẩn Vietsun & 5 Vendor</span>
       </div>
       <div class="stat-card">
         <span class="stat-label">🏭 Tổng Kho Quét Năm 2026 (TMS Gốc)</span>
@@ -604,15 +635,11 @@
     <section id="panelRoutes">
       <div class="filter-bar">
         <div class="filter-group">
-          <input type="text" id="routeSearch" class="input search-input" placeholder="🔍 Gõ Mã tuyến (VD: BI-KV1-015), Tên KCN, Quận/Huyện..." oninput="renderRoutesTable()" />
+          <input type="text" id="routeSearch" class="input search-input" placeholder="🔍 Gõ Mã tuyến (VD: BI-KV1-015), Tên KCN, Quận/Huyện, Tỉnh..." oninput="renderRoutesTable()" />
           <select id="routeProvinceFilter" class="select" onchange="renderRoutesTable()">
-            <option value="">📍 Tất cả Tỉnh / Thành phố</option>
+            <option value="">📍 Tất cả Tỉnh / Thành phố (Sau sáp nhập)</option>
           </select>
-          <select id="routeCarrierFilter" class="select" onchange="renderRoutesTable()">
-            <option value="ALL">🚛 Hiển thị tất cả Nhà xe (Vietsun + 5 Vendor)</option>
-            <option value="VIETSUN">Chỉ xem giá VIETSUN (Debit chuẩn)</option>
-            <option value="COMPARE">So sánh Chênh lệch Vendor thấp nhất vs Vietsun</option>
-          </select>
+          <button class="btn btn-purple btn-sm" onclick="openVendorModal()">🚛 + Thêm Vendor / Sao chép nhanh giá cước</button>
         </div>
         <div style="font-size:12px; color:var(--muted); font-weight:600;" id="routeFilterSummary">
           Đang hiển thị 246 tuyến đường
@@ -622,36 +649,7 @@
       <div class="table-card">
         <div class="table-scroll">
           <table id="routesTable">
-            <thead>
-              <tr>
-                <th rowspan="2" style="width:45px; text-align:center;">STT</th>
-                <th rowspan="2" style="width:120px;">MÃ TUYẾN</th>
-                <th rowspan="2" style="min-width:230px;">ĐỊA ĐIỂM / KCN / KHU VỰC</th>
-                <th rowspan="2" style="width:110px;">TỈNH</th>
-                <th rowspan="2" style="width:90px; text-align:center;">SỐ KHO 2026</th>
-                <th colspan="2" style="text-align:center; background:#15803d;">VIETSUN (CHUẨN)</th>
-                <th colspan="2" style="text-align:center;">NHAT SON</th>
-                <th colspan="2" style="text-align:center;">DUONG NGUYEN</th>
-                <th colspan="2" style="text-align:center;">PHUC TRUONG AN</th>
-                <th colspan="2" style="text-align:center;">TAN TIEN PHAT</th>
-                <th colspan="2" style="text-align:center;">TUAN HUNG</th>
-                <th rowspan="2" style="width:80px; text-align:center;">THAO TÁC</th>
-              </tr>
-              <tr class="sub-head">
-                <th style="background:#166534;">Cont 20'</th>
-                <th style="background:#166534;">Cont 40'</th>
-                <th>Cont 20'</th>
-                <th>Cont 40'</th>
-                <th>Cont 20'</th>
-                <th>Cont 40'</th>
-                <th>Cont 20'</th>
-                <th>Cont 40'</th>
-                <th>Cont 20'</th>
-                <th>Cont 40'</th>
-                <th>Cont 20'</th>
-                <th>Cont 40'</th>
-              </tr>
-            </thead>
+            <thead id="routesThead"></thead>
             <tbody id="routesTbody"></tbody>
           </table>
         </div>
@@ -682,16 +680,17 @@
             <option value="XUAT">📤 Kho Chuyên Hàng Xuất (X)</option>
           </select>
           <select id="whProvinceFilter" class="select" onchange="resetAndRenderWarehouses()">
-            <option value="">📍 Tất cả Tỉnh (TMS)</option>
+            <option value="">📍 Tất cả Tỉnh (Sau sáp nhập)</option>
           </select>
           <select id="whMinVolFilter" class="select" onchange="resetAndRenderWarehouses()">
-            <option value="1">📦 Mọi sản lượng (>= 1 cont)</option>
+            <option value="0">📦 Mọi sản lượng (Kể cả kho mới tạo)</option>
             <option value="5">🔥 Kho đi thường xuyên (>= 5 cont/năm)</option>
             <option value="20">⭐ Kho trọng điểm (>= 20 cont/năm)</option>
             <option value="100">👑 Top Kho Lớn (>= 100 cont/năm)</option>
           </select>
         </div>
         <div style="display:flex; align-items:center; gap:8px;">
+          <button class="btn btn-sm btn-success" onclick="openWarehouseModal()">➕ Thêm Kho Mới</button>
           <span style="font-size:12px; color:var(--muted); font-weight:600;" id="whFilterSummary"></span>
         </div>
       </div>
@@ -705,14 +704,15 @@
                   <input type="checkbox" id="chkAllWh" onchange="toggleSelectAllWh(this.checked)" />
                 </th>
                 <th style="width:95px;">MÃ KHO</th>
-                <th style="min-width:200px;">TÊN KHO ĐÓNG / TRẢ (TMS 2026)</th>
-                <th style="min-width:270px;">ĐỊA CHỈ CHI TIẾT</th>
-                <th style="width:105px;">TỈNH (TMS)</th>
-                <th style="min-width:160px;">KHÁCH HÀNG THƯỜNG ĐI</th>
-                <th style="width:115px; text-align:right;">SẢN LƯỢNG 2026</th>
-                <th style="min-width:280px;">MÃ TUYẾN ĐƯỜNG ÁP DỤNG (GÕ ĐỂ CHỌN)</th>
-                <th style="width:110px; text-align:right; background:#15803d;">CƯỚC VS 20'</th>
-                <th style="width:110px; text-align:right; background:#15803d;">CƯỚC VS 40'</th>
+                <th style="min-width:190px;">TÊN KHO ĐÓNG / TRẢ (TMS 2026)</th>
+                <th style="min-width:250px;">ĐỊA CHỈ CHI TIẾT</th>
+                <th style="width:105px;">TỈNH (SÁP NHẬP)</th>
+                <th style="min-width:150px;">KHÁCH HÀNG THƯỜNG ĐI</th>
+                <th style="width:110px; text-align:right;">SẢN LƯỢNG 2026</th>
+                <th style="min-width:265px;">MÃ TUYẾN ĐƯỜNG ÁP DỤNG (GÕ ĐỂ CHỌN)</th>
+                <th style="width:105px; text-align:right; background:#15803d;">CƯỚC VS 20'</th>
+                <th style="width:105px; text-align:right; background:#15803d;">CƯỚC VS 40'</th>
+                <th style="width:88px; text-align:center;">TÙY CHỈNH</th>
               </tr>
             </thead>
             <tbody id="warehousesTbody"></tbody>
@@ -774,13 +774,74 @@
 
   <!-- Datalist for fast searchable Route Code selection -->
   <datalist id="routesDatalist"></datalist>
+  <datalist id="provincesDatalist">
+    <option value="HCM">Bình Dương + BRVT + TP.HCM</option>
+    <option value="Tây Ninh">Long An + Tây Ninh</option>
+    <option value="Đồng Nai">Bình Phước + Đồng Nai</option>
+    <option value="Lâm Đồng">Bình Thuận + Đắk Nông + Lâm Đồng</option>
+    <option value="Đồng Tháp">Tiền Giang + Đồng Tháp</option>
+    <option value="Vĩnh Long">Trà Vinh + Bến Tre + Vĩnh Long</option>
+    <option value="Cần Thơ">Hậu Giang + Sóc Trăng + Cần Thơ</option>
+    <option value="Cà Mau">Bạc Liêu + Cà Mau</option>
+    <option value="An Giang">Kiên Giang + An Giang</option>
+  </datalist>
 
-  <!-- Bulk Assignment Floating Bar -->
+  <!-- Bulk Assignment & Bulk Delete Floating Bar -->
   <div class="bulk-bar" id="bulkBar">
     <span style="font-weight:700;" id="bulkCountText">Đã chọn 0 kho</span>
-    <input type="text" list="routesDatalist" id="bulkRouteInput" class="input" style="min-width:280px;" placeholder="Gõ Mã tuyến hoặc Tên KCN để gán hàng loạt..." />
+    <input type="text" list="routesDatalist" id="bulkRouteInput" class="input" style="min-width:260px;" placeholder="Gõ Mã tuyến hoặc Tên KCN để gán hàng loạt..." />
     <button class="btn btn-success" onclick="applyBulkRouteAssign()">✅ Gán Tuyến Hàng Loạt</button>
+    <button class="btn btn-danger" onclick="applyBulkDeleteWarehouses()">🗑️ Xóa Kho Đã Chọn</button>
     <button class="btn btn-outline" onclick="clearBulkSelection()">Bỏ chọn</button>
+  </div>
+
+  <!-- Modal Add/Clone Vendor -->
+  <div class="modal-backdrop" id="vendorModal">
+    <div class="modal">
+      <div class="modal-header" style="background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%);">
+        <h3>🚛 Quản Lý Nhà Xe (Vendor) & Áp Nhanh Giá Cước Toàn Tuyến</h3>
+        <button class="btn btn-sm btn-outline" onclick="closeVendorModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:12px; margin-bottom:14px;">
+          <div style="font-size:12px; font-weight:800; color:#334155; margin-bottom:6px;">
+            DANH SÁCH ĐƠN VỊ VẬN TẢI ĐANG CÓ TRONG BẢNG GIÁ:
+          </div>
+          <div class="vendor-chip-list" id="currentVendorsChipList"></div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>1. TÊN VENDOR MỚI (HOẶC CHỌN VENDOR ĐANG CÓ ĐỂ ÁP LẠI GIÁ NHANH)</label>
+            <input type="text" id="fmVendorName" class="input" placeholder="VD: MINH DUC, HAI AU, HOANG LONG..." style="font-weight:700; text-transform:uppercase;" />
+          </div>
+          <div class="form-group full">
+            <label>2. ÁP NHANH GIÁ CƯỚC GIỐNG ĐƠN VỊ NÀO? (SAO CHÉP TOÀN BỘ 246 TUYẾN ĐƯỜNG)</label>
+            <select id="fmVendorCloneSource" class="select" style="font-weight:700; color:#0f3a6d;">
+              <option value="VIETSUN">⭐ Giống 100% giá chuẩn VIETSUN</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>3. TỶ LỆ % SO VỚI ĐƠN VỊ GỐC (Mặc định 100% = Giống hệt)</label>
+            <input type="number" step="0.5" id="fmVendorFactorPct" class="input" value="100" />
+          </div>
+          <div class="form-group">
+            <label>4. CỘNG / TRỪ THÊM SỐ TIỀN VNĐ MỖI CONT (Mặc định 0)</label>
+            <input type="number" step="10000" id="fmVendorDeltaAmt" class="input" value="0" placeholder="VD: -50000 hoặc 100000" />
+          </div>
+        </div>
+        <div style="margin-top:12px; padding:10px 12px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; font-size:12px; color:#1e40af;">
+          💡 <strong>Mẹo:</strong> Nếu muốn Vendor mới lấy <strong>giá giống hệt VIETSUN</strong> (hoặc giống <strong>NHAT SON, DUONG NGUYEN...</strong>), bạn chỉ cần chọn đơn vị gốc ở mục 2 và giữ nguyên tỷ lệ <strong>100%</strong>, hệ thống sẽ tự động điền giá Cont 20' & 40' cho toàn bộ 246 tuyến đường ngay lập tức!
+        </div>
+      </div>
+      <div class="modal-footer">
+        <span></span>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-light" onclick="closeVendorModal()">Đóng</button>
+          <button class="btn btn-purple" onclick="submitAddOrCloneVendor()">⚡ Lưu Vendor & Áp Giá Toàn Tuyến</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Modal Add/Edit Route -->
@@ -797,8 +858,8 @@
             <input type="text" id="fmRouteCode" class="input" placeholder="VD: BI-KV1-015" />
           </div>
           <div class="form-group">
-            <label>TỈNH / THÀNH PHỐ</label>
-            <input type="text" id="fmRouteTinh" class="input" placeholder="VD: Bình Dương, HCM, Đồng Nai, Long An..." />
+            <label>TỈNH / THÀNH PHỐ (SAU SÁP NHẬP)</label>
+            <input type="text" list="provincesDatalist" id="fmRouteTinh" class="input" placeholder="VD: HCM, Tây Ninh, Đồng Nai, Lâm Đồng..." />
           </div>
           <div class="form-group full">
             <label>ĐỊA ĐIỂM / KHU CÔNG NGHIỆP / QUẬN HUYỆN</label>
@@ -812,8 +873,11 @@
         <div class="form-grid" id="fmCarrierRatesGrid"></div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-light" onclick="closeRouteModal()">Hủy</button>
-        <button class="btn btn-primary" onclick="submitSaveRoute()">💾 Lưu Mã Tuyến & Giá Cước</button>
+        <button class="btn btn-danger btn-sm" id="btnDeleteRouteInModal" style="display:none;" onclick="deleteRouteFromModal()">🗑️ Xóa Mã Tuyến Này</button>
+        <div style="display:flex; gap:8px; margin-left:auto;">
+          <button class="btn btn-light" onclick="closeRouteModal()">Hủy</button>
+          <button class="btn btn-primary" onclick="submitSaveRoute()">💾 Lưu Mã Tuyến & Giá Cước</button>
+        </div>
       </div>
     </div>
   </div>
@@ -822,7 +886,7 @@
   <div class="modal-backdrop" id="whModal">
     <div class="modal">
       <div class="modal-header">
-        <h3>🏭 Thêm / Cập Nhật Mã Kho Khách Hàng</h3>
+        <h3 id="whModalTitle">🏭 Thêm / Tùy Chỉnh Mã Kho Khách Hàng</h3>
         <button class="btn btn-sm btn-outline" onclick="closeWarehouseModal()">✕</button>
       </div>
       <div class="modal-body">
@@ -832,8 +896,8 @@
             <input type="text" id="fmWhCode" class="input" placeholder="VD: KHO-4317" />
           </div>
           <div class="form-group">
-            <label>TỈNH / THÀNH PHỐ (TMS)</label>
-            <input type="text" id="fmWhTinh" class="input" placeholder="VD: TAY NINH, HO CHI MINH..." />
+            <label>TỈNH / THÀNH PHỐ (SAU SÁP NHẬP)</label>
+            <input type="text" list="provincesDatalist" id="fmWhTinh" class="input" placeholder="VD: Tây Ninh, HCM, Đồng Nai..." />
           </div>
           <div class="form-group full">
             <label>TÊN KHO ĐÓNG / TRẢ HÀNG</label>
@@ -854,8 +918,11 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-light" onclick="closeWarehouseModal()">Hủy</button>
-        <button class="btn btn-success" onclick="submitSaveWarehouse()">💾 Lưu Mã Kho</button>
+        <button class="btn btn-danger btn-sm" id="btnDeleteWhInModal" style="display:none;" onclick="deleteWarehouseFromModal()">🗑️ Xóa Mã Kho Này</button>
+        <div style="display:flex; gap:8px; margin-left:auto;">
+          <button class="btn btn-light" onclick="closeWarehouseModal()">Hủy</button>
+          <button class="btn btn-success" onclick="submitSaveWarehouse()">💾 Lưu Mã Kho</button>
+        </div>
       </div>
     </div>
   </div>
@@ -863,13 +930,49 @@
   <div class="toast" id="toastBox"></div>
 
   <script>
-    const CARRIERS = ['VIETSUN', 'NHAT SON', 'DUONG NGUYEN', 'PHUC TRUONG AN', 'TAN TIEN PHAT', 'TUAN HUNG'];
+    const DEFAULT_CARRIERS = ['VIETSUN', 'NHAT SON', 'DUONG NGUYEN', 'PHUC TRUONG AN', 'TAN TIEN PHAT', 'TUAN HUNG'];
+
+    // Quy tắc sáp nhập tỉnh theo yêu cầu:
+    // Bình Dương => HCM, BRVT => HCM, Bình Thuận => Lâm Đồng, Đăk Nông => Lâm Đồng,
+    // Bình Phước => Đồng Nai, Long An => Tây Ninh, Tiền Giang => Đồng Tháp,
+    // Trà Vinh => Vĩnh Long, Bến Tre => Vĩnh Long, Hậu Giang => Cần Thơ,
+    // Bạc Liêu => Cà Mau, Kiên Giang => An Giang, Sóc Trăng => Cần Thơ.
+    const MERGED_PROVINCE_RULES = {
+      'BINH DUONG': 'HCM',
+      'BRVT': 'HCM',
+      'BA RIA VUNG TAU': 'HCM',
+      'BINH THUAN': 'Lâm Đồng',
+      'DAK NONG': 'Lâm Đồng',
+      'BINH PHUOC': 'Đồng Nai',
+      'LONG AN': 'Tây Ninh',
+      'TIEN GIANG': 'Đồng Tháp',
+      'TRA VINH': 'Vĩnh Long',
+      'BEN TRE': 'Vĩnh Long',
+      'HAU GIANG': 'Cần Thơ',
+      'BAC LIEU': 'Cà Mau',
+      'KIEN GIANG': 'An Giang',
+      'SOC TRANG': 'Cần Thơ',
+      'HCM': 'HCM',
+      'HO CHI MINH': 'HCM',
+      'TP HCM': 'HCM',
+      'TPHCM': 'HCM',
+      'DONG NAI': 'Đồng Nai',
+      'LAM DONG': 'Lâm Đồng',
+      'TAY NINH': 'Tây Ninh',
+      'DONG THAP': 'Đồng Tháp',
+      'VINH LONG': 'Vĩnh Long',
+      'CAN THO': 'Cần Thơ',
+      'CA MAU': 'Cà Mau',
+      'AN GIANG': 'An Giang'
+    };
+
     let appData = {
-      config: { adj_percent: 0.032, do_base_price: 18090, effective_date: '2026-07-21', carriers: CARRIERS, notes: [] },
+      config: { adj_percent: 0.032, do_base_price: 18090, effective_date: '2026-07-21', carriers: DEFAULT_CARRIERS, notes: [] },
       routes: [],
       warehouses: []
     };
     let routeMap = {};
+    let whMap = {};
     let routeWhCountMap = {};
     let rateMode = 'adjusted'; // 'adjusted' | 'base'
     let currentTab = 'routes';
@@ -883,13 +986,18 @@
     // Live TMS shipments for Tab 3
     let liveShipments = [];
 
+    function getCarriers() {
+      const list = appData.config?.carriers;
+      return (Array.isArray(list) && list.length > 0) ? list : DEFAULT_CARRIERS;
+    }
+
     function showToast(msg, bg = '#0f172a') {
       const el = document.getElementById('toastBox');
       el.textContent = msg;
       el.style.background = bg;
       el.classList.add('show');
       clearTimeout(el._timer);
-      el._timer = setTimeout(() => el.classList.remove('show'), 3200);
+      el._timer = setTimeout(() => el.classList.remove('show'), 3400);
     }
 
     function fmtMoney(val) {
@@ -911,7 +1019,16 @@
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .replace(/đ/g, 'd').replace(/Đ/g, 'D')
         .toUpperCase()
+        .replace(/[^A-Z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
         .trim();
+    }
+
+    function normalizeMergedProvince(rawTinh) {
+      const n = normStr(rawTinh);
+      if (!n) return '';
+      if (MERGED_PROVINCE_RULES[n]) return MERGED_PROVINCE_RULES[n];
+      return String(rawTinh || '').trim();
     }
 
     async function loadOverview() {
@@ -920,6 +1037,10 @@
         const data = await res.json();
         if (!data.ok) throw new Error(data.error || 'Lỗi tải dữ liệu');
         appData = data;
+        // Đảm bảo hiển thị tỉnh sau sáp nhập đồng nhất trên toàn bộ giao diện
+        appData.routes.forEach(r => { r.tinh = normalizeMergedProvince(r.tinh); });
+        appData.warehouses.forEach(w => { w.tinh_tms = normalizeMergedProvince(w.tinh_tms); });
+
         document.getElementById('adjPercentInput').value = ((appData.config.adj_percent || 0) * 100).toFixed(2);
         rebuildMapsAndStats();
         populateFilters();
@@ -932,6 +1053,7 @@
 
     function rebuildMapsAndStats() {
       routeMap = {};
+      whMap = {};
       routeWhCountMap = {};
       appData.routes.forEach(r => {
         routeMap[r.route_code] = r;
@@ -944,6 +1066,7 @@
       let matchedConts = 0;
 
       appData.warehouses.forEach(w => {
+        whMap[w.wh_code] = w;
         const c = Number(w.total_count || 0);
         totalConts += c;
         if (w.route_code && routeMap[w.route_code]) {
@@ -957,8 +1080,10 @@
 
       const truckingConts = Math.max(1, totalConts - specialConts);
       const pctVol = ((matchedConts * 100) / truckingConts).toFixed(1);
+      const carriers = getCarriers();
 
       document.getElementById('statRoutes').textContent = appData.routes.length.toLocaleString('vi-VN');
+      document.getElementById('statCarriersSub').textContent = `Bảng giá chuẩn Vietsun & ${Math.max(0, carriers.length - 1)} Vendor`;
       document.getElementById('cntRoutes').textContent = appData.routes.length;
       document.getElementById('statWarehouses').textContent = appData.warehouses.length.toLocaleString('vi-VN');
       document.getElementById('cntWarehouses').textContent = appData.warehouses.length;
@@ -988,14 +1113,14 @@
       const routeProvs = [...new Set(appData.routes.map(r => r.tinh).filter(Boolean))].sort();
       const rpSel = document.getElementById('routeProvinceFilter');
       const currRp = rpSel.value;
-      rpSel.innerHTML = `<option value="">📍 Tất cả Tỉnh / Thành phố (${routeProvs.length})</option>` +
+      rpSel.innerHTML = `<option value="">📍 Tất cả Tỉnh sau sáp nhập (${routeProvs.length})</option>` +
         routeProvs.map(p => `<option value="${p}">${p}</option>`).join('');
       rpSel.value = currRp;
 
       const whProvs = [...new Set(appData.warehouses.map(w => w.tinh_tms).filter(Boolean))].sort();
       const wpSel = document.getElementById('whProvinceFilter');
       const currWp = wpSel.value;
-      wpSel.innerHTML = `<option value="">📍 Tất cả Tỉnh TMS (${whProvs.length})</option>` +
+      wpSel.innerHTML = `<option value="">📍 Tất cả Tỉnh sau sáp nhập (${whProvs.length})</option>` +
         whProvs.map(p => `<option value="${p}">${p}</option>`).join('');
       wpSel.value = currWp;
     }
@@ -1048,9 +1173,38 @@
     }
 
     // =========================================================================
-    // RENDER TAB 1: ROUTES TABLE
+    // RENDER TAB 1: ROUTES TABLE (WITH DYNAMIC VENDOR COLUMNS)
     // =========================================================================
     function renderRoutesTable() {
+      const carriers = getCarriers();
+      const thead = document.getElementById('routesThead');
+      const carrierGroupHeaders = carriers.map(c => {
+        const isVs = c === 'VIETSUN';
+        const bg = isVs ? 'background:#15803d;' : '';
+        return `<th colspan="2" style="text-align:center; ${bg}">${c}${isVs ? ' (CHUẨN)' : ''}</th>`;
+      }).join('');
+
+      const carrierSubHeaders = carriers.map(c => {
+        const isVs = c === 'VIETSUN';
+        const bg = isVs ? 'background:#166534;' : '';
+        return `<th style="${bg}">Cont 20'</th><th style="${bg}">Cont 40'</th>`;
+      }).join('');
+
+      thead.innerHTML = `
+        <tr>
+          <th rowspan="2" style="width:45px; text-align:center;">STT</th>
+          <th rowspan="2" style="width:120px;">MÃ TUYẾN</th>
+          <th rowspan="2" style="min-width:230px;">ĐỊA ĐIỂM / KCN / KHU VỰC</th>
+          <th rowspan="2" style="width:110px;">TỈNH (SÁP NHẬP)</th>
+          <th rowspan="2" style="width:90px; text-align:center;">SỐ KHO 2026</th>
+          ${carrierGroupHeaders}
+          <th rowspan="2" style="width:85px; text-align:center;">THAO TÁC</th>
+        </tr>
+        <tr class="sub-head">
+          ${carrierSubHeaders}
+        </tr>
+      `;
+
       const q = normStr(document.getElementById('routeSearch').value);
       const prov = document.getElementById('routeProvinceFilter').value;
 
@@ -1070,7 +1224,7 @@
       tbody.innerHTML = list.map((r, idx) => {
         const br = r.base_rates || {};
         const whCnt = routeWhCountMap[r.route_code] || 0;
-        const cells = CARRIERS.map(c => {
+        const cells = carriers.map(c => {
           const c20 = getEffectiveRate(br[c]?.c20);
           const c40 = getEffectiveRate(br[c]?.c40);
           const cls = c === 'VIETSUN' ? 'num num-vs' : 'num';
@@ -1089,8 +1243,8 @@
                 : `<span style="color:#94a3b8;">0</span>`}
             </td>
             ${cells}
-            <td style="text-align:center;">
-              <button class="btn btn-sm btn-light" onclick="openRouteModal('${r.route_code}')">✏️</button>
+            <td style="text-align:center; white-space:nowrap;">
+              <button class="btn btn-sm btn-light" onclick="openRouteModal('${r.route_code}')" title="Chỉnh sửa tuyến">✏️</button>
             </td>
           </tr>
         `;
@@ -1105,7 +1259,86 @@
     }
 
     // =========================================================================
-    // RENDER TAB 2: WAREHOUSES 2026 & ROUTE ASSIGNMENT
+    // VENDOR MANAGEMENT & QUICK CLONE RATES MODAL
+    // =========================================================================
+    function openVendorModal() {
+      renderVendorModalContent();
+      document.getElementById('fmVendorName').value = '';
+      document.getElementById('fmVendorFactorPct').value = '100';
+      document.getElementById('fmVendorDeltaAmt').value = '0';
+      document.getElementById('vendorModal').classList.add('show');
+    }
+
+    function closeVendorModal() {
+      document.getElementById('vendorModal').classList.remove('show');
+    }
+
+    function renderVendorModalContent() {
+      const carriers = getCarriers();
+      const chipBox = document.getElementById('currentVendorsChipList');
+      chipBox.innerHTML = carriers.map(c => {
+        const isVs = c === 'VIETSUN';
+        return `
+          <div class="vendor-chip ${isVs ? 'vs' : ''}">
+            <span>${isVs ? '⭐ ' : '🚛 '}${c}</span>
+            ${!isVs ? `<button class="btn btn-sm" style="padding:1px 6px; background:#fee2e2; color:#b91c1c;" onclick="deleteVendorColumn('${c}')" title="Xóa cột Vendor này">✕</button>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      const srcSel = document.getElementById('fmVendorCloneSource');
+      srcSel.innerHTML =
+        carriers.map(c => `<option value="${c}">📋 Lấy giá giống [${c}] ${c === 'VIETSUN' ? '(Giá chuẩn Vietsun)' : ''}</option>`).join('') +
+        `<option value="">-- Không áp giá tự động (Để trống tự nhập sau) --</option>`;
+    }
+
+    async function submitAddOrCloneVendor() {
+      const vendor_name = document.getElementById('fmVendorName').value.trim().toUpperCase();
+      const source_carrier = document.getElementById('fmVendorCloneSource').value;
+      const factor_percent = parseFloat(document.getElementById('fmVendorFactorPct').value || '100');
+      const delta_amount = parseInt(document.getElementById('fmVendorDeltaAmt').value || '0', 10);
+
+      if (!vendor_name) {
+        showToast('Vui lòng nhập Tên Vendor / Nhà xe!', '#dc2626');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/index.php?route=cuoc/add-or-clone-vendor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vendor_name, source_carrier, factor_percent, delta_amount })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+        showToast(data.message, '#16a34a');
+        closeVendorModal();
+        await loadOverview();
+      } catch (e) {
+        showToast('Lỗi thêm Vendor: ' + e.message, '#dc2626');
+      }
+    }
+
+    async function deleteVendorColumn(vendorName) {
+      if (!confirm(`Bạn có chắc muốn xóa cột Vendor [${vendorName}] khỏi bảng giá cước?`)) return;
+      try {
+        const res = await fetch('/api/index.php?route=cuoc/delete-vendor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vendor_name: vendorName })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+        showToast(data.message, '#16a34a');
+        await loadOverview();
+        renderVendorModalContent();
+      } catch (e) {
+        showToast('Lỗi xóa Vendor: ' + e.message, '#dc2626');
+      }
+    }
+
+    // =========================================================================
+    // RENDER TAB 2: WAREHOUSES 2026 & ROUTE ASSIGNMENT + EDIT / DELETE
     // =========================================================================
     function resetAndRenderWarehouses() {
       whPage = 1;
@@ -1113,10 +1346,10 @@
       const st = document.getElementById('whStatusFilter').value;
       const flow = document.getElementById('whFlowFilter').value;
       const prov = document.getElementById('whProvinceFilter').value;
-      const minVol = parseInt(document.getElementById('whMinVolFilter').value || '1', 10);
+      const minVol = parseInt(document.getElementById('whMinVolFilter').value || '0', 10);
 
       filteredWarehouses = appData.warehouses.filter(w => {
-        if (w.total_count < minVol) return false;
+        if ((w.total_count || 0) < minVol) return false;
         if (prov && w.tinh_tms !== prov) return false;
         if (st === 'MATCHED' && !w.route_code) return false;
         if (st === 'UNMATCHED' && (w.route_code || w.match_confidence === 'SPECIAL')) return false;
@@ -1132,7 +1365,7 @@
 
       const sumConts = filteredWarehouses.reduce((acc, w) => acc + (w.total_count || 0), 0);
       document.getElementById('whFilterSummary').textContent =
-        `Lọc thấy ${filteredWarehouses.length.toLocaleString('vi-VN')} kho (${sumConts.toLocaleString('vi-VN')} cont trong năm 2026)`;
+        `Lọc thấy ${filteredWarehouses.length.toLocaleString('vi-VN')} kho (${sumConts.toLocaleString('vi-VN')} cont năm 2026)`;
 
       renderWarehousesPage();
     }
@@ -1146,7 +1379,7 @@
       const pageItems = filteredWarehouses.slice(start, start + WH_PAGE_SIZE);
 
       document.getElementById('whPageInfo').textContent =
-        `Trang ${whPage} / ${totalPages} (Hiển thị kho ${start + 1} - ${Math.min(start + WH_PAGE_SIZE, filteredWarehouses.length)} trên tổng ${filteredWarehouses.length} kho)`;
+        `Trang ${whPage} / ${totalPages} (Hiển thị kho ${filteredWarehouses.length ? start + 1 : 0} - ${Math.min(start + WH_PAGE_SIZE, filteredWarehouses.length)} trên tổng ${filteredWarehouses.length} kho)`;
       document.getElementById('btnPrevWh').disabled = whPage <= 1;
       document.getElementById('btnNextWh').disabled = whPage >= totalPages;
 
@@ -1195,6 +1428,10 @@
             </td>
             <td class="num num-vs">${fmtMoney(vs20)}</td>
             <td class="num num-vs">${fmtMoney(vs40)}</td>
+            <td style="text-align:center; white-space:nowrap;">
+              <button class="btn btn-sm btn-light" onclick="openWarehouseModal('${w.wh_code}')" title="Sửa thông tin kho">✏️</button>
+              <button class="btn btn-sm btn-light" style="color:#dc2626;" onclick="deleteSingleWarehouse('${w.wh_code}')" title="Xóa mã kho này">🗑️</button>
+            </td>
           </tr>
         `;
       }).join('');
@@ -1209,10 +1446,8 @@
       const val = String(rawVal || '').trim().toUpperCase();
       if (!val) return '';
       if (routeMap[val]) return val;
-      // Check if user selected or typed prefix
       const token = val.split(/\s+/)[0];
       if (routeMap[token]) return token;
-      // Search by dia_diem substring
       const nVal = normStr(val);
       const found = appData.routes.find(r => normStr(r.route_code) === nVal || normStr(r.dia_diem).includes(nVal));
       return found ? found.route_code : val;
@@ -1248,6 +1483,50 @@
         showToast(routeCode ? `Đã gán ${whCode} ➔ ${routeCode} (${r.dia_diem})` : `Đã gỡ mã tuyến của ${whCode}`, '#16a34a');
       } catch (err) {
         showToast('Lỗi gán mã tuyến: ' + err.message, '#dc2626');
+      }
+    }
+
+    async function deleteSingleWarehouse(whCode) {
+      const w = whMap[whCode];
+      if (!confirm(`Bạn có chắc muốn xóa Mã Kho [${whCode}] (${w ? w.kho_name : ''}) khỏi danh sách định danh kho?`)) return;
+      try {
+        const res = await fetch('/api/index.php?route=cuoc/delete-warehouse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wh_code: whCode })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+        appData.warehouses = appData.warehouses.filter(x => x.wh_code !== whCode);
+        selectedWhCodes.delete(whCode);
+        updateBulkBar();
+        rebuildMapsAndStats();
+        resetAndRenderWarehouses();
+        showToast(`Đã xóa mã kho ${whCode}!`, '#16a34a');
+      } catch (e) {
+        showToast('Lỗi xóa kho: ' + e.message, '#dc2626');
+      }
+    }
+
+    async function applyBulkDeleteWarehouses() {
+      const codes = [...selectedWhCodes];
+      if (!codes.length) return;
+      if (!confirm(`Bạn có chắc muốn XÓA ${codes.length} mã kho đã chọn?`)) return;
+      try {
+        const res = await fetch('/api/index.php?route=cuoc/delete-warehouse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wh_codes: codes })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+        appData.warehouses = appData.warehouses.filter(x => !selectedWhCodes.has(x.wh_code));
+        clearBulkSelection();
+        rebuildMapsAndStats();
+        resetAndRenderWarehouses();
+        showToast(data.message, '#16a34a');
+      } catch (e) {
+        showToast('Lỗi xóa kho hàng loạt: ' + e.message, '#dc2626');
       }
     }
 
@@ -1339,7 +1618,6 @@
     function resolveWarehouseAndRouteForShipment(item) {
       const nKho = normStr(item.khoNhanHangPo || '');
       const nDia = normStr(item.diaChiNhanPo || '');
-      // 1. Exact or strong match in appData.warehouses
       let wh = appData.warehouses.find(w => normStr(w.kho_name) === nKho && normStr(w.dia_chi) === nDia);
       if (!wh && nKho) {
         wh = appData.warehouses.find(w => normStr(w.kho_name) === nKho && w.route_code);
@@ -1354,12 +1632,15 @@
     function resolveVendorCarrierKey(donViVc) {
       const s = normStr(donViVc);
       if (!s) return '';
-      if (s.includes('VIETSUN') || s === 'VS') return 'VIETSUN';
-      if (s.includes('NHAT SON') || s.includes('NHATSON')) return 'NHAT SON';
-      if (s.includes('DUONG NGUYEN') || s.includes('DUONGNGUYEN')) return 'DUONG NGUYEN';
-      if (s.includes('PHUC TRUONG AN') || s.includes('PHUCTRUONGAN') || s === 'PTA') return 'PHUC TRUONG AN';
-      if (s.includes('TAN TIEN PHAT') || s.includes('THIEN PHUC PHAT') || s.includes('TANTIENPHAT')) return 'TAN TIEN PHAT';
-      if (s.includes('TUAN HUNG') || s.includes('TUANHUNG')) return 'TUAN HUNG';
+      const carriers = getCarriers();
+      // Exact or normalized match against active carriers list first
+      for (const c of carriers) {
+        const nc = normStr(c);
+        if (s === nc || s.includes(nc) || nc.includes(s)) return c;
+      }
+      if (s === 'VS') return 'VIETSUN';
+      if (s === 'PTA') return 'PHUC TRUONG AN';
+      if (s.includes('THIEN PHUC PHAT')) return 'TAN TIEN PHAT';
       return '';
     }
 
@@ -1428,7 +1709,7 @@
             <td>${r.wh ? `<span class="wh-badge">${r.wh.wh_code}</span>` : `<span style="color:#94a3b8;">Chưa có</span>`}</td>
             <td>
               ${r.route
-                ? `<span class="code-badge">${r.route.route_code}</span><div style="font-size:11px; color:#15803d; font-weight:600; margin-top:2px;">${r.route.dia_diem}</div>`
+                ? `<span class="code-badge">${r.route.route_code}</span><div style="font-size:11px; color:#15803d; font-weight:600; margin-top:2px;">${r.route.dia_diem} (${r.route.tinh})</div>`
                 : `<span class="status-tag status-unmatched">⚠️ Chưa gán tuyến</span>`}
             </td>
             <td>
@@ -1445,26 +1726,28 @@
     }
 
     // =========================================================================
-    // MODALS: ADD / EDIT ROUTE & WAREHOUSE
+    // MODALS: ADD / EDIT / DELETE ROUTE & WAREHOUSE
     // =========================================================================
     function openRouteModal(routeCode = '') {
       const r = routeCode ? routeMap[routeCode] : null;
       document.getElementById('fmRouteCode').value = r ? r.route_code : '';
       document.getElementById('fmRouteTinh').value = r ? r.tinh : '';
       document.getElementById('fmRouteDiaDiem').value = r ? r.dia_diem : '';
+      document.getElementById('btnDeleteRouteInModal').style.display = r ? 'inline-flex' : 'none';
 
+      const carriers = getCarriers();
       const grid = document.getElementById('fmCarrierRatesGrid');
-      grid.innerHTML = CARRIERS.map(c => {
+      grid.innerHTML = carriers.map((c, idx) => {
         const c20 = r?.base_rates?.[c]?.c20 || '';
         const c40 = r?.base_rates?.[c]?.c40 || '';
         return `
           <div class="form-group">
             <label>${c} — CONT 20' (Giá Gốc)</label>
-            <input type="number" class="input" id="rate_${c}_20" value="${c20}" placeholder="VNĐ Cont 20'" />
+            <input type="number" class="input" id="rate_c20_${idx}" data-carrier="${c}" value="${c20}" placeholder="VNĐ Cont 20'" />
           </div>
           <div class="form-group">
             <label>${c} — CONT 40' (Giá Gốc)</label>
-            <input type="number" class="input" id="rate_${c}_40" value="${c40}" placeholder="VNĐ Cont 40'" />
+            <input type="number" class="input" id="rate_c40_${idx}" data-carrier="${c}" value="${c40}" placeholder="VNĐ Cont 40'" />
           </div>
         `;
       }).join('');
@@ -1478,17 +1761,18 @@
 
     async function submitSaveRoute() {
       const route_code = document.getElementById('fmRouteCode').value.trim().toUpperCase();
-      const tinh = document.getElementById('fmRouteTinh').value.trim();
+      const tinh = normalizeMergedProvince(document.getElementById('fmRouteTinh').value.trim());
       const dia_diem = document.getElementById('fmRouteDiaDiem').value.trim();
       if (!route_code || !dia_diem) {
         showToast('Vui lòng nhập Mã Tuyến Đường và Địa Điểm!', '#dc2626');
         return;
       }
+      const carriers = getCarriers();
       const base_rates = {};
-      CARRIERS.forEach(c => {
+      carriers.forEach((c, idx) => {
         base_rates[c] = {
-          c20: Number(document.getElementById(`rate_${c}_20`).value || 0),
-          c40: Number(document.getElementById(`rate_${c}_40`).value || 0)
+          c20: Number(document.getElementById(`rate_c20_${idx}`)?.value || 0),
+          c40: Number(document.getElementById(`rate_c40_${idx}`)?.value || 0)
         };
       });
 
@@ -1508,13 +1792,39 @@
       }
     }
 
-    function openWarehouseModal() {
-      document.getElementById('fmWhCode').value = '';
-      document.getElementById('fmWhTinh').value = '';
-      document.getElementById('fmWhName').value = '';
-      document.getElementById('fmWhDiaChi').value = '';
-      document.getElementById('fmWhCustomers').value = '';
-      document.getElementById('fmWhRouteCode').value = '';
+    async function deleteRouteFromModal() {
+      const routeCode = document.getElementById('fmRouteCode').value.trim().toUpperCase();
+      if (!routeCode) return;
+      if (!confirm(`Bạn có chắc muốn xóa Mã Tuyến Đường [${routeCode}]?`)) return;
+      try {
+        const res = await fetch('/api/index.php?route=cuoc/delete-route', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ route_code: routeCode })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+        closeRouteModal();
+        showToast(data.message, '#16a34a');
+        await loadOverview();
+      } catch (e) {
+        showToast('Lỗi xóa tuyến: ' + e.message, '#dc2626');
+      }
+    }
+
+    function openWarehouseModal(whCode = '') {
+      const w = whCode ? whMap[whCode] : null;
+      document.getElementById('whModalTitle').textContent = w
+        ? `🏭 Tùy Chỉnh Mã Kho [${w.wh_code}]`
+        : '🏭 Thêm Mới Mã Kho Khách Hàng';
+      document.getElementById('fmWhCode').value = w ? w.wh_code : '';
+      document.getElementById('fmWhCode').readOnly = !!w;
+      document.getElementById('fmWhTinh').value = w ? (w.tinh_tms || '') : '';
+      document.getElementById('fmWhName').value = w ? (w.kho_name || '') : '';
+      document.getElementById('fmWhDiaChi').value = w ? (w.dia_chi || '') : '';
+      document.getElementById('fmWhCustomers').value = w ? (w.customers || '') : '';
+      document.getElementById('fmWhRouteCode').value = w ? (w.route_code || '') : '';
+      document.getElementById('btnDeleteWhInModal').style.display = w ? 'inline-flex' : 'none';
       document.getElementById('whModal').classList.add('show');
     }
 
@@ -1523,13 +1833,18 @@
     }
 
     async function submitSaveWarehouse() {
+      const whCode = document.getElementById('fmWhCode').value.trim().toUpperCase();
+      const existing = whCode ? whMap[whCode] : null;
       const payload = {
-        wh_code: document.getElementById('fmWhCode').value.trim(),
-        tinh_tms: document.getElementById('fmWhTinh').value.trim(),
+        wh_code: whCode,
+        tinh_tms: normalizeMergedProvince(document.getElementById('fmWhTinh').value.trim()),
         kho_name: document.getElementById('fmWhName').value.trim(),
         dia_chi: document.getElementById('fmWhDiaChi').value.trim(),
         customers: document.getElementById('fmWhCustomers').value.trim(),
-        route_code: extractRouteCodeFromInput(document.getElementById('fmWhRouteCode').value)
+        route_code: extractRouteCodeFromInput(document.getElementById('fmWhRouteCode').value),
+        total_count: existing ? existing.total_count : 0,
+        nhap_count: existing ? existing.nhap_count : 0,
+        xuat_count: existing ? existing.xuat_count : 0
       };
       try {
         const res = await fetch('/api/index.php?route=cuoc/save-warehouse', {
@@ -1547,46 +1862,49 @@
       }
     }
 
+    async function deleteWarehouseFromModal() {
+      const whCode = document.getElementById('fmWhCode').value.trim().toUpperCase();
+      if (!whCode) return;
+      closeWarehouseModal();
+      await deleteSingleWarehouse(whCode);
+    }
+
     // =========================================================================
-    // EXPORT EXCEL (.XLSX) WITH ROUTES & 2026 WAREHOUSE MAPPING
+    // EXPORT EXCEL (.XLSX) WITH DYNAMIC VENDORS & MERGED PROVINCES
     // =========================================================================
     async function exportCuocExcel() {
       try {
         showToast('⏳ Đang khởi tạo file Excel Bảng Giá Cước & Định Danh Mã Kho 2026...');
         const wb = new ExcelJS.Workbook();
+        const carriers = getCarriers();
 
         // Sheet 1: Bảng giá Mã Tuyến Đường
         const ws1 = wb.addWorksheet('1. BANG GIA MA TUYEN');
-        ws1.addRow([
-          'STT', 'MÃ TUYẾN', 'ĐỊA ĐIỂM / KCN', 'TỈNH', 'SỐ KHO 2026',
-          "VIETSUN 20'", "VIETSUN 40'",
-          "NHAT SON 20'", "NHAT SON 40'",
-          "DUONG NGUYEN 20'", "DUONG NGUYEN 40'",
-          "PHUC TRUONG AN 20'", "PHUC TRUONG AN 40'",
-          "TAN TIEN PHAT 20'", "TAN TIEN PHAT 40'",
-          "TUAN HUNG 20'", "TUAN HUNG 40'"
-        ]);
+        const head1 = ['STT', 'MÃ TUYẾN', 'ĐỊA ĐIỂM / KCN', 'TỈNH (SAU SÁP NHẬP)', 'SỐ KHO 2026'];
+        carriers.forEach(c => {
+          head1.push(`${c} 20'`, `${c} 40'`);
+        });
+        ws1.addRow(head1);
+
         appData.routes.forEach((r, idx) => {
           const br = r.base_rates || {};
-          ws1.addRow([
+          const row = [
             idx + 1,
             r.route_code,
             r.dia_diem,
             r.tinh,
-            routeWhCountMap[r.route_code] || 0,
-            getEffectiveRate(br['VIETSUN']?.c20), getEffectiveRate(br['VIETSUN']?.c40),
-            getEffectiveRate(br['NHAT SON']?.c20), getEffectiveRate(br['NHAT SON']?.c40),
-            getEffectiveRate(br['DUONG NGUYEN']?.c20), getEffectiveRate(br['DUONG NGUYEN']?.c40),
-            getEffectiveRate(br['PHUC TRUONG AN']?.c20), getEffectiveRate(br['PHUC TRUONG AN']?.c40),
-            getEffectiveRate(br['TAN TIEN PHAT']?.c20), getEffectiveRate(br['TAN TIEN PHAT']?.c40),
-            getEffectiveRate(br['TUAN HUNG']?.c20), getEffectiveRate(br['TUAN HUNG']?.c40)
-          ]);
+            routeWhCountMap[r.route_code] || 0
+          ];
+          carriers.forEach(c => {
+            row.push(getEffectiveRate(br[c]?.c20), getEffectiveRate(br[c]?.c40));
+          });
+          ws1.addRow(row);
         });
 
         // Sheet 2: Định Danh Mã Kho 2026
         const ws2 = wb.addWorksheet('2. DINH DANH KHO 2026');
         ws2.addRow([
-          'MÃ KHO', 'TÊN KHO (TMS)', 'ĐỊA CHỈ CHI TIẾT', 'TỈNH (TMS)', 'KHÁCH HÀNG',
+          'MÃ KHO', 'TÊN KHO (TMS)', 'ĐỊA CHỈ CHI TIẾT', 'TỈNH (SAU SÁP NHẬP)', 'KHÁCH HÀNG',
           'TỔNG CONT 2026', 'CONT NHẬP', 'CONT XUẤT',
           'MÃ TUYẾN ĐƯỜNG', 'TÊN TUYẾN / KCN', "CƯỚC VIETSUN 20'", "CƯỚC VIETSUN 40'"
         ]);
