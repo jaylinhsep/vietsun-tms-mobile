@@ -963,9 +963,10 @@
         </div>
 
         <div style="background:#fffbeb; border:1px solid #fcd34d; border-radius:8px; padding:12px; margin-bottom:14px; font-size:12px; color:#92400e; line-height:1.5;">
-          📐 <strong>Quy tắc tính chuẩn Excel (Triệt tiêu 100% lỗi lệch hàng đơn vị):</strong><br/>
-          • Bước 1: Lấy <strong>Giá chưa gồm VAT</strong> của kỳ trước nhân với hệ số biến động: <code>Giá_Chưa_VAT_Mới = Giá_Chưa_VAT_Kỳ_Trước × (1 + % Điều_Chỉnh)</code><br/>
-          • Bước 2: Nhân tiếp <strong>8% VAT</strong> và làm tròn đến hàng đơn vị: <code>Giá_Chuẩn_Gồm_VAT = ROUND(Giá_Chưa_VAT_Mới × 1.08, 0)</code>
+          📐 <strong>Quy tắc tính chuẩn Excel từ kỳ 25/08/2026 (Hàm <code>=INT(...)</code> — Triệt tiêu 100% lỗi lệch hàng đơn vị):</strong><br/>
+          • Bước 1: Lấy <strong>Giá chưa gồm VAT</strong> của kỳ trước nhân với hệ số biến động và lấy phần nguyên: <code>Giá_Chưa_VAT_Mới = INT(Giá_Chưa_VAT_Kỳ_Trước × (1 + % Điều_Chỉnh))</code><br/>
+          • Bước 2: Nhân tiếp <strong>8% VAT</strong> và lấy phần nguyên chuẩn Excel: <code>Giá_Chuẩn_Gồm_VAT = INT(Giá_Chưa_VAT_Mới × 1.08)</code><br/>
+          • Bước 3: Các Vendor khác lấy theo giá <strong>NHAT SON</strong> (hoặc đơn vị nguồn đã liên kết) sẽ <strong>tự động nhảy giá theo</strong> ngay khi điều chỉnh!
         </div>
 
         <h4 style="font-size:13px; font-weight:800; color:#0f3a6d; margin-bottom:10px;">➕ TẠO ĐỢT ĐIỀU CHỈNH GIÁ CƯỚC MỚI & LƯU BẢNG GIÁ:</h4>
@@ -1401,13 +1402,13 @@
         const vs = srcTbl['VIETSUN'] || {};
         const prevNoVat20 = Number(vs.c20_no_vat || (vs.c20 ? vs.c20 / 1.08 : 0));
         const prevVat20 = Number(vs.c20 || 0);
-        const newNoVat20 = prevNoVat20 * factor;
-        const newVat20 = Math.round(newNoVat20 * 1.08);
-        return `• <strong>${rt.route_code} (${rt.dia_diem} - Cont 20')</strong>: Giá kỳ trước = <strong>${fmtMoney(prevVat20)}đ</strong> (Chưa VAT: <code>${fmtMoney(Math.round(prevNoVat20))}đ</code>) ➔ Nhân <code>${pct >= 0 ? '+' : ''}${pct}%</code> ra Chưa VAT mới = <code>${fmtMoney(Math.round(newNoVat20))}đ</code> ➔ Nhân <code>8% VAT</code> = <strong style="color:#15803d; font-size:13px;">${fmtMoney(newVat20)} đ</strong>`;
+        const newNoVat20 = Math.floor(prevNoVat20 * factor + 1e-9);
+        const newVat20 = Math.floor(newNoVat20 * 1.08 + 1e-9);
+        return `• <strong>${rt.route_code} (${rt.dia_diem} - Cont 20')</strong>: Giá kỳ trước = <strong>${fmtMoney(prevVat20)}đ</strong> (Chưa VAT: <code>${fmtMoney(Math.floor(prevNoVat20 + 1e-9))}đ</code>) ➔ <code>INT(× ${pct >= 0 ? '+' : ''}${pct}%)</code> ra Chưa VAT mới = <code>${fmtMoney(newNoVat20)}đ</code> ➔ <code>INT(× 8% VAT)</code> = <strong style="color:#15803d; font-size:13px;">${fmtMoney(newVat20)} đ</strong>`;
       };
 
       previewBox.innerHTML = `
-        <div style="font-weight:800; margin-bottom:4px;">🔍 XEM TRƯỚC KẾT QUẢ TÍNH CƯỚC KỲ MỚI (CHUẨN EXCEL):</div>
+        <div style="font-weight:800; margin-bottom:4px;">🔍 XEM TRƯỚC KẾT QUẢ TÍNH CƯỚC KỲ MỚI (HÀM INT CHUẨN EXCEL):</div>
         <div>${buildSampleLine(r1)}</div>
         <div style="margin-top:3px;">${buildSampleLine(r9)}</div>
       `;
@@ -1614,14 +1615,20 @@
 
     function renderVendorModalContent(editingName = '') {
       const carriers = getCarriers();
+      const vLinks = appData.config?.vendor_links || {};
       const chipBox = document.getElementById('currentVendorsChipList');
       chipBox.innerHTML = carriers.map(c => {
         const isVs = c === 'VIETSUN';
         const isEditing = editingName && c === editingName;
         const safeC = escJsStr(c);
+        const lnk = vLinks[c];
+        const lnkBadge = (!isVs && lnk && lnk.source)
+          ? `<span style="background:#dcfce7; color:#166534; font-size:10px; padding:1px 6px; border-radius:99px; font-weight:700;">🔗 Theo ${lnk.source}${Number(lnk.factor_percent || 100) !== 100 ? ` (${lnk.factor_percent}%)` : ''}</span>`
+          : '';
         return `
           <div class="vendor-chip ${isVs ? 'vs' : ''}" style="${isEditing ? 'border:2px solid #7c3aed; background:#f3e8ff;' : ''}">
             <span>${isVs ? '⭐ ' : '🚛 '}${c}</span>
+            ${lnkBadge}
             ${!isVs ? `
               <button class="btn btn-sm" style="padding:1px 6px; background:#e0e7ff; color:#1d4ed8;" onclick="startEditVendorMode('${safeC}')" title="Sửa tên / Áp lại giá Vendor này">✏️</button>
               <button class="btn btn-sm" style="padding:1px 6px; background:#fee2e2; color:#b91c1c;" onclick="deleteVendorColumn('${safeC}')" title="Xóa cột Vendor này">🗑️</button>
@@ -1631,13 +1638,23 @@
       }).join('');
 
       const srcSel = document.getElementById('fmVendorCloneSource');
+      const curLink = editingName ? vLinks[editingName] : null;
+      const defaultSrc = curLink?.source || (editingName ? '__KEEP_CURRENT__' : 'NHAT SON');
       let opts = '';
       if (editingName) {
-        opts += `<option value="__KEEP_CURRENT__">🔒 Giữ nguyên giá hiện tại của [${editingName}] (Hoặc nhân % / cộng trừ bên dưới)</option>`;
+        opts += `<option value="__KEEP_CURRENT__" ${defaultSrc === '__KEEP_CURRENT__' ? 'selected' : ''}>🔒 Giữ nguyên giá hiện tại của [${editingName}] (Hoặc nhân % / cộng trừ bên dưới)</option>`;
       }
-      opts += carriers.map(c => `<option value="${c}">📋 Lấy giá giống [${c}] ${c === 'VIETSUN' ? '(Giá chuẩn Vietsun)' : ''}</option>`).join('');
+      opts += carriers.map(c => {
+        const sel = c === defaultSrc ? 'selected' : '';
+        const note = c === 'NHAT SON' ? '(Tự nhảy giá theo NHAT SON khi điều chỉnh)' : (c === 'VIETSUN' ? '(Giá chuẩn Vietsun)' : '(Tự nhảy giá theo khi điều chỉnh)');
+        return `<option value="${c}" ${sel}>📋 Lấy giá giống [${c}] ${note}</option>`;
+      }).join('');
       opts += `<option value="">-- Không áp lại giá (Chỉ đổi tên / thêm cột trống) --</option>`;
       srcSel.innerHTML = opts;
+      if (curLink) {
+        document.getElementById('fmVendorFactorPct').value = curLink.factor_percent ?? 100;
+        document.getElementById('fmVendorDeltaAmt').value = curLink.delta_amount ?? 0;
+      }
     }
 
     async function submitAddOrCloneVendor() {

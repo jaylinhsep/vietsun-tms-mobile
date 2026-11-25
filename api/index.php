@@ -2039,7 +2039,7 @@ try {
     // ========================================================================
     if (strpos($route, 'cuoc/') === 0) {
         $ensureCuocTables = function($pdo) {
-            $flagFile = sys_get_temp_dir() . '/vietsun_cuoc_schema_v4.flag';
+            $flagFile = sys_get_temp_dir() . '/vietsun_cuoc_schema_v5.flag';
             if (file_exists($flagFile)) {
                 return;
             }
@@ -2127,6 +2127,17 @@ try {
 
                     $rawCarriers = $pdo->query("SELECT config_val FROM tms_pricing_config WHERE config_key = 'carriers_json'")->fetchColumn();
                     $activeCarriers = json_decode($rawCarriers ?: '[]', true) ?: ['VIETSUN', 'NHAT SON', 'DUONG NGUYEN', 'PHUC TRUONG AN', 'TAN TIEN PHAT', 'TUAN HUNG'];
+                    $rawLinks = $pdo->query("SELECT config_val FROM tms_pricing_config WHERE config_key = 'vendor_links_json'")->fetchColumn();
+                    $vendorLinks = json_decode($rawLinks ?: '{}', true) ?: [];
+                    $default6Carriers = ['VIETSUN', 'NHAT SON', 'DUONG NGUYEN', 'PHUC TRUONG AN', 'TAN TIEN PHAT', 'TUAN HUNG'];
+
+                    // Detect or default custom vendors to link with NHAT SON so they auto-jump prices with NHAT SON
+                    foreach ($activeCarriers as $ac) {
+                        if (in_array($ac, $default6Carriers, true)) continue;
+                        if (empty($vendorLinks[$ac])) {
+                            $vendorLinks[$ac] = ['source' => 'NHAT SON', 'factor_percent' => 100.0, 'delta_amount' => 0];
+                        }
+                    }
 
                     $pdo->beginTransaction();
                     try {
@@ -2146,43 +2157,49 @@ try {
                                 $pRates = $r['period_rates'] ?? [];
                                 $exData = $existingRoutesMap[$rc] ?? null;
 
-                                // If user added custom vendors on VPS, compute their exact 21/07, 28/07, 25/08 snapshots
+                                // If user added custom vendors on VPS, sync their 21/07, 28/07, 25/08 (INT) snapshots from their linked source carrier (default NHAT SON)
                                 foreach ($activeCarriers as $ac) {
                                     if (isset($pRates['2026-08-25'][$ac])) {
                                         continue;
                                     }
-                                    $oldC20 = (int)($exData['base'][$ac]['c20'] ?? 0);
-                                    $oldC40 = (int)($exData['base'][$ac]['c40'] ?? 0);
-                                    $vs21 = $pRates['2026-07-21']['VIETSUN'] ?? ['c20' => 0, 'c40' => 0, 'c20_no_vat' => 0, 'c40_no_vat' => 0];
-                                    if ($oldC20 <= 0) $oldC20 = (int)$vs21['c20'];
-                                    if ($oldC40 <= 0) $oldC40 = (int)$vs21['c40'];
+                                    $lnk = $vendorLinks[$ac] ?? ['source' => 'NHAT SON', 'factor_percent' => 100.0, 'delta_amount' => 0];
+                                    $srcKey = !empty($lnk['source']) && in_array($lnk['source'], $default6Carriers, true) ? $lnk['source'] : 'NHAT SON';
+                                    $fPct = isset($lnk['factor_percent']) ? (float)$lnk['factor_percent'] : 100.0;
+                                    $dAmt = isset($lnk['delta_amount']) ? (int)$lnk['delta_amount'] : 0;
 
-                                    $nv20_21 = $noVat2107Map[$oldC20] ?? ($oldC20 > 0 ? ($oldC20 / 1.08) : 0);
-                                    $nv40_21 = $noVat2107Map[$oldC40] ?? ($oldC40 > 0 ? ($oldC40 / 1.08) : 0);
-                                    $pRates['2026-07-21'][$ac] = [
-                                        'c20_no_vat' => $nv20_21,
-                                        'c40_no_vat' => $nv40_21,
-                                        'c20'        => $oldC20,
-                                        'c40'        => $oldC40
-                                    ];
+                                    if ($fPct == 100.0 && $dAmt == 0) {
+                                        foreach (['2026-07-21', '2026-07-28', '2026-08-25'] as $pKey) {
+                                            $pRates[$pKey][$ac] = $pRates[$pKey][$srcKey] ?? ($pRates[$pKey]['NHAT SON'] ?? ($pRates[$pKey]['VIETSUN'] ?? ['c20' => 0, 'c40' => 0, 'c20_no_vat' => 0, 'c40_no_vat' => 0]));
+                                        }
+                                    } else {
+                                        $src21 = $pRates['2026-07-21'][$srcKey] ?? ($pRates['2026-07-21']['NHAT SON'] ?? ['c20' => 0, 'c40' => 0, 'c20_no_vat' => 0, 'c40_no_vat' => 0]);
+                                        $nv20_21 = !empty($src21['c20_no_vat']) ? max(0.0, (float)$src21['c20_no_vat'] * ($fPct / 100.0) + ($dAmt / 1.08)) : 0.0;
+                                        $nv40_21 = !empty($src21['c40_no_vat']) ? max(0.0, (float)$src21['c40_no_vat'] * ($fPct / 100.0) + ($dAmt / 1.08)) : 0.0;
+                                        $pRates['2026-07-21'][$ac] = [
+                                            'c20_no_vat' => $nv20_21,
+                                            'c40_no_vat' => $nv40_21,
+                                            'c20'        => $nv20_21 > 0 ? (int)round($nv20_21 * 1.08) : 0,
+                                            'c40'        => $nv40_21 > 0 ? (int)round($nv40_21 * 1.08) : 0
+                                        ];
 
-                                    $nv20_28 = $nv20_21 * 1.032;
-                                    $nv40_28 = $nv40_21 * 1.032;
-                                    $pRates['2026-07-28'][$ac] = [
-                                        'c20_no_vat' => $nv20_28,
-                                        'c40_no_vat' => $nv40_28,
-                                        'c20'        => $nv20_28 > 0 ? (int)round($nv20_28 * 1.08) : 0,
-                                        'c40'        => $nv40_28 > 0 ? (int)round($nv40_28 * 1.08) : 0
-                                    ];
+                                        $nv20_28 = $nv20_21 * 1.032;
+                                        $nv40_28 = $nv40_21 * 1.032;
+                                        $pRates['2026-07-28'][$ac] = [
+                                            'c20_no_vat' => $nv20_28,
+                                            'c40_no_vat' => $nv40_28,
+                                            'c20'        => $nv20_28 > 0 ? (int)round($nv20_28 * 1.08) : 0,
+                                            'c40'        => $nv40_28 > 0 ? (int)round($nv40_28 * 1.08) : 0
+                                        ];
 
-                                    $nv20_25 = $nv20_28 * 1.032;
-                                    $nv40_25 = $nv40_28 * 1.032;
-                                    $pRates['2026-08-25'][$ac] = [
-                                        'c20_no_vat' => $nv20_25,
-                                        'c40_no_vat' => $nv40_25,
-                                        'c20'        => $nv20_25 > 0 ? (int)round($nv20_25 * 1.08) : 0,
-                                        'c40'        => $nv40_25 > 0 ? (int)round($nv40_25 * 1.08) : 0
-                                    ];
+                                        $nv20_25 = $nv20_28 > 0 ? (int)floor($nv20_28 * 1.032 + 1e-9) : 0;
+                                        $nv40_25 = $nv40_28 > 0 ? (int)floor($nv40_28 * 1.032 + 1e-9) : 0;
+                                        $pRates['2026-08-25'][$ac] = [
+                                            'c20_no_vat' => $nv20_25,
+                                            'c40_no_vat' => $nv40_25,
+                                            'c20'        => $nv20_25 > 0 ? (int)floor($nv20_25 * 1.08 + 1e-9) : 0,
+                                            'c40'        => $nv40_25 > 0 ? (int)floor($nv40_25 * 1.08 + 1e-9) : 0
+                                        ];
+                                    }
                                 }
 
                                 $activeBase = $pRates['2026-08-25'] ?? ($r['base_rates'] ?? []);
@@ -2249,6 +2266,7 @@ try {
                         $stCfgUp->execute(['adj_percent', '0.032']);
                         $stCfgUp->execute(['do_base_price', '28540']);
                         $stCfgUp->execute(['effective_date', '2026-08-25']);
+                        $stCfgUp->execute(['vendor_links_json', json_encode($vendorLinks, JSON_UNESCAPED_UNICODE)]);
 
                         $stCfgIgnore = $pdo->prepare("INSERT IGNORE INTO tms_pricing_config (config_key, config_val) VALUES (?, ?)");
                         $stCfgIgnore->execute(['notes_json', json_encode($seed['notes'] ?? [], JSON_UNESCAPED_UNICODE)]);
@@ -2322,6 +2340,7 @@ try {
                 ]
             ];
             $carriers = json_decode($cfg['carriers_json'] ?? '[]', true) ?: ['VIETSUN', 'NHAT SON', 'DUONG NGUYEN', 'PHUC TRUONG AN', 'TAN TIEN PHAT', 'TUAN HUNG'];
+            $vendorLinks = json_decode($cfg['vendor_links_json'] ?? '{}', true) ?: [];
             $notes = json_decode($cfg['notes_json'] ?? '[]', true) ?: [];
 
             $routesRaw = $pdo->query("SELECT * FROM tms_routes ORDER BY sort_order ASC, route_code ASC")->fetchAll();
@@ -2371,6 +2390,7 @@ try {
                     'active_period_id' => $activePeriodId,
                     'periods'          => $periods,
                     'carriers'         => $carriers,
+                    'vendor_links'     => $vendorLinks,
                     'notes'            => $notes
                 ],
                 'routes'     => $routes,
@@ -2421,6 +2441,8 @@ try {
             $factor = 1.0 + ($adjPercent / 100.0);
             $rawCarriers = $pdo->query("SELECT config_val FROM tms_pricing_config WHERE config_key = 'carriers_json'")->fetchColumn();
             $carriers = json_decode($rawCarriers ?: '[]', true) ?: ['VIETSUN', 'NHAT SON', 'DUONG NGUYEN', 'PHUC TRUONG AN', 'TAN TIEN PHAT', 'TUAN HUNG'];
+            $rawLinks = $pdo->query("SELECT config_val FROM tms_pricing_config WHERE config_key = 'vendor_links_json'")->fetchColumn();
+            $vendorLinks = json_decode($rawLinks ?: '{}', true) ?: [];
 
             $allRoutes = $pdo->query("SELECT route_code, base_rates_json, period_rates_json FROM tms_routes")->fetchAll();
             $stUpR = $pdo->prepare("UPDATE tms_routes SET base_rates_json = ?, period_rates_json = ? WHERE route_code = ?");
@@ -2433,15 +2455,15 @@ try {
                     $srcTable = $pr[$basePeriodId] ?? $br;
 
                     $newTable = [];
-                    // Tính chuẩn VIETSUN trước để các ô trống của vendor lấy theo VIETSUN
+                    // Tính chuẩn VIETSUN theo hàm INT chuẩn Excel: INT(no_vat * factor) -> INT(new_no_vat * 1.08)
                     $vsSrc = $srcTable['VIETSUN'] ?? ['c20' => 0, 'c40' => 0, 'c20_no_vat' => 0, 'c40_no_vat' => 0];
                     $vsNoVat20 = !empty($vsSrc['c20_no_vat']) ? (float)$vsSrc['c20_no_vat'] : (!empty($vsSrc['c20']) ? ((float)$vsSrc['c20'] / 1.08) : 0.0);
                     $vsNoVat40 = !empty($vsSrc['c40_no_vat']) ? (float)$vsSrc['c40_no_vat'] : (!empty($vsSrc['c40']) ? ((float)$vsSrc['c40'] / 1.08) : 0.0);
 
-                    $newVsNoVat20 = $vsNoVat20 * $factor;
-                    $newVsNoVat40 = $vsNoVat40 * $factor;
-                    $newVsVat20 = $newVsNoVat20 > 0 ? (int)round($newVsNoVat20 * 1.08) : 0;
-                    $newVsVat40 = $newVsNoVat40 > 0 ? (int)round($newVsNoVat40 * 1.08) : 0;
+                    $newVsNoVat20 = $vsNoVat20 > 0 ? (int)floor($vsNoVat20 * $factor + 1e-9) : 0;
+                    $newVsNoVat40 = $vsNoVat40 > 0 ? (int)floor($vsNoVat40 * $factor + 1e-9) : 0;
+                    $newVsVat20 = $newVsNoVat20 > 0 ? (int)floor($newVsNoVat20 * 1.08 + 1e-9) : 0;
+                    $newVsVat40 = $newVsNoVat40 > 0 ? (int)floor($newVsNoVat40 * 1.08 + 1e-9) : 0;
 
                     $newTable['VIETSUN'] = [
                         'c20_no_vat' => $newVsNoVat20,
@@ -2450,20 +2472,44 @@ try {
                         'c40'        => $newVsVat40
                     ];
 
+                    // B1: Tính các vendor gốc (không phụ thuộc hoặc chính là nguồn)
                     foreach ($carriers as $cName) {
                         if ($cName === 'VIETSUN') continue;
                         $cSrc = $srcTable[$cName] ?? [];
                         $srcNoVat20 = !empty($cSrc['c20_no_vat']) ? (float)$cSrc['c20_no_vat'] : (!empty($cSrc['c20']) ? ((float)$cSrc['c20'] / 1.08) : $vsNoVat20);
                         $srcNoVat40 = !empty($cSrc['c40_no_vat']) ? (float)$cSrc['c40_no_vat'] : (!empty($cSrc['c40']) ? ((float)$cSrc['c40'] / 1.08) : $vsNoVat40);
 
-                        $newNoVat20 = $srcNoVat20 * $factor;
-                        $newNoVat40 = $srcNoVat40 * $factor;
+                        $newNoVat20 = $srcNoVat20 > 0 ? (int)floor($srcNoVat20 * $factor + 1e-9) : 0;
+                        $newNoVat40 = $srcNoVat40 > 0 ? (int)floor($srcNoVat40 * $factor + 1e-9) : 0;
                         $newTable[$cName] = [
                             'c20_no_vat' => $newNoVat20,
                             'c40_no_vat' => $newNoVat40,
-                            'c20'        => $newNoVat20 > 0 ? (int)round($newNoVat20 * 1.08) : 0,
-                            'c40'        => $newNoVat40 > 0 ? (int)round($newNoVat40 * 1.08) : 0
+                            'c20'        => $newNoVat20 > 0 ? (int)floor($newNoVat20 * 1.08 + 1e-9) : 0,
+                            'c40'        => $newNoVat40 > 0 ? (int)floor($newNoVat40 * 1.08 + 1e-9) : 0
                         ];
+                    }
+
+                    // B2: Các vendor liên kết (VD: lấy theo giá NHAT SON) tự động nhảy giá theo đúng vendor nguồn
+                    foreach ($carriers as $cName) {
+                        if ($cName === 'VIETSUN' || empty($vendorLinks[$cName]['source'])) continue;
+                        $lnk = $vendorLinks[$cName];
+                        $srcCarrier = $lnk['source'];
+                        if ($srcCarrier === $cName || !isset($newTable[$srcCarrier])) continue;
+                        $fPct = isset($lnk['factor_percent']) ? (float)$lnk['factor_percent'] : 100.0;
+                        $dAmt = isset($lnk['delta_amount']) ? (int)$lnk['delta_amount'] : 0;
+                        if ($fPct == 100.0 && $dAmt == 0) {
+                            $newTable[$cName] = $newTable[$srcCarrier];
+                        } else {
+                            $sObj = $newTable[$srcCarrier];
+                            $nv20 = !empty($sObj['c20_no_vat']) ? (int)floor(max(0.0, (float)$sObj['c20_no_vat'] * ($fPct / 100.0) + ($dAmt / 1.08)) + 1e-9) : 0;
+                            $nv40 = !empty($sObj['c40_no_vat']) ? (int)floor(max(0.0, (float)$sObj['c40_no_vat'] * ($fPct / 100.0) + ($dAmt / 1.08)) + 1e-9) : 0;
+                            $newTable[$cName] = [
+                                'c20_no_vat' => $nv20,
+                                'c40_no_vat' => $nv40,
+                                'c20'        => $nv20 > 0 ? (int)floor($nv20 * 1.08 + 1e-9) : 0,
+                                'c40'        => $nv40 > 0 ? (int)floor($nv40 * 1.08 + 1e-9) : 0
+                            ];
+                        }
                     }
 
                     $pr[$periodId] = $newTable;
@@ -2732,6 +2778,31 @@ try {
             ");
             $stCfg->execute([json_encode(array_values($carriers), JSON_UNESCAPED_UNICODE)]);
 
+            // Lưu liên kết vendor_links_json để khi điều chỉnh giá hoặc sửa giá đơn vị nguồn (VD: NHAT SON), các vendor theo sau tự động nhảy giá
+            $rawLinks = $pdo->query("SELECT config_val FROM tms_pricing_config WHERE config_key = 'vendor_links_json'")->fetchColumn();
+            $vendorLinks = json_decode($rawLinks ?: '{}', true) ?: [];
+            $oldLink = ($oldVendorName !== '' && isset($vendorLinks[$oldVendorName])) ? $vendorLinks[$oldVendorName] : null;
+            foreach ($targetVendors as $tv) {
+                if ($sourceCarrier !== '' && $sourceCarrier !== '__KEEP_CURRENT__') {
+                    $vendorLinks[$tv] = [
+                        'source'         => $sourceCarrier,
+                        'factor_percent' => $factorPercent,
+                        'delta_amount'   => $deltaAmount
+                    ];
+                } elseif ($oldLink) {
+                    $vendorLinks[$tv] = $oldLink;
+                }
+            }
+            if ($oldVendorName !== '' && !in_array($oldVendorName, $targetVendors, true)) {
+                unset($vendorLinks[$oldVendorName]);
+            }
+            $stCfgLink = $pdo->prepare("
+                INSERT INTO tms_pricing_config (config_key, config_val)
+                VALUES ('vendor_links_json', ?)
+                ON DUPLICATE KEY UPDATE config_val = VALUES(config_val)
+            ");
+            $stCfgLink->execute([json_encode($vendorLinks, JSON_UNESCAPED_UNICODE)]);
+
             // 2. Cập nhật base_rates_json & period_rates_json trên toàn bộ 246 tuyến đường (Đổi tên key cũ -> mới, và/hoặc Áp nhanh giá từ source_carrier)
             $updatedRoutes = 0;
             if ($oldVendorName !== '' || $sourceCarrier !== '') {
@@ -2758,11 +2829,11 @@ try {
                                         'c40_no_vat' => $srcNoVat40
                                     ];
                                 } else {
-                                    $newNoVat20 = $srcNoVat20 > 0 ? max(0.0, $srcNoVat20 * ($factorPercent / 100.0) + ($deltaAmount / 1.08)) : 0.0;
-                                    $newNoVat40 = $srcNoVat40 > 0 ? max(0.0, $srcNoVat40 * ($factorPercent / 100.0) + ($deltaAmount / 1.08)) : 0.0;
+                                    $newNoVat20 = $srcNoVat20 > 0 ? (int)floor(max(0.0, $srcNoVat20 * ($factorPercent / 100.0) + ($deltaAmount / 1.08)) + 1e-9) : 0;
+                                    $newNoVat40 = $srcNoVat40 > 0 ? (int)floor(max(0.0, $srcNoVat40 * ($factorPercent / 100.0) + ($deltaAmount / 1.08)) + 1e-9) : 0;
                                     $tbl[$tv] = [
-                                        'c20'        => $newNoVat20 > 0 ? (int)round($newNoVat20 * 1.08) : 0,
-                                        'c40'        => $newNoVat40 > 0 ? (int)round($newNoVat40 * 1.08) : 0,
+                                        'c20'        => $newNoVat20 > 0 ? (int)floor($newNoVat20 * 1.08 + 1e-9) : 0,
+                                        'c40'        => $newNoVat40 > 0 ? (int)floor($newNoVat40 * 1.08 + 1e-9) : 0,
                                         'c20_no_vat' => $newNoVat20,
                                         'c40_no_vat' => $newNoVat40
                                     ];
@@ -2894,12 +2965,12 @@ try {
                     if ($c20 <= 0) $c20 = $vs20;
                     if ($c40 <= 0) $c40 = $vs40;
                 }
-                $nv20 = !empty($cObj['c20_no_vat']) && abs(round((float)$cObj['c20_no_vat'] * 1.08) - $c20) <= 2
+                $nv20 = !empty($cObj['c20_no_vat']) && abs(floor((float)$cObj['c20_no_vat'] * 1.08 + 1e-9) - $c20) <= 2
                     ? (float)$cObj['c20_no_vat']
-                    : ($c20 === $vs20 ? $vsNoVat20 : ($c20 / 1.08));
-                $nv40 = !empty($cObj['c40_no_vat']) && abs(round((float)$cObj['c40_no_vat'] * 1.08) - $c40) <= 2
+                    : ($c20 === $vs20 ? $vsNoVat20 : (int)floor($c20 / 1.08 + 1e-9));
+                $nv40 = !empty($cObj['c40_no_vat']) && abs(floor((float)$cObj['c40_no_vat'] * 1.08 + 1e-9) - $c40) <= 2
                     ? (float)$cObj['c40_no_vat']
-                    : ($c40 === $vs40 ? $vsNoVat40 : ($c40 / 1.08));
+                    : ($c40 === $vs40 ? $vsNoVat40 : (int)floor($c40 / 1.08 + 1e-9));
                 $cObj = [
                     'c20'        => $c20,
                     'c40'        => $c40,
@@ -2908,6 +2979,30 @@ try {
                 ];
             }
             unset($cObj);
+
+            // Tự động đồng bộ các vendor khác đang lấy theo giá NHAT SON (hoặc đơn vị nguồn khác) khi điều chỉnh giá tuyến này
+            $rawLinks = $pdo->query("SELECT config_val FROM tms_pricing_config WHERE config_key = 'vendor_links_json'")->fetchColumn();
+            $vendorLinks = json_decode($rawLinks ?: '{}', true) ?: [];
+            foreach ($vendorLinks as $vTarget => $lnk) {
+                $srcCarrier = $lnk['source'] ?? '';
+                if ($srcCarrier !== '' && $srcCarrier !== $vTarget && isset($baseRates[$srcCarrier])) {
+                    $fPct = isset($lnk['factor_percent']) ? (float)$lnk['factor_percent'] : 100.0;
+                    $dAmt = isset($lnk['delta_amount']) ? (int)$lnk['delta_amount'] : 0;
+                    if ($fPct == 100.0 && $dAmt == 0) {
+                        $baseRates[$vTarget] = $baseRates[$srcCarrier];
+                    } else {
+                        $sObj = $baseRates[$srcCarrier];
+                        $nv20 = !empty($sObj['c20_no_vat']) ? (int)floor(max(0.0, (float)$sObj['c20_no_vat'] * ($fPct / 100.0) + ($dAmt / 1.08)) + 1e-9) : 0;
+                        $nv40 = !empty($sObj['c40_no_vat']) ? (int)floor(max(0.0, (float)$sObj['c40_no_vat'] * ($fPct / 100.0) + ($dAmt / 1.08)) + 1e-9) : 0;
+                        $baseRates[$vTarget] = [
+                            'c20_no_vat' => $nv20,
+                            'c40_no_vat' => $nv40,
+                            'c20'        => $nv20 > 0 ? (int)floor($nv20 * 1.08 + 1e-9) : 0,
+                            'c40'        => $nv40 > 0 ? (int)floor($nv40 * 1.08 + 1e-9) : 0
+                        ];
+                    }
+                }
+            }
 
             $stEx = $pdo->prepare("SELECT base_rates_json, period_rates_json, sort_order FROM tms_routes WHERE route_code = ? LIMIT 1");
             $stEx->execute([$routeCode]);
