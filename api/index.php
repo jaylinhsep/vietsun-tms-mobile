@@ -2039,14 +2039,14 @@ try {
     // ========================================================================
     if (strpos($route, 'cuoc/') === 0) {
         $ensureCuocTables = function($pdo) {
-            $flagFile = sys_get_temp_dir() . '/vietsun_cuoc_schema_v3.flag';
+            $flagFile = sys_get_temp_dir() . '/vietsun_cuoc_schema_v4.flag';
             if (file_exists($flagFile)) {
                 return;
             }
             $pdo->exec("
                 CREATE TABLE IF NOT EXISTS tms_pricing_config (
                     config_key VARCHAR(64) PRIMARY KEY,
-                    config_val TEXT NOT NULL,
+                    config_val LONGTEXT NOT NULL,
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             ");
@@ -2055,12 +2055,21 @@ try {
                     route_code VARCHAR(32) PRIMARY KEY,
                     dia_diem VARCHAR(255) NOT NULL,
                     tinh VARCHAR(100) NOT NULL DEFAULT '',
-                    base_rates_json TEXT NOT NULL,
+                    base_rates_json LONGTEXT NOT NULL,
+                    period_rates_json LONGTEXT NULL,
                     notes VARCHAR(255) DEFAULT '',
                     sort_order INT NOT NULL DEFAULT 0,
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
             ");
+            try {
+                $pdo->exec("ALTER TABLE tms_routes ADD COLUMN period_rates_json LONGTEXT NULL AFTER base_rates_json");
+            } catch (Exception $e) {}
+            try {
+                $pdo->exec("ALTER TABLE tms_routes MODIFY COLUMN base_rates_json LONGTEXT NOT NULL");
+                $pdo->exec("ALTER TABLE tms_pricing_config MODIFY COLUMN config_val LONGTEXT NOT NULL");
+            } catch (Exception $e) {}
+
             $pdo->exec("
                 CREATE TABLE IF NOT EXISTS tms_warehouses_2026 (
                     wh_code VARCHAR(32) PRIMARY KEY,
@@ -2088,19 +2097,101 @@ try {
             if (file_exists($seedFile)) {
                 $seed = json_decode(file_get_contents($seedFile), true);
                 if (is_array($seed)) {
+                    // Build lookup map from 21/07 VAT integer -> exact 21/07 pre-VAT float
+                    $noVat2107Map = [];
+                    if (!empty($seed['routes'])) {
+                        foreach ($seed['routes'] as $sr) {
+                            $p21 = $sr['period_rates']['2026-07-21'] ?? [];
+                            foreach ($p21 as $cObj) {
+                                if (!empty($cObj['c20']) && !empty($cObj['c20_no_vat'])) {
+                                    $noVat2107Map[(int)$cObj['c20']] = (float)$cObj['c20_no_vat'];
+                                }
+                                if (!empty($cObj['c40']) && !empty($cObj['c40_no_vat'])) {
+                                    $noVat2107Map[(int)$cObj['c40']] = (float)$cObj['c40_no_vat'];
+                                }
+                            }
+                        }
+                    }
+
+                    // Existing routes in DB (to preserve any custom vendor columns added by user)
+                    $existingRoutesMap = [];
+                    if ($routeCnt > 0) {
+                        $exRows = $pdo->query("SELECT route_code, base_rates_json, period_rates_json FROM tms_routes")->fetchAll();
+                        foreach ($exRows as $er) {
+                            $existingRoutesMap[$er['route_code']] = [
+                                'base'    => json_decode($er['base_rates_json'] ?? '{}', true) ?: [],
+                                'periods' => json_decode($er['period_rates_json'] ?? '{}', true) ?: []
+                            ];
+                        }
+                    }
+
+                    $rawCarriers = $pdo->query("SELECT config_val FROM tms_pricing_config WHERE config_key = 'carriers_json'")->fetchColumn();
+                    $activeCarriers = json_decode($rawCarriers ?: '[]', true) ?: ['VIETSUN', 'NHAT SON', 'DUONG NGUYEN', 'PHUC TRUONG AN', 'TAN TIEN PHAT', 'TUAN HUNG'];
+
                     $pdo->beginTransaction();
                     try {
-                        if ($routeCnt === 0 && !empty($seed['routes'])) {
-                            $stR = $pdo->prepare("
-                                INSERT IGNORE INTO tms_routes (route_code, dia_diem, tinh, base_rates_json, sort_order)
-                                VALUES (?, ?, ?, ?, ?)
+                        if (!empty($seed['routes'])) {
+                            $stUpsertR = $pdo->prepare("
+                                INSERT INTO tms_routes (route_code, dia_diem, tinh, base_rates_json, period_rates_json, sort_order)
+                                VALUES (?, ?, ?, ?, ?, ?)
+                                ON DUPLICATE KEY UPDATE
+                                    dia_diem = VALUES(dia_diem),
+                                    tinh = VALUES(tinh),
+                                    base_rates_json = VALUES(base_rates_json),
+                                    period_rates_json = VALUES(period_rates_json),
+                                    sort_order = VALUES(sort_order)
                             ");
                             foreach ($seed['routes'] as $idx => $r) {
-                                $stR->execute([
-                                    $r['route_code'] ?? '',
+                                $rc = $r['route_code'] ?? '';
+                                $pRates = $r['period_rates'] ?? [];
+                                $exData = $existingRoutesMap[$rc] ?? null;
+
+                                // If user added custom vendors on VPS, compute their exact 21/07, 28/07, 25/08 snapshots
+                                foreach ($activeCarriers as $ac) {
+                                    if (isset($pRates['2026-08-25'][$ac])) {
+                                        continue;
+                                    }
+                                    $oldC20 = (int)($exData['base'][$ac]['c20'] ?? 0);
+                                    $oldC40 = (int)($exData['base'][$ac]['c40'] ?? 0);
+                                    $vs21 = $pRates['2026-07-21']['VIETSUN'] ?? ['c20' => 0, 'c40' => 0, 'c20_no_vat' => 0, 'c40_no_vat' => 0];
+                                    if ($oldC20 <= 0) $oldC20 = (int)$vs21['c20'];
+                                    if ($oldC40 <= 0) $oldC40 = (int)$vs21['c40'];
+
+                                    $nv20_21 = $noVat2107Map[$oldC20] ?? ($oldC20 > 0 ? ($oldC20 / 1.08) : 0);
+                                    $nv40_21 = $noVat2107Map[$oldC40] ?? ($oldC40 > 0 ? ($oldC40 / 1.08) : 0);
+                                    $pRates['2026-07-21'][$ac] = [
+                                        'c20_no_vat' => $nv20_21,
+                                        'c40_no_vat' => $nv40_21,
+                                        'c20'        => $oldC20,
+                                        'c40'        => $oldC40
+                                    ];
+
+                                    $nv20_28 = $nv20_21 * 1.032;
+                                    $nv40_28 = $nv40_21 * 1.032;
+                                    $pRates['2026-07-28'][$ac] = [
+                                        'c20_no_vat' => $nv20_28,
+                                        'c40_no_vat' => $nv40_28,
+                                        'c20'        => $nv20_28 > 0 ? (int)round($nv20_28 * 1.08) : 0,
+                                        'c40'        => $nv40_28 > 0 ? (int)round($nv40_28 * 1.08) : 0
+                                    ];
+
+                                    $nv20_25 = $nv20_28 * 1.032;
+                                    $nv40_25 = $nv40_28 * 1.032;
+                                    $pRates['2026-08-25'][$ac] = [
+                                        'c20_no_vat' => $nv20_25,
+                                        'c40_no_vat' => $nv40_25,
+                                        'c20'        => $nv20_25 > 0 ? (int)round($nv20_25 * 1.08) : 0,
+                                        'c40'        => $nv40_25 > 0 ? (int)round($nv40_25 * 1.08) : 0
+                                    ];
+                                }
+
+                                $activeBase = $pRates['2026-08-25'] ?? ($r['base_rates'] ?? []);
+                                $stUpsertR->execute([
+                                    $rc,
                                     $r['dia_diem'] ?? '',
                                     $r['tinh'] ?? '',
-                                    json_encode($r['base_rates'] ?? [], JSON_UNESCAPED_UNICODE),
+                                    json_encode($activeBase, JSON_UNESCAPED_UNICODE),
+                                    json_encode($pRates, JSON_UNESCAPED_UNICODE),
                                     $idx + 1
                                 ]);
                             }
@@ -2128,7 +2219,6 @@ try {
                                 ]);
                             }
                         } elseif (!empty($seed['warehouses'])) {
-                            // Cập nhật bổ sung cho các kho trong DB đang chưa gán mã tuyến (route_code = '') từ kết quả đối soát lịch sử Debit 25/08
                             $stUpWh = $pdo->prepare("
                                 UPDATE tms_warehouses_2026
                                 SET route_code = ?, match_confidence = ?, match_reason = ?, custom_rates_json = ?
@@ -2148,12 +2238,21 @@ try {
                                 }
                             }
                         }
-                        $stCfg = $pdo->prepare("INSERT IGNORE INTO tms_pricing_config (config_key, config_val) VALUES (?, ?)");
-                        $stCfg->execute(['adj_percent', (string)($seed['adj_percent'] ?? 0.032)]);
-                        $stCfg->execute(['do_base_price', '18090']);
-                        $stCfg->execute(['effective_date', '2026-07-21']);
-                        $stCfg->execute(['notes_json', json_encode($seed['notes'] ?? [], JSON_UNESCAPED_UNICODE)]);
-                        $stCfg->execute(['carriers_json', json_encode(['VIETSUN', 'NHAT SON', 'DUONG NGUYEN', 'PHUC TRUONG AN', 'TAN TIEN PHAT', 'TUAN HUNG'], JSON_UNESCAPED_UNICODE)]);
+
+                        $stCfgUp = $pdo->prepare("
+                            INSERT INTO tms_pricing_config (config_key, config_val)
+                            VALUES (?, ?)
+                            ON DUPLICATE KEY UPDATE config_val = VALUES(config_val)
+                        ");
+                        $stCfgUp->execute(['active_period_id', (string)($seed['active_period_id'] ?? '2026-08-25')]);
+                        $stCfgUp->execute(['periods_json', json_encode($seed['periods'] ?? [], JSON_UNESCAPED_UNICODE)]);
+                        $stCfgUp->execute(['adj_percent', '0.032']);
+                        $stCfgUp->execute(['do_base_price', '28540']);
+                        $stCfgUp->execute(['effective_date', '2026-08-25']);
+
+                        $stCfgIgnore = $pdo->prepare("INSERT IGNORE INTO tms_pricing_config (config_key, config_val) VALUES (?, ?)");
+                        $stCfgIgnore->execute(['notes_json', json_encode($seed['notes'] ?? [], JSON_UNESCAPED_UNICODE)]);
+                        $stCfgIgnore->execute(['carriers_json', json_encode(['VIETSUN', 'NHAT SON', 'DUONG NGUYEN', 'PHUC TRUONG AN', 'TAN TIEN PHAT', 'TUAN HUNG'], JSON_UNESCAPED_UNICODE)]);
                         $pdo->commit();
                     } catch (Exception $ex) {
                         if ($pdo->inTransaction()) $pdo->rollBack();
@@ -2161,48 +2260,7 @@ try {
                 }
             }
 
-            // Yêu cầu 1: Những ô cước mà Vendor đang để trống (0) thì tự động lấy bằng giá VIETSUN
-            $rawCarriers = $pdo->query("SELECT config_val FROM tms_pricing_config WHERE config_key = 'carriers_json'")->fetchColumn();
-            $activeCarriers = json_decode($rawCarriers ?: '[]', true) ?: ['VIETSUN', 'NHAT SON', 'DUONG NGUYEN', 'PHUC TRUONG AN', 'TAN TIEN PHAT', 'TUAN HUNG'];
-            $allRoutesInDb = $pdo->query("SELECT route_code, base_rates_json FROM tms_routes")->fetchAll();
-            $stFillR = $pdo->prepare("UPDATE tms_routes SET base_rates_json = ? WHERE route_code = ?");
-            $pdo->beginTransaction();
-            try {
-                foreach ($allRoutesInDb as $rr) {
-                    $br = json_decode($rr['base_rates_json'] ?? '{}', true) ?: [];
-                    $vs20 = (int)($br['VIETSUN']['c20'] ?? 0);
-                    $vs40 = (int)($br['VIETSUN']['c40'] ?? 0);
-                    $changed = false;
-                    foreach ($activeCarriers as $ac) {
-                        if ($ac === 'VIETSUN') continue;
-                        if (!isset($br[$ac])) {
-                            $br[$ac] = ['c20' => $vs20, 'c40' => $vs40];
-                            $changed = true;
-                        } else {
-                            if (empty($br[$ac]['c20']) && $vs20 > 0) {
-                                $br[$ac]['c20'] = $vs20;
-                                $changed = true;
-                            }
-                            if (empty($br[$ac]['c40']) && $vs40 > 0) {
-                                $br[$ac]['c40'] = $vs40;
-                                $changed = true;
-                            }
-                        }
-                    }
-                    if ($changed) {
-                        $stFillR->execute([json_encode($br, JSON_UNESCAPED_UNICODE), $rr['route_code']]);
-                    }
-                }
-                $pdo->commit();
-            } catch (Exception $ex) {
-                if ($pdo->inTransaction()) $pdo->rollBack();
-            }
-
-            // Chuẩn hóa Tỉnh sau sáp nhập trên cả bảng tms_routes & tms_warehouses_2026:
-            // Bình Dương => HCM, BRVT => HCM, Bình Thuận => Lâm Đồng, Đăk Nông => Lâm Đồng,
-            // Bình Phước => Đồng Nai, Long An => Tây Ninh, Tiền Giang => Đồng Tháp,
-            // Trà Vinh => Vĩnh Long, Bến Tre => Vĩnh Long, Hậu Giang => Cần Thơ,
-            // Bạc Liêu => Cà Mau, Kiên Giang => An Giang, Sóc Trăng => Cần Thơ.
+            // Chuẩn hóa Tỉnh sau sáp nhập trên cả bảng tms_routes & tms_warehouses_2026
             $mergeSqlMap = [
                 'HCM'       => ['Bình Dương', 'BINH DUONG', 'BRVT', 'Bà Rịa - Vũng Tàu', 'BA RIA VUNG TAU', 'HO CHI MINH', 'TP.HCM', 'TPHCM'],
                 'Lâm Đồng'  => ['Bình Thuận', 'BINH THUAN', 'Đăk Nông', 'Đắk Nông', 'DAK NONG', 'LAM DONG'],
@@ -2228,7 +2286,7 @@ try {
 
         $ensureCuocTables($pdo);
 
-        // GET cuoc/overview: Trả về toàn bộ Tuyến đường, Cấu hình % biến động cước & Danh sách Kho 2026
+        // GET cuoc/overview: Trả về toàn bộ Tuyến đường (kèm lịch sử các kỳ điều chỉnh), Cấu hình & Danh sách Kho 2026
         if ($route === 'cuoc/overview') {
             $cfgRows = $pdo->query("SELECT config_key, config_val FROM tms_pricing_config")->fetchAll();
             $cfg = [];
@@ -2236,19 +2294,52 @@ try {
                 $cfg[$cr['config_key']] = $cr['config_val'];
             }
             $adjPercent = isset($cfg['adj_percent']) ? (float)$cfg['adj_percent'] : 0.032;
+            $activePeriodId = $cfg['active_period_id'] ?? '2026-08-25';
+            $periods = json_decode($cfg['periods_json'] ?? '[]', true) ?: [
+                [
+                    'id'             => '2026-07-21',
+                    'effective_date' => '2026-07-21',
+                    'label'          => 'Kỳ 21/07/2026 (Dầu DO 23.320 đ/lít | +3.0%)',
+                    'do_price'       => 23320,
+                    'adj_percent'    => 3.0,
+                    'base_period_id' => '2026-07-07'
+                ],
+                [
+                    'id'             => '2026-07-28',
+                    'effective_date' => '2026-07-28',
+                    'label'          => 'Kỳ 28/07/2026 (Dầu DO 25.760 đ/lít | +3.2%)',
+                    'do_price'       => 25760,
+                    'adj_percent'    => 3.2,
+                    'base_period_id' => '2026-07-21'
+                ],
+                [
+                    'id'             => '2026-08-25',
+                    'effective_date' => '2026-08-25',
+                    'label'          => 'Kỳ 25/08/2026 (Dầu DO 28.540 đ/lít | +3.2%)',
+                    'do_price'       => 28540,
+                    'adj_percent'    => 3.2,
+                    'base_period_id' => '2026-07-28'
+                ]
+            ];
             $carriers = json_decode($cfg['carriers_json'] ?? '[]', true) ?: ['VIETSUN', 'NHAT SON', 'DUONG NGUYEN', 'PHUC TRUONG AN', 'TAN TIEN PHAT', 'TUAN HUNG'];
             $notes = json_decode($cfg['notes_json'] ?? '[]', true) ?: [];
 
             $routesRaw = $pdo->query("SELECT * FROM tms_routes ORDER BY sort_order ASC, route_code ASC")->fetchAll();
             $routes = [];
             foreach ($routesRaw as $rr) {
+                $baseRates = json_decode($rr['base_rates_json'] ?? '{}', true) ?: [];
+                $periodRates = !empty($rr['period_rates_json']) ? (json_decode($rr['period_rates_json'], true) ?: []) : [];
+                if (isset($periodRates[$activePeriodId])) {
+                    $baseRates = $periodRates[$activePeriodId];
+                }
                 $routes[] = [
-                    'route_code' => $rr['route_code'],
-                    'dia_diem'   => $rr['dia_diem'],
-                    'tinh'       => $rr['tinh'],
-                    'notes'      => $rr['notes'] ?? '',
-                    'sort_order' => (int)$rr['sort_order'],
-                    'base_rates' => json_decode($rr['base_rates_json'] ?? '{}', true) ?: []
+                    'route_code'   => $rr['route_code'],
+                    'dia_diem'     => $rr['dia_diem'],
+                    'tinh'         => $rr['tinh'],
+                    'notes'        => $rr['notes'] ?? '',
+                    'sort_order'   => (int)$rr['sort_order'],
+                    'base_rates'   => $baseRates,
+                    'period_rates' => $periodRates
                 ];
             }
 
@@ -2274,14 +2365,268 @@ try {
             echo json_encode([
                 'ok'         => true,
                 'config'     => [
-                    'adj_percent'    => $adjPercent,
-                    'do_base_price'  => (int)($cfg['do_base_price'] ?? 18090),
-                    'effective_date' => $cfg['effective_date'] ?? '2026-07-21',
-                    'carriers'       => $carriers,
-                    'notes'          => $notes
+                    'adj_percent'      => $adjPercent,
+                    'do_base_price'    => (int)($cfg['do_base_price'] ?? 28540),
+                    'effective_date'   => $cfg['effective_date'] ?? '2026-08-25',
+                    'active_period_id' => $activePeriodId,
+                    'periods'          => $periods,
+                    'carriers'         => $carriers,
+                    'notes'            => $notes
                 ],
                 'routes'     => $routes,
                 'warehouses' => $warehouses
+            ]);
+            exit;
+        }
+
+        // POST cuoc/create-period: Tạo đợt điều chỉnh giá cước mới (Lấy giá chưa gồm VAT kỳ trước × (1 + %) -> sau đó × 1.08 VAT 8% làm tròn hàng đơn vị) và lưu bảng giá đã điều chỉnh
+        if ($route === 'cuoc/create-period') {
+            $effectiveDate = trim((string)($jsonBody['effective_date'] ?? date('Y-m-d')));
+            $doPrice = (int)($jsonBody['do_price'] ?? 28540);
+            $adjPercent = isset($jsonBody['adj_percent']) ? (float)$jsonBody['adj_percent'] : 0.0;
+            $basePeriodId = trim((string)($jsonBody['base_period_id'] ?? ''));
+            $customLabel = trim((string)($jsonBody['label'] ?? ''));
+
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $effectiveDate)) {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'error' => 'Ngày áp dụng không hợp lệ (Định dạng chuẩn: YYYY-MM-DD)!']);
+                exit;
+            }
+
+            $rawPeriods = $pdo->query("SELECT config_val FROM tms_pricing_config WHERE config_key = 'periods_json'")->fetchColumn();
+            $periods = json_decode($rawPeriods ?: '[]', true) ?: [];
+            $curActiveId = $pdo->query("SELECT config_val FROM tms_pricing_config WHERE config_key = 'active_period_id'")->fetchColumn() ?: '2026-08-25';
+            if ($basePeriodId === '') {
+                $basePeriodId = $curActiveId;
+            }
+
+            // Tạo ID duy nhất cho kỳ điều chỉnh
+            $periodId = $effectiveDate;
+            $overwrite = !empty($jsonBody['overwrite']);
+            if (!$overwrite) {
+                $suffix = 2;
+                $existingIds = array_column($periods, 'id');
+                while (in_array($periodId, $existingIds, true)) {
+                    $periodId = $effectiveDate . '-v' . $suffix;
+                    $suffix++;
+                }
+            }
+
+            $parts = explode('-', $effectiveDate);
+            $vnDate = count($parts) === 3 ? ($parts[2] . '/' . $parts[1] . '/' . $parts[0]) : $effectiveDate;
+            $signStr = ($adjPercent >= 0 ? '+' : '') . rtrim(rtrim(number_format($adjPercent, 2, '.', ''), '0'), '.') . '%';
+            $doFmt = number_format($doPrice, 0, ',', '.');
+            $label = $customLabel !== '' ? $customLabel : "Kỳ {$vnDate} (Dầu DO {$doFmt} đ/lít | {$signStr})";
+
+            $factor = 1.0 + ($adjPercent / 100.0);
+            $rawCarriers = $pdo->query("SELECT config_val FROM tms_pricing_config WHERE config_key = 'carriers_json'")->fetchColumn();
+            $carriers = json_decode($rawCarriers ?: '[]', true) ?: ['VIETSUN', 'NHAT SON', 'DUONG NGUYEN', 'PHUC TRUONG AN', 'TAN TIEN PHAT', 'TUAN HUNG'];
+
+            $allRoutes = $pdo->query("SELECT route_code, base_rates_json, period_rates_json FROM tms_routes")->fetchAll();
+            $stUpR = $pdo->prepare("UPDATE tms_routes SET base_rates_json = ?, period_rates_json = ? WHERE route_code = ?");
+
+            $pdo->beginTransaction();
+            try {
+                foreach ($allRoutes as $rr) {
+                    $br = json_decode($rr['base_rates_json'] ?? '{}', true) ?: [];
+                    $pr = !empty($rr['period_rates_json']) ? (json_decode($rr['period_rates_json'], true) ?: []) : [];
+                    $srcTable = $pr[$basePeriodId] ?? $br;
+
+                    $newTable = [];
+                    // Tính chuẩn VIETSUN trước để các ô trống của vendor lấy theo VIETSUN
+                    $vsSrc = $srcTable['VIETSUN'] ?? ['c20' => 0, 'c40' => 0, 'c20_no_vat' => 0, 'c40_no_vat' => 0];
+                    $vsNoVat20 = !empty($vsSrc['c20_no_vat']) ? (float)$vsSrc['c20_no_vat'] : (!empty($vsSrc['c20']) ? ((float)$vsSrc['c20'] / 1.08) : 0.0);
+                    $vsNoVat40 = !empty($vsSrc['c40_no_vat']) ? (float)$vsSrc['c40_no_vat'] : (!empty($vsSrc['c40']) ? ((float)$vsSrc['c40'] / 1.08) : 0.0);
+
+                    $newVsNoVat20 = $vsNoVat20 * $factor;
+                    $newVsNoVat40 = $vsNoVat40 * $factor;
+                    $newVsVat20 = $newVsNoVat20 > 0 ? (int)round($newVsNoVat20 * 1.08) : 0;
+                    $newVsVat40 = $newVsNoVat40 > 0 ? (int)round($newVsNoVat40 * 1.08) : 0;
+
+                    $newTable['VIETSUN'] = [
+                        'c20_no_vat' => $newVsNoVat20,
+                        'c40_no_vat' => $newVsNoVat40,
+                        'c20'        => $newVsVat20,
+                        'c40'        => $newVsVat40
+                    ];
+
+                    foreach ($carriers as $cName) {
+                        if ($cName === 'VIETSUN') continue;
+                        $cSrc = $srcTable[$cName] ?? [];
+                        $srcNoVat20 = !empty($cSrc['c20_no_vat']) ? (float)$cSrc['c20_no_vat'] : (!empty($cSrc['c20']) ? ((float)$cSrc['c20'] / 1.08) : $vsNoVat20);
+                        $srcNoVat40 = !empty($cSrc['c40_no_vat']) ? (float)$cSrc['c40_no_vat'] : (!empty($cSrc['c40']) ? ((float)$cSrc['c40'] / 1.08) : $vsNoVat40);
+
+                        $newNoVat20 = $srcNoVat20 * $factor;
+                        $newNoVat40 = $srcNoVat40 * $factor;
+                        $newTable[$cName] = [
+                            'c20_no_vat' => $newNoVat20,
+                            'c40_no_vat' => $newNoVat40,
+                            'c20'        => $newNoVat20 > 0 ? (int)round($newNoVat20 * 1.08) : 0,
+                            'c40'        => $newNoVat40 > 0 ? (int)round($newNoVat40 * 1.08) : 0
+                        ];
+                    }
+
+                    $pr[$periodId] = $newTable;
+                    $stUpR->execute([
+                        json_encode($newTable, JSON_UNESCAPED_UNICODE),
+                        json_encode($pr, JSON_UNESCAPED_UNICODE),
+                        $rr['route_code']
+                    ]);
+                }
+
+                $newPeriodMeta = [
+                    'id'             => $periodId,
+                    'effective_date' => $effectiveDate,
+                    'label'          => $label,
+                    'do_price'       => $doPrice,
+                    'adj_percent'    => $adjPercent,
+                    'base_period_id' => $basePeriodId,
+                    'created_at'     => date('Y-m-d H:i:s')
+                ];
+                $foundIdx = -1;
+                foreach ($periods as $pIdx => $pm) {
+                    if (($pm['id'] ?? '') === $periodId) {
+                        $foundIdx = $pIdx;
+                        break;
+                    }
+                }
+                if ($foundIdx >= 0) {
+                    $periods[$foundIdx] = $newPeriodMeta;
+                } else {
+                    $periods[] = $newPeriodMeta;
+                }
+
+                $stCfg = $pdo->prepare("
+                    INSERT INTO tms_pricing_config (config_key, config_val)
+                    VALUES (?, ?)
+                    ON DUPLICATE KEY UPDATE config_val = VALUES(config_val)
+                ");
+                $stCfg->execute(['periods_json', json_encode(array_values($periods), JSON_UNESCAPED_UNICODE)]);
+                $stCfg->execute(['active_period_id', $periodId]);
+                $stCfg->execute(['effective_date', $effectiveDate]);
+                $stCfg->execute(['do_base_price', (string)$doPrice]);
+                $stCfg->execute(['adj_percent', (string)($adjPercent / 100.0)]);
+                $pdo->commit();
+            } catch (Exception $ex) {
+                if ($pdo->inTransaction()) $pdo->rollBack();
+                throw $ex;
+            }
+
+            echo json_encode([
+                'ok'               => true,
+                'active_period_id' => $periodId,
+                'periods'          => array_values($periods),
+                'message'          => "Đã tạo và lưu bảng giá điều chỉnh [$label] thành công!"
+            ]);
+            exit;
+        }
+
+        // POST cuoc/set-active-period: Chuyển đổi kỳ bảng giá đang áp dụng mặc định
+        if ($route === 'cuoc/set-active-period') {
+            $periodId = trim((string)($jsonBody['period_id'] ?? ''));
+            $rawPeriods = $pdo->query("SELECT config_val FROM tms_pricing_config WHERE config_key = 'periods_json'")->fetchColumn();
+            $periods = json_decode($rawPeriods ?: '[]', true) ?: [];
+            $targetMeta = null;
+            foreach ($periods as $pm) {
+                if (($pm['id'] ?? '') === $periodId) {
+                    $targetMeta = $pm;
+                    break;
+                }
+            }
+            if (!$targetMeta) {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'error' => 'Không tìm thấy kỳ điều chỉnh giá này!']);
+                exit;
+            }
+
+            $allRoutes = $pdo->query("SELECT route_code, base_rates_json, period_rates_json FROM tms_routes")->fetchAll();
+            $stUpR = $pdo->prepare("UPDATE tms_routes SET base_rates_json = ? WHERE route_code = ?");
+            $pdo->beginTransaction();
+            try {
+                foreach ($allRoutes as $rr) {
+                    $pr = !empty($rr['period_rates_json']) ? (json_decode($rr['period_rates_json'], true) ?: []) : [];
+                    if (isset($pr[$periodId])) {
+                        $stUpR->execute([json_encode($pr[$periodId], JSON_UNESCAPED_UNICODE), $rr['route_code']]);
+                    }
+                }
+                $stCfg = $pdo->prepare("
+                    INSERT INTO tms_pricing_config (config_key, config_val)
+                    VALUES (?, ?)
+                    ON DUPLICATE KEY UPDATE config_val = VALUES(config_val)
+                ");
+                $stCfg->execute(['active_period_id', $periodId]);
+                $stCfg->execute(['effective_date', $targetMeta['effective_date'] ?? $periodId]);
+                $stCfg->execute(['do_base_price', (string)($targetMeta['do_price'] ?? 28540)]);
+                $stCfg->execute(['adj_percent', (string)(((float)($targetMeta['adj_percent'] ?? 3.2)) / 100.0)]);
+                $pdo->commit();
+            } catch (Exception $ex) {
+                if ($pdo->inTransaction()) $pdo->rollBack();
+                throw $ex;
+            }
+
+            echo json_encode([
+                'ok'               => true,
+                'active_period_id' => $periodId,
+                'message'          => "Đã chuyển bảng giá áp dụng sang [{$targetMeta['label']}]!"
+            ]);
+            exit;
+        }
+
+        // POST cuoc/delete-period: Xóa một kỳ điều chỉnh giá khỏi lịch sử
+        if ($route === 'cuoc/delete-period') {
+            $periodId = trim((string)($jsonBody['period_id'] ?? ''));
+            $rawPeriods = $pdo->query("SELECT config_val FROM tms_pricing_config WHERE config_key = 'periods_json'")->fetchColumn();
+            $periods = json_decode($rawPeriods ?: '[]', true) ?: [];
+            if (count($periods) <= 1) {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'error' => 'Phải giữ lại ít nhất 1 kỳ bảng giá gốc!']);
+                exit;
+            }
+            $newPeriods = array_values(array_filter($periods, function($pm) use ($periodId) {
+                return ($pm['id'] ?? '') !== $periodId;
+            }));
+            if (count($newPeriods) === count($periods)) {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'error' => 'Không tìm thấy kỳ giá cần xóa!']);
+                exit;
+            }
+            $latestPeriod = $newPeriods[count($newPeriods) - 1];
+            $newActiveId = $latestPeriod['id'];
+
+            $allRoutes = $pdo->query("SELECT route_code, base_rates_json, period_rates_json FROM tms_routes")->fetchAll();
+            $stUpR = $pdo->prepare("UPDATE tms_routes SET base_rates_json = ?, period_rates_json = ? WHERE route_code = ?");
+            $pdo->beginTransaction();
+            try {
+                foreach ($allRoutes as $rr) {
+                    $pr = !empty($rr['period_rates_json']) ? (json_decode($rr['period_rates_json'], true) ?: []) : [];
+                    unset($pr[$periodId]);
+                    $activeBr = $pr[$newActiveId] ?? (json_decode($rr['base_rates_json'] ?? '{}', true) ?: []);
+                    $stUpR->execute([
+                        json_encode($activeBr, JSON_UNESCAPED_UNICODE),
+                        json_encode($pr, JSON_UNESCAPED_UNICODE),
+                        $rr['route_code']
+                    ]);
+                }
+                $stCfg = $pdo->prepare("
+                    INSERT INTO tms_pricing_config (config_key, config_val)
+                    VALUES (?, ?)
+                    ON DUPLICATE KEY UPDATE config_val = VALUES(config_val)
+                ");
+                $stCfg->execute(['periods_json', json_encode($newPeriods, JSON_UNESCAPED_UNICODE)]);
+                $stCfg->execute(['active_period_id', $newActiveId]);
+                $stCfg->execute(['effective_date', $latestPeriod['effective_date'] ?? $newActiveId]);
+                $stCfg->execute(['do_base_price', (string)($latestPeriod['do_price'] ?? 28540)]);
+                $pdo->commit();
+            } catch (Exception $ex) {
+                if ($pdo->inTransaction()) $pdo->rollBack();
+                throw $ex;
+            }
+
+            echo json_encode([
+                'ok'               => true,
+                'active_period_id' => $newActiveId,
+                'periods'          => $newPeriods,
+                'message'          => "Đã xóa kỳ giá [$periodId] và chuyển về kỳ [{$latestPeriod['label']}]!"
             ]);
             exit;
         }
@@ -2387,36 +2732,65 @@ try {
             ");
             $stCfg->execute([json_encode(array_values($carriers), JSON_UNESCAPED_UNICODE)]);
 
-            // 2. Cập nhật base_rates_json trên toàn bộ 246 tuyến đường (Đổi tên key cũ -> mới, và/hoặc Áp nhanh giá từ source_carrier)
+            // 2. Cập nhật base_rates_json & period_rates_json trên toàn bộ 246 tuyến đường (Đổi tên key cũ -> mới, và/hoặc Áp nhanh giá từ source_carrier)
             $updatedRoutes = 0;
             if ($oldVendorName !== '' || $sourceCarrier !== '') {
-                $allRoutes = $pdo->query("SELECT route_code, base_rates_json FROM tms_routes")->fetchAll();
-                $stUp = $pdo->prepare("UPDATE tms_routes SET base_rates_json = ? WHERE route_code = ?");
+                $allRoutes = $pdo->query("SELECT route_code, base_rates_json, period_rates_json FROM tms_routes")->fetchAll();
+                $stUp = $pdo->prepare("UPDATE tms_routes SET base_rates_json = ?, period_rates_json = ? WHERE route_code = ?");
                 $pdo->beginTransaction();
                 try {
-                    foreach ($allRoutes as $rr) {
-                        $br = json_decode($rr['base_rates_json'] ?? '{}', true) ?: [];
-                        $oldRateObj = ($oldVendorName !== '' && isset($br[$oldVendorName])) ? $br[$oldVendorName] : ['c20' => 0, 'c40' => 0];
-
+                    $cloneRateForTable = function(&$tbl) use ($oldVendorName, $targetVendors, $sourceCarrier, $factorPercent, $deltaAmount) {
+                        $oldRateObj = ($oldVendorName !== '' && isset($tbl[$oldVendorName])) ? $tbl[$oldVendorName] : ['c20' => 0, 'c40' => 0, 'c20_no_vat' => 0, 'c40_no_vat' => 0];
                         foreach ($targetVendors as $tv) {
                             if ($sourceCarrier !== '') {
                                 $srcKey = ($sourceCarrier === '__KEEP_CURRENT__' && $oldVendorName !== '') ? $oldVendorName : $sourceCarrier;
-                                $src = ($srcKey === $oldVendorName) ? $oldRateObj : ($br[$srcKey] ?? ['c20' => 0, 'c40' => 0]);
+                                $src = ($srcKey === $oldVendorName) ? $oldRateObj : ($tbl[$srcKey] ?? ($tbl['VIETSUN'] ?? ['c20' => 0, 'c40' => 0]));
                                 $src20 = (float)($src['c20'] ?? 0);
                                 $src40 = (float)($src['c40'] ?? 0);
-                                $new20 = $src20 > 0 ? max(0, (int)round($src20 * ($factorPercent / 100.0) + $deltaAmount)) : 0;
-                                $new40 = $src40 > 0 ? max(0, (int)round($src40 * ($factorPercent / 100.0) + $deltaAmount)) : 0;
-                                $br[$tv] = ['c20' => $new20, 'c40' => $new40];
-                            } elseif ($oldVendorName !== '' && !isset($br[$tv])) {
-                                $br[$tv] = $oldRateObj;
+                                $srcNoVat20 = !empty($src['c20_no_vat']) ? (float)$src['c20_no_vat'] : ($src20 / 1.08);
+                                $srcNoVat40 = !empty($src['c40_no_vat']) ? (float)$src['c40_no_vat'] : ($src40 / 1.08);
+
+                                if ($factorPercent == 100.0 && $deltaAmount == 0) {
+                                    $tbl[$tv] = [
+                                        'c20'        => (int)round($src20),
+                                        'c40'        => (int)round($src40),
+                                        'c20_no_vat' => $srcNoVat20,
+                                        'c40_no_vat' => $srcNoVat40
+                                    ];
+                                } else {
+                                    $newNoVat20 = $srcNoVat20 > 0 ? max(0.0, $srcNoVat20 * ($factorPercent / 100.0) + ($deltaAmount / 1.08)) : 0.0;
+                                    $newNoVat40 = $srcNoVat40 > 0 ? max(0.0, $srcNoVat40 * ($factorPercent / 100.0) + ($deltaAmount / 1.08)) : 0.0;
+                                    $tbl[$tv] = [
+                                        'c20'        => $newNoVat20 > 0 ? (int)round($newNoVat20 * 1.08) : 0,
+                                        'c40'        => $newNoVat40 > 0 ? (int)round($newNoVat40 * 1.08) : 0,
+                                        'c20_no_vat' => $newNoVat20,
+                                        'c40_no_vat' => $newNoVat40
+                                    ];
+                                }
+                            } elseif ($oldVendorName !== '' && !isset($tbl[$tv])) {
+                                $tbl[$tv] = $oldRateObj;
                             }
                         }
-
                         if ($oldVendorName !== '' && !in_array($oldVendorName, $targetVendors, true)) {
-                            unset($br[$oldVendorName]);
+                            unset($tbl[$oldVendorName]);
                         }
+                    };
 
-                        $stUp->execute([json_encode($br, JSON_UNESCAPED_UNICODE), $rr['route_code']]);
+                    foreach ($allRoutes as $rr) {
+                        $br = json_decode($rr['base_rates_json'] ?? '{}', true) ?: [];
+                        $pr = !empty($rr['period_rates_json']) ? (json_decode($rr['period_rates_json'], true) ?: []) : [];
+                        $cloneRateForTable($br);
+                        foreach ($pr as $pKey => &$pTbl) {
+                            if (is_array($pTbl)) {
+                                $cloneRateForTable($pTbl);
+                            }
+                        }
+                        unset($pTbl);
+                        $stUp->execute([
+                            json_encode($br, JSON_UNESCAPED_UNICODE),
+                            json_encode($pr, JSON_UNESCAPED_UNICODE),
+                            $rr['route_code']
+                        ]);
                         $updatedRoutes++;
                     }
                     $pdo->commit();
@@ -2441,7 +2815,7 @@ try {
             exit;
         }
 
-        // POST cuoc/delete-vendor: Xóa 1 cột Vendor khỏi bảng giá và dọn dữ liệu base_rates_json
+        // POST cuoc/delete-vendor: Xóa 1 cột Vendor khỏi bảng giá và dọn dữ liệu base_rates_json & period_rates_json
         if ($route === 'cuoc/delete-vendor') {
             $vendorName = strtoupper(trim($jsonBody['vendor_name'] ?? ''));
             if ($vendorName === '' || $vendorName === 'VIETSUN') {
@@ -2461,17 +2835,24 @@ try {
             ");
             $stCfg->execute([json_encode($carriers, JSON_UNESCAPED_UNICODE)]);
 
-            // Xóa key của vendor này trong base_rates_json
-            $allRoutes = $pdo->query("SELECT route_code, base_rates_json FROM tms_routes")->fetchAll();
-            $stUp = $pdo->prepare("UPDATE tms_routes SET base_rates_json = ? WHERE route_code = ?");
+            // Xóa key của vendor này trong base_rates_json & period_rates_json
+            $allRoutes = $pdo->query("SELECT route_code, base_rates_json, period_rates_json FROM tms_routes")->fetchAll();
+            $stUp = $pdo->prepare("UPDATE tms_routes SET base_rates_json = ?, period_rates_json = ? WHERE route_code = ?");
             $pdo->beginTransaction();
             try {
                 foreach ($allRoutes as $rr) {
                     $br = json_decode($rr['base_rates_json'] ?? '{}', true) ?: [];
-                    if (isset($br[$vendorName])) {
-                        unset($br[$vendorName]);
-                        $stUp->execute([json_encode($br, JSON_UNESCAPED_UNICODE), $rr['route_code']]);
+                    $pr = !empty($rr['period_rates_json']) ? (json_decode($rr['period_rates_json'], true) ?: []) : [];
+                    unset($br[$vendorName]);
+                    foreach ($pr as $pKey => &$pTbl) {
+                        if (is_array($pTbl)) unset($pTbl[$vendorName]);
                     }
+                    unset($pTbl);
+                    $stUp->execute([
+                        json_encode($br, JSON_UNESCAPED_UNICODE),
+                        json_encode($pr, JSON_UNESCAPED_UNICODE),
+                        $rr['route_code']
+                    ]);
                 }
                 $pdo->commit();
             } catch (Exception $ex) {
@@ -2482,36 +2863,80 @@ try {
             exit;
         }
 
-        // POST cuoc/save-route: Thêm mới hoặc cập nhật Mã Tuyến Đường & Bảng giá Vietsun + Vendor
+        // POST cuoc/save-route: Thêm mới hoặc cập nhật Mã Tuyến Đường & Bảng giá Vietsun + Vendor (Lưu vào kỳ đang xem/áp dụng)
         if ($route === 'cuoc/save-route') {
             $routeCode = strtoupper(trim($jsonBody['route_code'] ?? ''));
             $diaDiem = trim($jsonBody['dia_diem'] ?? '');
             $tinh = trim($jsonBody['tinh'] ?? '');
             $baseRates = $jsonBody['base_rates'] ?? [];
+            $periodId = trim((string)($jsonBody['period_id'] ?? ''));
             $notes = trim($jsonBody['notes'] ?? '');
             if ($routeCode === '' || $diaDiem === '') {
                 http_response_code(400);
                 echo json_encode(['ok' => false, 'error' => 'Vui lòng nhập Mã Tuyến Đường và Địa Điểm!']);
                 exit;
             }
-            $sortOrder = (int)($jsonBody['sort_order'] ?? 0);
+            $curActiveId = $pdo->query("SELECT config_val FROM tms_pricing_config WHERE config_key = 'active_period_id'")->fetchColumn() ?: '2026-08-25';
+            if ($periodId === '') {
+                $periodId = $curActiveId;
+            }
+
+            // Chuẩn hóa c20_no_vat & c40_no_vat và lấp các ô trống bằng giá VIETSUN
+            $vs20 = (int)($baseRates['VIETSUN']['c20'] ?? 0);
+            $vs40 = (int)($baseRates['VIETSUN']['c40'] ?? 0);
+            $vsNoVat20 = !empty($baseRates['VIETSUN']['c20_no_vat']) ? (float)$baseRates['VIETSUN']['c20_no_vat'] : ($vs20 / 1.08);
+            $vsNoVat40 = !empty($baseRates['VIETSUN']['c40_no_vat']) ? (float)$baseRates['VIETSUN']['c40_no_vat'] : ($vs40 / 1.08);
+
+            foreach ($baseRates as $cKey => &$cObj) {
+                $c20 = (int)($cObj['c20'] ?? 0);
+                $c40 = (int)($cObj['c40'] ?? 0);
+                if ($cKey !== 'VIETSUN') {
+                    if ($c20 <= 0) $c20 = $vs20;
+                    if ($c40 <= 0) $c40 = $vs40;
+                }
+                $nv20 = !empty($cObj['c20_no_vat']) && abs(round((float)$cObj['c20_no_vat'] * 1.08) - $c20) <= 2
+                    ? (float)$cObj['c20_no_vat']
+                    : ($c20 === $vs20 ? $vsNoVat20 : ($c20 / 1.08));
+                $nv40 = !empty($cObj['c40_no_vat']) && abs(round((float)$cObj['c40_no_vat'] * 1.08) - $c40) <= 2
+                    ? (float)$cObj['c40_no_vat']
+                    : ($c40 === $vs40 ? $vsNoVat40 : ($c40 / 1.08));
+                $cObj = [
+                    'c20'        => $c20,
+                    'c40'        => $c40,
+                    'c20_no_vat' => $nv20,
+                    'c40_no_vat' => $nv40
+                ];
+            }
+            unset($cObj);
+
+            $stEx = $pdo->prepare("SELECT base_rates_json, period_rates_json, sort_order FROM tms_routes WHERE route_code = ? LIMIT 1");
+            $stEx->execute([$routeCode]);
+            $exRow = $stEx->fetch();
+            $pr = ($exRow && !empty($exRow['period_rates_json'])) ? (json_decode($exRow['period_rates_json'], true) ?: []) : [];
+            $pr[$periodId] = $baseRates;
+
+            $activeBase = ($periodId === $curActiveId || !$exRow) ? $baseRates : (json_decode($exRow['base_rates_json'] ?? '{}', true) ?: $baseRates);
+
+            $sortOrder = (int)($jsonBody['sort_order'] ?? ($exRow['sort_order'] ?? 0));
             if ($sortOrder <= 0) {
                 $sortOrder = ((int)$pdo->query("SELECT COALESCE(MAX(sort_order), 0) FROM tms_routes")->fetchColumn()) + 1;
             }
             $st = $pdo->prepare("
-                INSERT INTO tms_routes (route_code, dia_diem, tinh, base_rates_json, notes, sort_order)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO tms_routes (route_code, dia_diem, tinh, base_rates_json, period_rates_json, notes, sort_order)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
                     dia_diem = VALUES(dia_diem),
                     tinh = VALUES(tinh),
                     base_rates_json = VALUES(base_rates_json),
+                    period_rates_json = VALUES(period_rates_json),
                     notes = VALUES(notes)
             ");
             $st->execute([
                 $routeCode,
                 $diaDiem,
                 $tinh,
-                json_encode($baseRates, JSON_UNESCAPED_UNICODE),
+                json_encode($activeBase, JSON_UNESCAPED_UNICODE),
+                json_encode($pr, JSON_UNESCAPED_UNICODE),
                 $notes,
                 $sortOrder
             ]);

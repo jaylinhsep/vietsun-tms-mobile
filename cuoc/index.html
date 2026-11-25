@@ -596,13 +596,13 @@
         <span class="stat-sub" id="statMatchedVol">Đạt 84.0% tổng sản lượng Trucking 2026</span>
       </div>
       <div class="stat-card">
-        <span class="stat-label">⛽ Biến Động Cước Theo Giá Dầu DO</span>
-        <div class="stat-value" style="color: var(--accent)" id="statAdjDisplay">+3.20%</div>
-        <span class="stat-sub" id="statDoBase">Giá DO cơ sở: 18,090 đ/lít (Áp dụng 21/07/2026)</span>
+        <span class="stat-label">⛽ Kỳ Giá Cước & Dầu DO Đang Xem</span>
+        <div class="stat-value" style="color: var(--accent); font-size: 18px;" id="statAdjDisplay">Kỳ 25/08/2026 (+3.2%)</div>
+        <span class="stat-sub" id="statDoBase">Dầu DO: 28.540 đ/lít • Giá chuẩn gồm VAT 8%</span>
       </div>
     </div>
 
-    <!-- Navigation Tabs & Global % Rate Mode Switcher -->
+    <!-- Navigation Tabs & Saved Adjustment Period Selector -->
     <div class="tabs-bar">
       <div class="tabs-left">
         <button class="tab-btn active" id="tabBtnRoutes" onclick="switchTab('routes')">
@@ -619,13 +619,13 @@
       </div>
 
       <div class="adj-control">
-        <label for="adjPercentInput">Biến động cước chung (%):</label>
-        <input type="number" step="0.1" id="adjPercentInput" class="adj-input" value="3.2" onchange="saveAdjPercent()" />
-        <button class="btn btn-sm btn-primary" onclick="saveAdjPercent()">Lưu %</button>
-        <div class="mode-switch">
-          <button class="mode-btn active" id="modeBtnAdjusted" onclick="setRateMode('adjusted')">Giá Thực Tế (+%)</button>
-          <button class="mode-btn" id="modeBtnBase" onclick="setRateMode('base')">Giá Gốc (21/07)</button>
+        <label for="periodSelect">📅 Kỳ bảng giá:</label>
+        <select id="periodSelect" class="select" style="font-weight:800; color:#0f3a6d; border-color:#93c5fd; padding:5px 9px;" onchange="onChangePeriodSelect(this.value)"></select>
+        <div class="mode-switch" title="Chuyển đổi giữa Giá đã gồm VAT 8% (Chuẩn bảng cước) và Giá chưa gồm VAT">
+          <button class="mode-btn active" id="modeBtnVat" onclick="setVatMode('vat')">Đã gồm VAT 8%</button>
+          <button class="mode-btn" id="modeBtnNoVat" onclick="setVatMode('no_vat')">Chưa gồm VAT</button>
         </div>
+        <button class="btn btn-sm btn-warning" onclick="openPeriodModal()">⛽ + Điều Chỉnh Giá (% DO)</button>
       </div>
     </div>
 
@@ -947,10 +947,69 @@
     </div>
   </div>
 
+  <!-- Modal Quản Lý & Tạo Đợt Điều Chỉnh Giá Cước Mới Theo Dầu DO -->
+  <div class="modal-backdrop" id="periodModal">
+    <div class="modal" style="max-width: 820px;">
+      <div class="modal-header" style="background: linear-gradient(135deg, #0f3a6d 0%, #0284c7 100%);">
+        <h3>⛽ Quản Lý Lịch Sử & Tạo Đợt Điều Chỉnh Giá Cước Theo Dầu DO</h3>
+        <button class="btn btn-sm btn-outline" onclick="closePeriodModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:12px; margin-bottom:14px;">
+          <div style="font-size:12px; font-weight:800; color:#0f3a6d; margin-bottom:8px;">
+            📜 DANH SÁCH CÁC KỲ BẢNG GIÁ ĐÃ LƯU TRONG HỆ THỐNG (MỖI ĐỢT ĐIỀU CHỈNH ĐỀU LƯU BẢNG GIÁ RIÊNG):
+          </div>
+          <div id="savedPeriodsListBox" style="display:flex; flex-direction:column; gap:6px;"></div>
+        </div>
+
+        <div style="background:#fffbeb; border:1px solid #fcd34d; border-radius:8px; padding:12px; margin-bottom:14px; font-size:12px; color:#92400e; line-height:1.5;">
+          📐 <strong>Quy tắc tính chuẩn Excel (Triệt tiêu 100% lỗi lệch hàng đơn vị):</strong><br/>
+          • Bước 1: Lấy <strong>Giá chưa gồm VAT</strong> của kỳ trước nhân với hệ số biến động: <code>Giá_Chưa_VAT_Mới = Giá_Chưa_VAT_Kỳ_Trước × (1 + % Điều_Chỉnh)</code><br/>
+          • Bước 2: Nhân tiếp <strong>8% VAT</strong> và làm tròn đến hàng đơn vị: <code>Giá_Chuẩn_Gồm_VAT = ROUND(Giá_Chưa_VAT_Mới × 1.08, 0)</code>
+        </div>
+
+        <h4 style="font-size:13px; font-weight:800; color:#0f3a6d; margin-bottom:10px;">➕ TẠO ĐỢT ĐIỀU CHỈNH GIÁ CƯỚC MỚI & LƯU BẢNG GIÁ:</h4>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>1. LẤY GIÁ CHƯA VAT TỪ KỲ NÀO LÀM CƠ SỞ NHÂN % ĐIỀU CHỈNH?</label>
+            <select id="fmPeriodBaseId" class="select" style="font-weight:700; color:#0f3a6d;" onchange="updatePeriodFormulaPreview()"></select>
+          </div>
+          <div class="form-group">
+            <label>2. NGÀY ÁP DỤNG KỲ MỚI</label>
+            <input type="date" id="fmPeriodDate" class="input" style="font-weight:700;" onchange="updatePeriodFormulaPreview()" />
+          </div>
+          <div class="form-group">
+            <label>3. GIÁ DẦU DO KỲ MỚI (VNĐ / LÍT)</label>
+            <input type="number" step="10" id="fmPeriodDoPrice" class="input" value="28540" placeholder="VD: 28540" oninput="updatePeriodFormulaPreview()" />
+          </div>
+          <div class="form-group">
+            <label>4. MỨC ĐIỀU CHỈNH TĂNG / GIẢM (%)</label>
+            <input type="number" step="0.1" id="fmPeriodAdjPct" class="input" value="3.2" placeholder="VD: 3.2 hoặc -2.5" style="font-weight:800; color:#b45309;" oninput="updatePeriodFormulaPreview()" />
+          </div>
+          <div class="form-group">
+            <label>5. GHI CHÚ / TÊN KỲ (Để trống sẽ tự tạo theo Ngày & Giá DO)</label>
+            <input type="text" id="fmPeriodLabel" class="input" placeholder="Tự động: Kỳ DD/MM/YYYY (Dầu DO ...)" />
+          </div>
+        </div>
+
+        <div id="periodFormulaPreviewBox" style="margin-top:12px; padding:11px 14px; background:#f0fdf4; border:1px solid #86efac; border-radius:8px; font-size:12px; color:#166534;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-light" onclick="closePeriodModal()">Đóng</button>
+        <button class="btn btn-primary" onclick="submitCreateAdjustmentPeriod()">💾 Tạo Kỳ Mới & Lưu Bảng Giá Đã Điều Chỉnh</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toastBox"></div>
 
   <script>
     const DEFAULT_CARRIERS = ['VIETSUN', 'NHAT SON', 'DUONG NGUYEN', 'PHUC TRUONG AN', 'TAN TIEN PHAT', 'TUAN HUNG'];
+    const DEFAULT_PERIODS = [
+      { id: '2026-07-21', effective_date: '2026-07-21', label: 'Kỳ 21/07/2026 (Dầu DO 23.320 đ/lít | +3.0%)', do_price: 23320, adj_percent: 3.0, base_period_id: '2026-07-07' },
+      { id: '2026-07-28', effective_date: '2026-07-28', label: 'Kỳ 28/07/2026 (Dầu DO 25.760 đ/lít | +3.2%)', do_price: 25760, adj_percent: 3.2, base_period_id: '2026-07-21' },
+      { id: '2026-08-25', effective_date: '2026-08-25', label: 'Kỳ 25/08/2026 (Dầu DO 28.540 đ/lít | +3.2%)', do_price: 28540, adj_percent: 3.2, base_period_id: '2026-07-28' }
+    ];
 
     // Quy tắc sáp nhập tỉnh theo yêu cầu:
     // Bình Dương => HCM, BRVT => HCM, Bình Thuận => Lâm Đồng, Đăk Nông => Lâm Đồng,
@@ -987,14 +1046,23 @@
     };
 
     let appData = {
-      config: { adj_percent: 0.032, do_base_price: 18090, effective_date: '2026-07-21', carriers: DEFAULT_CARRIERS, notes: [] },
+      config: {
+        adj_percent: 0.032,
+        do_base_price: 28540,
+        effective_date: '2026-08-25',
+        active_period_id: '2026-08-25',
+        periods: DEFAULT_PERIODS,
+        carriers: DEFAULT_CARRIERS,
+        notes: []
+      },
       routes: [],
       warehouses: []
     };
     let routeMap = {};
     let whMap = {};
     let routeWhCountMap = {};
-    let rateMode = 'adjusted'; // 'adjusted' | 'base'
+    let currentPeriodId = '2026-08-25';
+    let vatMode = 'vat'; // 'vat' (Đã gồm VAT 8% chuẩn) | 'no_vat' (Chưa gồm VAT)
     let currentTab = 'routes';
 
     // Warehouse pagination & selection
@@ -1011,6 +1079,56 @@
       return (Array.isArray(list) && list.length > 0) ? list : DEFAULT_CARRIERS;
     }
 
+    function getPeriods() {
+      const list = appData.config?.periods;
+      return (Array.isArray(list) && list.length > 0) ? list : DEFAULT_PERIODS;
+    }
+
+    function getCurrentPeriodMeta() {
+      const periods = getPeriods();
+      return periods.find(p => p.id === currentPeriodId) || periods[periods.length - 1] || DEFAULT_PERIODS[2];
+    }
+
+    // Lấy bảng giá của tuyến đường theo kỳ đang chọn (currentPeriodId)
+    function getRouteRatesForCurrentPeriod(route) {
+      if (!route) return {};
+      if (route.period_rates && route.period_rates[currentPeriodId]) {
+        return route.period_rates[currentPeriodId];
+      }
+      return route.base_rates || {};
+    }
+
+    // Lấy đơn giá hiển thị (Đã gồm VAT 8% hoặc Chưa gồm VAT) cho 1 nhà xe trên 1 tuyến, nếu trống tự lấy theo VIETSUN
+    function getRouteCarrierRate(route, carrierKey, sizeKey = 'c20') {
+      if (!route) return 0;
+      const tbl = getRouteRatesForCurrentPeriod(route);
+      const vsObj = tbl['VIETSUN'] || {};
+      const cObj = tbl[carrierKey] || {};
+      const noVatKey = sizeKey === 'c40' ? 'c40_no_vat' : 'c20_no_vat';
+
+      if (vatMode === 'no_vat') {
+        let nv = Number(cObj[noVatKey] || 0);
+        if (!nv || nv <= 0) {
+          const v = Number(cObj[sizeKey] || 0);
+          nv = v > 0 ? (v / 1.08) : 0;
+        }
+        if ((!nv || nv <= 0) && carrierKey !== 'VIETSUN') {
+          nv = Number(vsObj[noVatKey] || 0);
+          if (!nv || nv <= 0) {
+            const vVs = Number(vsObj[sizeKey] || 0);
+            nv = vVs > 0 ? (vVs / 1.08) : 0;
+          }
+        }
+        return nv > 0 ? Math.round(nv) : 0;
+      } else {
+        let v = Number(cObj[sizeKey] || 0);
+        if ((!v || v <= 0) && carrierKey !== 'VIETSUN') {
+          v = Number(vsObj[sizeKey] || 0);
+        }
+        return v > 0 ? Math.round(v) : 0;
+      }
+    }
+
     function showToast(msg, bg = '#0f172a') {
       const el = document.getElementById('toastBox');
       el.textContent = msg;
@@ -1024,14 +1142,6 @@
       const n = Number(val || 0);
       if (!n || n <= 0) return '-';
       return Math.round(n).toLocaleString('vi-VN');
-    }
-
-    function getEffectiveRate(baseVal) {
-      const n = Number(baseVal || 0);
-      if (!n || n <= 0) return 0;
-      if (rateMode === 'base') return Math.round(n);
-      const adj = Number(appData.config.adj_percent || 0);
-      return Math.round(n * (1 + adj));
     }
 
     function normStr(s) {
@@ -1061,7 +1171,8 @@
         appData.routes.forEach(r => { r.tinh = normalizeMergedProvince(r.tinh); });
         appData.warehouses.forEach(w => { w.tinh_tms = normalizeMergedProvince(w.tinh_tms); });
 
-        document.getElementById('adjPercentInput').value = ((appData.config.adj_percent || 0) * 100).toFixed(2);
+        currentPeriodId = appData.config.active_period_id || '2026-08-25';
+        renderPeriodSelectDropdown();
         rebuildMapsAndStats();
         populateFilters();
         renderRoutesTable();
@@ -1069,6 +1180,51 @@
       } catch (err) {
         showToast('Lỗi tải dữ liệu: ' + err.message, '#dc2626');
       }
+    }
+
+    function renderPeriodSelectDropdown() {
+      const sel = document.getElementById('periodSelect');
+      if (!sel) return;
+      const periods = [...getPeriods()].reverse(); // Kỳ mới nhất lên đầu
+      const activeId = appData.config.active_period_id || '2026-08-25';
+      sel.innerHTML = periods.map(p => {
+        const isAct = p.id === activeId;
+        return `<option value="${p.id}" ${p.id === currentPeriodId ? 'selected' : ''}>${isAct ? '📌 ' : '📜 '}${p.label}${isAct ? ' [Đang áp dụng]' : ''}</option>`;
+      }).join('');
+    }
+
+    async function onChangePeriodSelect(periodId) {
+      currentPeriodId = periodId;
+      rebuildMapsAndStats();
+      renderRoutesTable();
+      renderWarehousesPage();
+      if (currentTab === 'calculator') renderLivePricingTable();
+
+      // Đồng bộ kỳ đang chọn làm kỳ áp dụng mặc định trên hệ thống
+      try {
+        const res = await fetch('/api/index.php?route=cuoc/set-active-period', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ period_id: periodId })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          appData.config.active_period_id = periodId;
+          renderPeriodSelectDropdown();
+          const pm = getCurrentPeriodMeta();
+          showToast(`Đã chuyển sang bảng giá: ${pm.label}`, '#0284c7');
+        }
+      } catch (e) {}
+    }
+
+    function setVatMode(mode) {
+      vatMode = mode;
+      document.getElementById('modeBtnVat').classList.toggle('active', mode === 'vat');
+      document.getElementById('modeBtnNoVat').classList.toggle('active', mode === 'no_vat');
+      rebuildMapsAndStats();
+      renderRoutesTable();
+      renderWarehousesPage();
+      if (currentTab === 'calculator') renderLivePricingTable();
     }
 
     function rebuildMapsAndStats() {
@@ -1113,15 +1269,20 @@
       document.getElementById('statMatchedWh').textContent = `${matchedWh.toLocaleString('vi-VN')} kho`;
       document.getElementById('statMatchedVol').textContent = `Bao phủ ${matchedConts.toLocaleString('vi-VN')} cont (${pctVol}% sản lượng Trucking 2026)`;
 
-      const adjPct = ((appData.config.adj_percent || 0) * 100).toFixed(2);
-      document.getElementById('statAdjDisplay').textContent = (adjPct >= 0 ? '+' : '') + adjPct + '%';
+      const pm = getCurrentPeriodMeta();
+      const pParts = String(pm.effective_date || pm.id || '').split('-');
+      const shortDate = pParts.length >= 3 ? `${pParts[2]}/${pParts[1]}/${pParts[0]}` : pm.id;
+      const pctNum = Number(pm.adj_percent || 0);
+      const signPct = (pctNum >= 0 ? '+' : '') + pctNum + '%';
+      document.getElementById('statAdjDisplay').textContent = `Kỳ ${shortDate} (${signPct})`;
+      document.getElementById('statDoBase').textContent = `Dầu DO: ${Number(pm.do_price || 28540).toLocaleString('vi-VN')} đ/lít • ${vatMode === 'vat' ? 'Giá đã gồm VAT 8%' : 'Giá chưa gồm VAT'}`;
 
       // Build datalist for route pickers (including NGOAI-LE option)
       const dl = document.getElementById('routesDatalist');
       dl.innerHTML = `<option value="NGOAI-LE">🟣 KHO NGOẠI LỆ — Giữ nguyên giá đã Debit lịch sử trước đó</option>` +
         appData.routes.map(r => {
-          const vs20 = fmtMoney(getEffectiveRate(r.base_rates?.VIETSUN?.c20));
-          const vs40 = fmtMoney(getEffectiveRate(r.base_rates?.VIETSUN?.c40));
+          const vs20 = fmtMoney(getRouteCarrierRate(r, 'VIETSUN', 'c20'));
+          const vs40 = fmtMoney(getRouteCarrierRate(r, 'VIETSUN', 'c40'));
           return `<option value="${r.route_code}">${r.dia_diem} (${r.tinh}) — VS 20': ${vs20} | 40': ${vs40}</option>`;
         }).join('');
 
@@ -1165,33 +1326,145 @@
       }
     }
 
-    function setRateMode(mode) {
-      rateMode = mode;
-      document.getElementById('modeBtnAdjusted').classList.toggle('active', mode === 'adjusted');
-      document.getElementById('modeBtnBase').classList.toggle('active', mode === 'base');
-      rebuildMapsAndStats();
-      renderRoutesTable();
-      renderWarehousesPage();
-      if (currentTab === 'calculator') renderLivePricingTable();
+    // =========================================================================
+    // MODAL QUẢN LÝ LỊCH SỬ & TẠO ĐỢT ĐIỀU CHỈNH GIÁ CƯỚC MỚI THEO DẦU DO
+    // =========================================================================
+    function openPeriodModal() {
+      const pm = getCurrentPeriodMeta();
+      document.getElementById('fmPeriodDate').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('fmPeriodDoPrice').value = pm.do_price || 28540;
+      document.getElementById('fmPeriodAdjPct').value = '3.2';
+      document.getElementById('fmPeriodLabel').value = '';
+
+      renderSavedPeriodsInModal();
+      updatePeriodFormulaPreview();
+      document.getElementById('periodModal').classList.add('show');
     }
 
-    async function saveAdjPercent() {
-      const val = parseFloat(document.getElementById('adjPercentInput').value || '0') / 100;
-      appData.config.adj_percent = val;
-      rebuildMapsAndStats();
-      renderRoutesTable();
-      renderWarehousesPage();
-      if (currentTab === 'calculator') renderLivePricingTable();
+    function closePeriodModal() {
+      document.getElementById('periodModal').classList.remove('show');
+    }
+
+    function renderSavedPeriodsInModal() {
+      const periods = [...getPeriods()].reverse();
+      const activeId = appData.config.active_period_id || '2026-08-25';
+      const box = document.getElementById('savedPeriodsListBox');
+      box.innerHTML = periods.map(p => {
+        const isAct = p.id === activeId;
+        const isCur = p.id === currentPeriodId;
+        const safeId = escJsStr(p.id);
+        return `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; border-radius:7px; background:${isCur ? '#e0f2fe' : '#fff'}; border:1px solid ${isCur ? '#38bdf8' : '#e2e8f0'};">
+            <div>
+              <div style="font-weight:800; color:#0f3a6d; font-size:12.5px;">
+                ${isAct ? '📌 ' : '📜 '}${p.label}
+                ${isAct ? `<span style="background:#dcfce7; color:#15803d; padding:1px 7px; border-radius:99px; font-size:10.5px; margin-left:6px;">Đang áp dụng</span>` : ''}
+              </div>
+              <div style="font-size:11px; color:#64748b; margin-top:2px;">
+                Mã kỳ: <code>${p.id}</code> • Dầu DO: <strong>${Number(p.do_price || 0).toLocaleString('vi-VN')} đ/lít</strong> • Điều chỉnh: <strong>${Number(p.adj_percent || 0) >= 0 ? '+' : ''}${p.adj_percent}%</strong> (Từ kỳ gốc: <code>${p.base_period_id || 'Gốc'}</code>)
+              </div>
+            </div>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <button class="btn btn-sm ${isAct ? 'btn-success' : 'btn-primary'}" onclick="selectAndApplyPeriodFromModal('${safeId}')">
+                ${isAct ? '✓ Đang xem & áp dụng' : '📌 Xem & Áp dụng kỳ này'}
+              </button>
+              ${periods.length > 1 ? `<button class="btn btn-sm btn-light" style="color:#dc2626;" onclick="deleteSavedPeriod('${safeId}')" title="Xóa kỳ giá này">🗑️</button>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const baseSel = document.getElementById('fmPeriodBaseId');
+      baseSel.innerHTML = periods.map(p => {
+        return `<option value="${p.id}" ${p.id === currentPeriodId ? 'selected' : ''}>${p.label} (Mã kỳ: ${p.id})</option>`;
+      }).join('');
+    }
+
+    async function selectAndApplyPeriodFromModal(periodId) {
+      await onChangePeriodSelect(periodId);
+      renderSavedPeriodsInModal();
+      updatePeriodFormulaPreview();
+    }
+
+    function updatePeriodFormulaPreview() {
+      const baseId = document.getElementById('fmPeriodBaseId').value || currentPeriodId;
+      const pct = parseFloat(document.getElementById('fmPeriodAdjPct').value || '0');
+      const factor = 1 + (pct / 100);
+      const r1 = appData.routes[0]; // BI-KĐA-001 (KCN Đồng An 2)
+      const r9 = appData.routes[8]; // BI-KBĐ-009 (KCN Bình Đường - Dĩ An)
+      const previewBox = document.getElementById('periodFormulaPreviewBox');
+      if (!r1 || !previewBox) return;
+
+      const buildSampleLine = (rt) => {
+        if (!rt) return '';
+        const srcTbl = (rt.period_rates && rt.period_rates[baseId]) ? rt.period_rates[baseId] : (rt.base_rates || {});
+        const vs = srcTbl['VIETSUN'] || {};
+        const prevNoVat20 = Number(vs.c20_no_vat || (vs.c20 ? vs.c20 / 1.08 : 0));
+        const prevVat20 = Number(vs.c20 || 0);
+        const newNoVat20 = prevNoVat20 * factor;
+        const newVat20 = Math.round(newNoVat20 * 1.08);
+        return `• <strong>${rt.route_code} (${rt.dia_diem} - Cont 20')</strong>: Giá kỳ trước = <strong>${fmtMoney(prevVat20)}đ</strong> (Chưa VAT: <code>${fmtMoney(Math.round(prevNoVat20))}đ</code>) ➔ Nhân <code>${pct >= 0 ? '+' : ''}${pct}%</code> ra Chưa VAT mới = <code>${fmtMoney(Math.round(newNoVat20))}đ</code> ➔ Nhân <code>8% VAT</code> = <strong style="color:#15803d; font-size:13px;">${fmtMoney(newVat20)} đ</strong>`;
+      };
+
+      previewBox.innerHTML = `
+        <div style="font-weight:800; margin-bottom:4px;">🔍 XEM TRƯỚC KẾT QUẢ TÍNH CƯỚC KỲ MỚI (CHUẨN EXCEL):</div>
+        <div>${buildSampleLine(r1)}</div>
+        <div style="margin-top:3px;">${buildSampleLine(r9)}</div>
+      `;
+    }
+
+    async function submitCreateAdjustmentPeriod() {
+      const base_period_id = document.getElementById('fmPeriodBaseId').value || currentPeriodId;
+      const effective_date = document.getElementById('fmPeriodDate').value;
+      const do_price = parseInt(document.getElementById('fmPeriodDoPrice').value || '28540', 10);
+      const adj_percent = parseFloat(document.getElementById('fmPeriodAdjPct').value || '0');
+      const label = document.getElementById('fmPeriodLabel').value.trim();
+
+      if (!effective_date) {
+        showToast('Vui lòng chọn Ngày áp dụng cho đợt điều chỉnh giá!', '#dc2626');
+        return;
+      }
 
       try {
-        await fetch('/api/index.php?route=cuoc/save-config', {
+        const res = await fetch('/api/index.php?route=cuoc/create-period', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ adj_percent: val })
+          body: JSON.stringify({
+            base_period_id,
+            effective_date,
+            do_price,
+            adj_percent,
+            label
+          })
         });
-        showToast(`Đã cập nhật mức biến động cước chung: ${(val * 100).toFixed(2)}%`, '#16a34a');
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Lỗi tạo kỳ điều chỉnh');
+        showToast(data.message, '#16a34a');
+        closePeriodModal();
+        await loadOverview();
       } catch (e) {
-        showToast('Lỗi lưu cấu hình: ' + e.message, '#dc2626');
+        showToast('Lỗi tạo đợt điều chỉnh giá: ' + e.message, '#dc2626');
+      }
+    }
+
+    async function deleteSavedPeriod(periodId) {
+      if (!confirm(`Bạn có chắc muốn XÓA kỳ bảng giá [${periodId}] khỏi lịch sử không?`)) return;
+      try {
+        const res = await fetch('/api/index.php?route=cuoc/delete-period', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ period_id: periodId })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+        showToast(data.message, '#16a34a');
+        await loadOverview();
+        if (document.getElementById('periodModal').classList.contains('show')) {
+          renderSavedPeriodsInModal();
+          updatePeriodFormulaPreview();
+        }
+      } catch (e) {
+        showToast('Lỗi xóa kỳ bảng giá: ' + e.message, '#dc2626');
       }
     }
 
@@ -1205,6 +1478,7 @@
     function renderRoutesTable() {
       const carriers = getCarriers();
       const thead = document.getElementById('routesThead');
+      const vatBadgeText = vatMode === 'vat' ? 'GỒM VAT 8%' : 'CHƯA VAT';
       const carrierGroupHeaders = carriers.map(c => {
         const isVs = c === 'VIETSUN';
         const bg = isVs ? 'background:#15803d;' : '';
@@ -1216,7 +1490,7 @@
              </span>`
           : '';
         return `<th colspan="2" style="text-align:center; max-width:260px; white-space:normal; line-height:1.3; ${bg}">
-          <span>${c}${isVs ? ' (CHUẨN)' : ''}</span>${actionBtns}
+          <span>${c}${isVs ? ` (CHUẨN - ${vatBadgeText})` : ''}</span>${actionBtns}
         </th>`;
       }).join('');
 
@@ -1253,21 +1527,16 @@
         return true;
       });
 
+      const pm = getCurrentPeriodMeta();
       document.getElementById('routeFilterSummary').textContent =
-        `Đang hiển thị ${list.length} / ${appData.routes.length} mã tuyến đường (${rateMode === 'adjusted' ? 'Giá thực tế sau điều chỉnh %' : 'Giá gốc 21/07/2026'})`;
+        `Đang hiển thị ${list.length} / ${appData.routes.length} mã tuyến • ${pm.label} • Chế độ: ${vatMode === 'vat' ? 'GIÁ CƯỚC BAO GỒM VAT 8% (CHUẨN)' : 'GIÁ CƯỚC CHƯA BAO GỒM VAT'}`;
 
       const tbody = document.getElementById('routesTbody');
       tbody.innerHTML = list.map((r, idx) => {
-        const br = r.base_rates || {};
         const whCnt = routeWhCountMap[r.route_code] || 0;
-        const vsBase20 = br['VIETSUN']?.c20 || 0;
-        const vsBase40 = br['VIETSUN']?.c40 || 0;
         const cells = carriers.map(c => {
-          // Yêu cầu 1: Những ô cước mà Vendor đang để trống (0) thì tự động lấy bằng giá VIETSUN
-          const raw20 = (br[c]?.c20 && br[c].c20 > 0) ? br[c].c20 : vsBase20;
-          const raw40 = (br[c]?.c40 && br[c].c40 > 0) ? br[c].c40 : vsBase40;
-          const c20 = getEffectiveRate(raw20);
-          const c40 = getEffectiveRate(raw40);
+          const c20 = getRouteCarrierRate(r, c, 'c20');
+          const c40 = getRouteCarrierRate(r, c, 'c40');
           const cls = c === 'VIETSUN' ? 'num num-vs' : 'num';
           return `<td class="${cls}">${fmtMoney(c20)}</td><td class="${cls}">${fmtMoney(c40)}</td>`;
         }).join('');
@@ -1489,10 +1758,10 @@
         const r = (!isException && w.route_code) ? routeMap[w.route_code] : null;
         const vs20 = isException
           ? Number(w.custom_rates?.c20 || w.custom_rates?.c40 || 0)
-          : (r ? getEffectiveRate(r.base_rates?.VIETSUN?.c20) : 0);
+          : (r ? getRouteCarrierRate(r, 'VIETSUN', 'c20') : 0);
         const vs40 = isException
           ? Number(w.custom_rates?.c40 || w.custom_rates?.c20 || 0)
-          : (r ? getEffectiveRate(r.base_rates?.VIETSUN?.c40) : 0);
+          : (r ? getRouteCarrierRate(r, 'VIETSUN', 'c40') : 0);
         const isChecked = selectedWhCodes.has(w.wh_code);
 
         let statusHtml = '';
@@ -1808,16 +2077,14 @@
         const sizeKey = is40 ? 'c40' : 'c20';
         const vsRate = isException
           ? Number(wh.custom_rates?.[sizeKey] || wh.custom_rates?.c40 || wh.custom_rates?.c20 || 0)
-          : (route ? getEffectiveRate(route.base_rates?.VIETSUN?.[sizeKey]) : 0);
+          : (route ? getRouteCarrierRate(route, 'VIETSUN', sizeKey) : 0);
 
         const carrierKey = resolveVendorCarrierKey(item.donViVcPo);
         let vendorRate = 0;
         if (isException) {
           vendorRate = vsRate;
         } else if (route && carrierKey) {
-          const rawVRate = route.base_rates?.[carrierKey]?.[sizeKey];
-          const fallbackVs = route.base_rates?.VIETSUN?.[sizeKey];
-          vendorRate = getEffectiveRate((rawVRate && rawVRate > 0) ? rawVRate : fallbackVs);
+          vendorRate = getRouteCarrierRate(route, carrierKey, sizeKey);
         }
 
         if (route || isException) {
@@ -1888,17 +2155,19 @@
       document.getElementById('btnDeleteRouteInModal').style.display = r ? 'inline-flex' : 'none';
 
       const carriers = getCarriers();
+      const tbl = r ? getRouteRatesForCurrentPeriod(r) : {};
+      const pm = getCurrentPeriodMeta();
       const grid = document.getElementById('fmCarrierRatesGrid');
       grid.innerHTML = carriers.map((c, idx) => {
-        const c20 = r?.base_rates?.[c]?.c20 || '';
-        const c40 = r?.base_rates?.[c]?.c40 || '';
+        const c20 = tbl?.[c]?.c20 || tbl?.['VIETSUN']?.c20 || '';
+        const c40 = tbl?.[c]?.c40 || tbl?.['VIETSUN']?.c40 || '';
         return `
           <div class="form-group">
-            <label>${c} — CONT 20' (Giá Gốc)</label>
+            <label>${c} — CONT 20' (Gồm VAT 8% - ${pm.effective_date || pm.id})</label>
             <input type="number" class="input" id="rate_c20_${idx}" data-carrier="${c}" value="${c20}" placeholder="VNĐ Cont 20'" />
           </div>
           <div class="form-group">
-            <label>${c} — CONT 40' (Giá Gốc)</label>
+            <label>${c} — CONT 40' (Gồm VAT 8% - ${pm.effective_date || pm.id})</label>
             <input type="number" class="input" id="rate_c40_${idx}" data-carrier="${c}" value="${c40}" placeholder="VNĐ Cont 40'" />
           </div>
         `;
@@ -1920,11 +2189,18 @@
         return;
       }
       const carriers = getCarriers();
+      const existingRoute = routeMap[route_code];
+      const existingTbl = existingRoute ? getRouteRatesForCurrentPeriod(existingRoute) : {};
       const base_rates = {};
       carriers.forEach((c, idx) => {
+        const c20 = Number(document.getElementById(`rate_c20_${idx}`)?.value || 0);
+        const c40 = Number(document.getElementById(`rate_c40_${idx}`)?.value || 0);
+        const oldObj = existingTbl[c] || {};
         base_rates[c] = {
-          c20: Number(document.getElementById(`rate_c20_${idx}`)?.value || 0),
-          c40: Number(document.getElementById(`rate_c40_${idx}`)?.value || 0)
+          c20,
+          c40,
+          c20_no_vat: (oldObj.c20 === c20 && oldObj.c20_no_vat) ? oldObj.c20_no_vat : (c20 / 1.08),
+          c40_no_vat: (oldObj.c40 === c40 && oldObj.c40_no_vat) ? oldObj.c40_no_vat : (c40 / 1.08)
         };
       });
 
@@ -1932,7 +2208,7 @@
         const res = await fetch('/api/index.php?route=cuoc/save-route', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ route_code, tinh, dia_diem, base_rates })
+          body: JSON.stringify({ route_code, tinh, dia_diem, base_rates, period_id: currentPeriodId })
         });
         const data = await res.json();
         if (!data.ok) throw new Error(data.error);
@@ -2045,9 +2321,6 @@
         ws1.addRow(head1);
 
         appData.routes.forEach((r, idx) => {
-          const br = r.base_rates || {};
-          const vsBase20 = br['VIETSUN']?.c20 || 0;
-          const vsBase40 = br['VIETSUN']?.c40 || 0;
           const row = [
             idx + 1,
             r.route_code,
@@ -2056,9 +2329,7 @@
             routeWhCountMap[r.route_code] || 0
           ];
           carriers.forEach(c => {
-            const raw20 = (br[c]?.c20 && br[c].c20 > 0) ? br[c].c20 : vsBase20;
-            const raw40 = (br[c]?.c40 && br[c].c40 > 0) ? br[c].c40 : vsBase40;
-            row.push(getEffectiveRate(raw20), getEffectiveRate(raw40));
+            row.push(getRouteCarrierRate(r, c, 'c20'), getRouteCarrierRate(r, c, 'c40'));
           });
           ws1.addRow(row);
         });
@@ -2075,10 +2346,10 @@
           const r = (!isException && w.route_code) ? routeMap[w.route_code] : null;
           const c20 = isException
             ? Number(w.custom_rates?.c20 || w.custom_rates?.c40 || 0)
-            : (r ? getEffectiveRate(r.base_rates?.VIETSUN?.c20) : 0);
+            : (r ? getRouteCarrierRate(r, 'VIETSUN', 'c20') : 0);
           const c40 = isException
             ? Number(w.custom_rates?.c40 || w.custom_rates?.c20 || 0)
-            : (r ? getEffectiveRate(r.base_rates?.VIETSUN?.c40) : 0);
+            : (r ? getRouteCarrierRate(r, 'VIETSUN', 'c40') : 0);
           ws2.addRow([
             w.wh_code,
             w.kho_name,
