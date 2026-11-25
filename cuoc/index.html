@@ -1718,15 +1718,37 @@
     // =========================================================================
     // TAB 3: LIVE SHIPMENT AUTO-PRICING CALCULATOR
     // =========================================================================
+    function getBillingCycleParam(isoDateStr) {
+      const parts = String(isoDateStr || '').split('-');
+      if (parts.length < 3) return new Date().toISOString().slice(0, 7) + '-01';
+      let y = parseInt(parts[0], 10);
+      let m = parseInt(parts[1], 10);
+      const d = parseInt(parts[2], 10);
+      if (d >= 26) {
+        m += 1;
+        if (m > 12) { m = 1; y += 1; }
+      }
+      return `${y}-${String(m).padStart(2, '0')}-01`;
+    }
+
     async function loadLiveShipmentsForPricing() {
       const dt = document.getElementById('calcDateInput').value || new Date().toISOString().slice(0, 10);
+      const cycleParam = getBillingCycleParam(dt);
       const tbody = document.getElementById('calcTbody');
-      tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:24px; font-weight:600;">⏳ Đang tải danh sách chuyến hàng từ TMS Gốc và đối chiếu Mã Kho / Mã Tuyến Đường...</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:24px; font-weight:600;">⏳ Đang tải danh sách chuyến hàng ngày ${dt} (Kỳ ${cycleParam}) từ TMS Gốc và đối chiếu Mã Kho / Mã Tuyến Đường...</td></tr>`;
 
       try {
-        const res = await fetch(`/index.php?route=return_json&date=${encodeURIComponent(dt)}`);
-        const data = await res.json();
-        liveShipments = Array.isArray(data) ? data : (data.data || []);
+        const res = await fetch(`/api/index.php?route=return_json&ngay=${encodeURIComponent(cycleParam)}`);
+        const text = await res.text();
+        if (!text || !text.trim()) throw new Error('Phản hồi rỗng từ máy chủ');
+        const data = JSON.parse(text.trim());
+        const allArr = Array.isArray(data) ? data : Object.values(data.data || data || {});
+        // Filter by selected date if matches exist, otherwise show the cycle's shipments
+        const byDate = allArr.filter(it => {
+          const itemDate = String(it.ngayTraHang || it.ngayTraHangPo || it.timeThucHien || '').slice(0, 10);
+          return itemDate === dt;
+        });
+        liveShipments = byDate.length > 0 ? byDate : allArr;
         renderLivePricingTable();
       } catch (e) {
         tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:24px; color:#dc2626;">Lỗi tải dữ liệu TMS: ${e.message}</td></tr>`;
@@ -1829,7 +1851,7 @@
         return `
           <tr>
             <td style="text-align:center; color:#64748b;">${idx + 1}</td>
-            <td style="font-weight:600;">${it.ngayTraHangPo || '-'}</td>
+            <td style="font-weight:600;">${it.ngayTraHang || it.ngayTraHangPo || it.timeThucHien || '-'}</td>
             <td>${xnBadge}</td>
             <td>
               <div style="font-weight:800; color:#0f172a;">${it.soContPo || '--'}</div>

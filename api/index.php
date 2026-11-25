@@ -1448,10 +1448,11 @@ try {
     if ($route === 'return_json') {
         $ngay = $_GET['ngay'] ?? ($_GET['date'] ?? null);
         $force = !empty($_GET['refresh']);
+        $includeDebit = empty($_GET['fast']);
         if ($ngay && preg_match('/^\d{4}-\d{2}-01$/', $ngay)) {
-            echo json_encode(fetch_single_cycle($ngay, $force));
+            echo json_encode(array_values(fetch_single_cycle($ngay, $force)));
         } else {
-            echo json_encode(fetch_vietsun_shipments($ngay, $force));
+            echo json_encode(array_values(fetch_vietsun_shipments($ngay, $force, $includeDebit)));
         }
         exit;
     }
