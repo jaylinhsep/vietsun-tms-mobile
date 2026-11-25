@@ -795,25 +795,35 @@
     <button class="btn btn-outline" onclick="clearBulkSelection()">Bỏ chọn</button>
   </div>
 
-  <!-- Modal Add/Clone Vendor -->
+  <!-- Modal Add/Edit/Clone Vendor -->
   <div class="modal-backdrop" id="vendorModal">
     <div class="modal">
       <div class="modal-header" style="background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%);">
-        <h3>🚛 Quản Lý Nhà Xe (Vendor) & Áp Nhanh Giá Cước Toàn Tuyến</h3>
+        <h3 id="vendorModalTitle">🚛 Quản Lý Nhà Xe (Vendor) — Thêm / Sửa / Xóa & Áp Nhanh Giá Cước</h3>
         <button class="btn btn-sm btn-outline" onclick="closeVendorModal()">✕</button>
       </div>
       <div class="modal-body">
         <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:12px; margin-bottom:14px;">
-          <div style="font-size:12px; font-weight:800; color:#334155; margin-bottom:6px;">
-            DANH SÁCH ĐƠN VỊ VẬN TẢI ĐANG CÓ TRONG BẢNG GIÁ:
+          <div style="font-size:12px; font-weight:800; color:#334155; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            <span>DANH SÁCH VENDOR ĐANG CÓ (BẤM ✏️ ĐỂ SỬA / ĐỔI TÊN / TÁCH, HOẶC 🗑️ ĐỂ XÓA):</span>
+            <button class="btn btn-sm btn-light" onclick="startAddNewVendorMode()">➕ Chuyển sang Thêm Mới</button>
           </div>
           <div class="vendor-chip-list" id="currentVendorsChipList"></div>
         </div>
 
+        <input type="hidden" id="fmOldVendorName" value="" />
+        <div id="editingVendorBanner" style="display:none; margin-bottom:12px; padding:9px 12px; background:#fef3c7; border:1px solid #fcd34d; border-radius:8px; font-size:12px; font-weight:700; color:#92400e;"></div>
+
         <div class="form-grid">
           <div class="form-group full">
-            <label>1. TÊN VENDOR MỚI (HOẶC CHỌN VENDOR ĐANG CÓ ĐỂ ÁP LẠI GIÁ NHANH)</label>
-            <input type="text" id="fmVendorName" class="input" placeholder="VD: MINH DUC, HAI AU, HOANG LONG..." style="font-weight:700; text-transform:uppercase;" />
+            <label id="lblVendorNameInput">1. TÊN VENDOR (CÓ THỂ NHẬP 1 HOẶC NHIỀU VENDOR CÁCH NHAU DẤU PHẨY)</label>
+            <input type="text" id="fmVendorName" class="input" placeholder="VD: GIA KHANG, AN THANH PHAT..." style="font-weight:700; text-transform:uppercase;" />
+          </div>
+          <div class="form-group full" style="background:#f8fafc; padding:8px 11px; border-radius:7px; border:1px dashed #cbd5e1;">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; color:#0f172a;">
+              <input type="checkbox" id="fmVendorSplitComma" style="width:16px; height:16px;" />
+              <span><strong>Tách dấu phẩy ( , ) thành từng cột Vendor riêng biệt</strong> (Bỏ tick nếu muốn gộp chung nhiều Vendor có cùng mức giá vào 1 cột duy nhất)</span>
+            </label>
           </div>
           <div class="form-group full">
             <label>2. ÁP NHANH GIÁ CƯỚC GIỐNG ĐƠN VỊ NÀO? (SAO CHÉP TOÀN BỘ 246 TUYẾN ĐƯỜNG)</label>
@@ -831,14 +841,14 @@
           </div>
         </div>
         <div style="margin-top:12px; padding:10px 12px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px; font-size:12px; color:#1e40af;">
-          💡 <strong>Mẹo:</strong> Nếu muốn Vendor mới lấy <strong>giá giống hệt VIETSUN</strong> (hoặc giống <strong>NHAT SON, DUONG NGUYEN...</strong>), bạn chỉ cần chọn đơn vị gốc ở mục 2 và giữ nguyên tỷ lệ <strong>100%</strong>, hệ thống sẽ tự động điền giá Cont 20' & 40' cho toàn bộ 246 tuyến đường ngay lập tức!
+          💡 <strong>Mẹo:</strong> Bạn có thể bấm nút <strong>✏️</strong> ngay trên tiêu đề cột của bất kỳ Vendor nào trên bảng giá (hoặc ở danh sách bên trên) để <strong>Đổi tên Vendor</strong>, <strong>Tách chuỗi nhiều Vendor thành từng cột riêng</strong>, <strong>Áp lại giá theo Vietsun / Nhật Sơn / Dương Nguyên...</strong> hoặc bấm <strong>🗑️</strong> để <strong>Xóa cột Vendor</strong> đó!
         </div>
       </div>
       <div class="modal-footer">
-        <span></span>
-        <div style="display:flex; gap:8px;">
+        <button class="btn btn-danger btn-sm" id="btnDeleteVendorInModal" style="display:none;" onclick="deleteCurrentEditingVendor()">🗑️ Xóa Vendor Này</button>
+        <div style="display:flex; gap:8px; margin-left:auto;">
           <button class="btn btn-light" onclick="closeVendorModal()">Đóng</button>
-          <button class="btn btn-purple" onclick="submitAddOrCloneVendor()">⚡ Lưu Vendor & Áp Giá Toàn Tuyến</button>
+          <button class="btn btn-purple" id="btnSubmitVendorModal" onclick="submitAddOrCloneVendor()">⚡ Lưu Vendor & Áp Giá Toàn Tuyến</button>
         </div>
       </div>
     </div>
@@ -1173,15 +1183,28 @@
     }
 
     // =========================================================================
-    // RENDER TAB 1: ROUTES TABLE (WITH DYNAMIC VENDOR COLUMNS)
+    // RENDER TAB 1: ROUTES TABLE (WITH DYNAMIC VENDOR COLUMNS + EDIT / DELETE BUTTONS)
     // =========================================================================
+    function escJsStr(s) {
+      return String(s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
     function renderRoutesTable() {
       const carriers = getCarriers();
       const thead = document.getElementById('routesThead');
       const carrierGroupHeaders = carriers.map(c => {
         const isVs = c === 'VIETSUN';
         const bg = isVs ? 'background:#15803d;' : '';
-        return `<th colspan="2" style="text-align:center; ${bg}">${c}${isVs ? ' (CHUẨN)' : ''}</th>`;
+        const safeC = escJsStr(c);
+        const actionBtns = !isVs
+          ? `<span style="display:inline-flex; gap:3px; margin-left:6px; vertical-align:middle;">
+               <button type="button" onclick="openVendorModal('${safeC}')" title="Sửa tên / Áp lại giá / Tách Vendor [${c}]" style="border:none; background:rgba(255,255,255,0.18); color:#fff; border-radius:4px; padding:1px 5px; font-size:10.5px; cursor:pointer;">✏️</button>
+               <button type="button" onclick="deleteVendorColumn('${safeC}')" title="Xóa cột Vendor [${c}]" style="border:none; background:rgba(239,68,68,0.85); color:#fff; border-radius:4px; padding:1px 5px; font-size:10.5px; cursor:pointer;">🗑️</button>
+             </span>`
+          : '';
+        return `<th colspan="2" style="text-align:center; max-width:260px; white-space:normal; line-height:1.3; ${bg}">
+          <span>${c}${isVs ? ' (CHUẨN)' : ''}</span>${actionBtns}
+        </th>`;
       }).join('');
 
       const carrierSubHeaders = carriers.map(c => {
@@ -1259,44 +1282,84 @@
     }
 
     // =========================================================================
-    // VENDOR MANAGEMENT & QUICK CLONE RATES MODAL
+    // VENDOR MANAGEMENT (ADD / EDIT / RENAME / SPLIT / DELETE & QUICK CLONE RATES)
     // =========================================================================
-    function openVendorModal() {
-      renderVendorModalContent();
-      document.getElementById('fmVendorName').value = '';
-      document.getElementById('fmVendorFactorPct').value = '100';
-      document.getElementById('fmVendorDeltaAmt').value = '0';
+    function openVendorModal(editVendorName = '') {
       document.getElementById('vendorModal').classList.add('show');
+      if (editVendorName && editVendorName !== 'VIETSUN') {
+        startEditVendorMode(editVendorName);
+      } else {
+        startAddNewVendorMode();
+      }
     }
 
     function closeVendorModal() {
       document.getElementById('vendorModal').classList.remove('show');
     }
 
-    function renderVendorModalContent() {
+    function startAddNewVendorMode() {
+      document.getElementById('fmOldVendorName').value = '';
+      document.getElementById('fmVendorName').value = '';
+      document.getElementById('fmVendorSplitComma').checked = false;
+      document.getElementById('fmVendorFactorPct').value = '100';
+      document.getElementById('fmVendorDeltaAmt').value = '0';
+      document.getElementById('editingVendorBanner').style.display = 'none';
+      document.getElementById('btnDeleteVendorInModal').style.display = 'none';
+      document.getElementById('btnSubmitVendorModal').innerHTML = '⚡ Lưu Vendor Mới & Áp Giá Toàn Tuyến';
+      renderVendorModalContent('');
+    }
+
+    function startEditVendorMode(vName) {
+      document.getElementById('fmOldVendorName').value = vName;
+      document.getElementById('fmVendorName').value = vName;
+      document.getElementById('fmVendorSplitComma').checked = false;
+      document.getElementById('fmVendorFactorPct').value = '100';
+      document.getElementById('fmVendorDeltaAmt').value = '0';
+
+      const banner = document.getElementById('editingVendorBanner');
+      banner.style.display = 'block';
+      banner.innerHTML = `✏️ Đang chỉnh sửa Vendor: <strong>[${vName}]</strong> — Bạn có thể sửa lại tên, tick "Tách dấu phẩy" nếu muốn tách thành nhiều cột riêng, hoặc chọn áp lại bảng giá bên dưới.`;
+
+      document.getElementById('btnDeleteVendorInModal').style.display = 'inline-flex';
+      document.getElementById('btnSubmitVendorModal').innerHTML = '💾 Cập Nhật Vendor Này';
+      renderVendorModalContent(vName);
+    }
+
+    function renderVendorModalContent(editingName = '') {
       const carriers = getCarriers();
       const chipBox = document.getElementById('currentVendorsChipList');
       chipBox.innerHTML = carriers.map(c => {
         const isVs = c === 'VIETSUN';
+        const isEditing = editingName && c === editingName;
+        const safeC = escJsStr(c);
         return `
-          <div class="vendor-chip ${isVs ? 'vs' : ''}">
+          <div class="vendor-chip ${isVs ? 'vs' : ''}" style="${isEditing ? 'border:2px solid #7c3aed; background:#f3e8ff;' : ''}">
             <span>${isVs ? '⭐ ' : '🚛 '}${c}</span>
-            ${!isVs ? `<button class="btn btn-sm" style="padding:1px 6px; background:#fee2e2; color:#b91c1c;" onclick="deleteVendorColumn('${c}')" title="Xóa cột Vendor này">✕</button>` : ''}
+            ${!isVs ? `
+              <button class="btn btn-sm" style="padding:1px 6px; background:#e0e7ff; color:#1d4ed8;" onclick="startEditVendorMode('${safeC}')" title="Sửa tên / Áp lại giá Vendor này">✏️</button>
+              <button class="btn btn-sm" style="padding:1px 6px; background:#fee2e2; color:#b91c1c;" onclick="deleteVendorColumn('${safeC}')" title="Xóa cột Vendor này">🗑️</button>
+            ` : ''}
           </div>
         `;
       }).join('');
 
       const srcSel = document.getElementById('fmVendorCloneSource');
-      srcSel.innerHTML =
-        carriers.map(c => `<option value="${c}">📋 Lấy giá giống [${c}] ${c === 'VIETSUN' ? '(Giá chuẩn Vietsun)' : ''}</option>`).join('') +
-        `<option value="">-- Không áp giá tự động (Để trống tự nhập sau) --</option>`;
+      let opts = '';
+      if (editingName) {
+        opts += `<option value="__KEEP_CURRENT__">🔒 Giữ nguyên giá hiện tại của [${editingName}] (Hoặc nhân % / cộng trừ bên dưới)</option>`;
+      }
+      opts += carriers.map(c => `<option value="${c}">📋 Lấy giá giống [${c}] ${c === 'VIETSUN' ? '(Giá chuẩn Vietsun)' : ''}</option>`).join('');
+      opts += `<option value="">-- Không áp lại giá (Chỉ đổi tên / thêm cột trống) --</option>`;
+      srcSel.innerHTML = opts;
     }
 
     async function submitAddOrCloneVendor() {
+      const old_vendor_name = document.getElementById('fmOldVendorName').value.trim().toUpperCase();
       const vendor_name = document.getElementById('fmVendorName').value.trim().toUpperCase();
       const source_carrier = document.getElementById('fmVendorCloneSource').value;
       const factor_percent = parseFloat(document.getElementById('fmVendorFactorPct').value || '100');
       const delta_amount = parseInt(document.getElementById('fmVendorDeltaAmt').value || '0', 10);
+      const split_comma = document.getElementById('fmVendorSplitComma').checked;
 
       if (!vendor_name) {
         showToast('Vui lòng nhập Tên Vendor / Nhà xe!', '#dc2626');
@@ -1307,7 +1370,14 @@
         const res = await fetch('/api/index.php?route=cuoc/add-or-clone-vendor', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ vendor_name, source_carrier, factor_percent, delta_amount })
+          body: JSON.stringify({
+            old_vendor_name,
+            vendor_name,
+            source_carrier,
+            factor_percent,
+            delta_amount,
+            split_comma
+          })
         });
         const data = await res.json();
         if (!data.ok) throw new Error(data.error);
@@ -1315,12 +1385,19 @@
         closeVendorModal();
         await loadOverview();
       } catch (e) {
-        showToast('Lỗi thêm Vendor: ' + e.message, '#dc2626');
+        showToast('Lỗi lưu Vendor: ' + e.message, '#dc2626');
       }
     }
 
+    async function deleteCurrentEditingVendor() {
+      const oldName = document.getElementById('fmOldVendorName').value.trim();
+      if (!oldName) return;
+      await deleteVendorColumn(oldName);
+      closeVendorModal();
+    }
+
     async function deleteVendorColumn(vendorName) {
-      if (!confirm(`Bạn có chắc muốn xóa cột Vendor [${vendorName}] khỏi bảng giá cước?`)) return;
+      if (!confirm(`Bạn có chắc muốn XÓA cột Vendor [${vendorName}] khỏi bảng giá cước?`)) return;
       try {
         const res = await fetch('/api/index.php?route=cuoc/delete-vendor', {
           method: 'POST',
@@ -1331,7 +1408,9 @@
         if (!data.ok) throw new Error(data.error);
         showToast(data.message, '#16a34a');
         await loadOverview();
-        renderVendorModalContent();
+        if (document.getElementById('vendorModal').classList.contains('show')) {
+          startAddNewVendorMode();
+        }
       } catch (e) {
         showToast('Lỗi xóa Vendor: ' + e.message, '#dc2626');
       }
@@ -1633,10 +1712,12 @@
       const s = normStr(donViVc);
       if (!s) return '';
       const carriers = getCarriers();
-      // Exact or normalized match against active carriers list first
+      // Exact or normalized match against active carriers list (including comma-grouped vendors like "GIA KHANG, AN THANH PHAT...")
       for (const c of carriers) {
-        const nc = normStr(c);
-        if (s === nc || s.includes(nc) || nc.includes(s)) return c;
+        const parts = String(c).split(',').map(p => normStr(p)).filter(Boolean);
+        for (const p of parts) {
+          if (s === p || s.includes(p) || p.includes(s)) return c;
+        }
       }
       if (s === 'VS') return 'VIETSUN';
       if (s === 'PTA') return 'PHUC TRUONG AN';

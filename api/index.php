@@ -2250,47 +2250,113 @@ try {
             exit;
         }
 
-        // POST cuoc/add-or-clone-vendor: Thêm mới Vendor (hoặc áp nhanh giá cước của 1 Vendor có sẵn/mới theo VIETSUN, NHAT SON, DUONG NGUYEN... kèm hệ số % hoặc chênh lệch VNĐ)
+        // POST cuoc/add-or-clone-vendor: Thêm mới hoặc Sửa (đổi tên) Vendor, hỗ trợ tách nhiều Vendor ngăn cách bằng dấu phẩy hoặc giữ nguyên tên, và áp nhanh giá cước
         if ($route === 'cuoc/add-or-clone-vendor') {
-            $vendorName = strtoupper(trim($jsonBody['vendor_name'] ?? ''));
+            $oldVendorName = strtoupper(trim($jsonBody['old_vendor_name'] ?? ''));
+            $rawVendorName = strtoupper(trim($jsonBody['vendor_name'] ?? ''));
             $sourceCarrier = strtoupper(trim($jsonBody['source_carrier'] ?? ''));
             $factorPercent = isset($jsonBody['factor_percent']) ? (float)$jsonBody['factor_percent'] : 100.0;
             $deltaAmount = isset($jsonBody['delta_amount']) ? (int)$jsonBody['delta_amount'] : 0;
+            $splitComma = !empty($jsonBody['split_comma']);
 
-            if ($vendorName === '') {
+            if ($rawVendorName === '') {
                 http_response_code(400);
                 echo json_encode(['ok' => false, 'error' => 'Vui lòng nhập Tên Vendor / Nhà xe!']);
                 exit;
+            }
+            if ($oldVendorName === 'VIETSUN' && $rawVendorName !== 'VIETSUN') {
+                http_response_code(400);
+                echo json_encode(['ok' => false, 'error' => 'Không thể đổi tên cột chuẩn VIETSUN!']);
+                exit;
+            }
+
+            // Danh sách tên vendor đích (hỗ trợ tách dấu phẩy nếu người dùng nhập nhiều Vendor cùng lúc hoặc bấm Tách)
+            $targetVendors = [];
+            if ($splitComma && strpos($rawVendorName, ',') !== false) {
+                foreach (explode(',', $rawVendorName) as $part) {
+                    $p = trim($part);
+                    if ($p !== '' && !in_array($p, $targetVendors, true)) {
+                        $targetVendors[] = $p;
+                    }
+                }
+            } else {
+                $targetVendors = [$rawVendorName];
             }
 
             // 1. Cập nhật danh sách carriers_json
             $rawCarriers = $pdo->query("SELECT config_val FROM tms_pricing_config WHERE config_key = 'carriers_json'")->fetchColumn();
             $carriers = json_decode($rawCarriers ?: '[]', true) ?: ['VIETSUN', 'NHAT SON', 'DUONG NGUYEN', 'PHUC TRUONG AN', 'TAN TIEN PHAT', 'TUAN HUNG'];
-            if (!in_array($vendorName, $carriers, true)) {
-                $carriers[] = $vendorName;
-                $stCfg = $pdo->prepare("
-                    INSERT INTO tms_pricing_config (config_key, config_val)
-                    VALUES ('carriers_json', ?)
-                    ON DUPLICATE KEY UPDATE config_val = VALUES(config_val)
-                ");
-                $stCfg->execute([json_encode(array_values($carriers), JSON_UNESCAPED_UNICODE)]);
+
+            if ($oldVendorName !== '' && $oldVendorName !== 'VIETSUN') {
+                // Thay thế tại đúng vị trí của oldVendorName
+                $newCarriers = [];
+                $replaced = false;
+                foreach ($carriers as $c) {
+                    if (strtoupper(trim($c)) === $oldVendorName) {
+                        foreach ($targetVendors as $tv) {
+                            if (!in_array($tv, $newCarriers, true)) {
+                                $newCarriers[] = $tv;
+                            }
+                        }
+                        $replaced = true;
+                    } else {
+                        if (!in_array($c, $newCarriers, true)) {
+                            $newCarriers[] = $c;
+                        }
+                    }
+                }
+                if (!$replaced) {
+                    foreach ($targetVendors as $tv) {
+                        if (!in_array($tv, $newCarriers, true)) {
+                            $newCarriers[] = $tv;
+                        }
+                    }
+                }
+                $carriers = array_values($newCarriers);
+            } else {
+                foreach ($targetVendors as $tv) {
+                    if (!in_array($tv, $carriers, true)) {
+                        $carriers[] = $tv;
+                    }
+                }
             }
 
-            // 2. Nếu có chọn source_carrier để áp nhanh giá cước trên toàn bộ 246 tuyến đường
+            $stCfg = $pdo->prepare("
+                INSERT INTO tms_pricing_config (config_key, config_val)
+                VALUES ('carriers_json', ?)
+                ON DUPLICATE KEY UPDATE config_val = VALUES(config_val)
+            ");
+            $stCfg->execute([json_encode(array_values($carriers), JSON_UNESCAPED_UNICODE)]);
+
+            // 2. Cập nhật base_rates_json trên toàn bộ 246 tuyến đường (Đổi tên key cũ -> mới, và/hoặc Áp nhanh giá từ source_carrier)
             $updatedRoutes = 0;
-            if ($sourceCarrier !== '') {
+            if ($oldVendorName !== '' || $sourceCarrier !== '') {
                 $allRoutes = $pdo->query("SELECT route_code, base_rates_json FROM tms_routes")->fetchAll();
                 $stUp = $pdo->prepare("UPDATE tms_routes SET base_rates_json = ? WHERE route_code = ?");
                 $pdo->beginTransaction();
                 try {
                     foreach ($allRoutes as $rr) {
                         $br = json_decode($rr['base_rates_json'] ?? '{}', true) ?: [];
-                        $src = $br[$sourceCarrier] ?? ['c20' => 0, 'c40' => 0];
-                        $src20 = (float)($src['c20'] ?? 0);
-                        $src40 = (float)($src['c40'] ?? 0);
-                        $new20 = $src20 > 0 ? max(0, (int)round($src20 * ($factorPercent / 100.0) + $deltaAmount)) : 0;
-                        $new40 = $src40 > 0 ? max(0, (int)round($src40 * ($factorPercent / 100.0) + $deltaAmount)) : 0;
-                        $br[$vendorName] = ['c20' => $new20, 'c40' => $new40];
+                        $oldRateObj = ($oldVendorName !== '' && isset($br[$oldVendorName])) ? $br[$oldVendorName] : ['c20' => 0, 'c40' => 0];
+
+                        foreach ($targetVendors as $tv) {
+                            if ($sourceCarrier !== '') {
+                                $srcKey = ($sourceCarrier === '__KEEP_CURRENT__' && $oldVendorName !== '') ? $oldVendorName : $sourceCarrier;
+                                $src = ($srcKey === $oldVendorName) ? $oldRateObj : ($br[$srcKey] ?? ['c20' => 0, 'c40' => 0]);
+                                $src20 = (float)($src['c20'] ?? 0);
+                                $src40 = (float)($src['c40'] ?? 0);
+                                $new20 = $src20 > 0 ? max(0, (int)round($src20 * ($factorPercent / 100.0) + $deltaAmount)) : 0;
+                                $new40 = $src40 > 0 ? max(0, (int)round($src40 * ($factorPercent / 100.0) + $deltaAmount)) : 0;
+                                $br[$tv] = ['c20' => $new20, 'c40' => $new40];
+                            } elseif ($oldVendorName !== '' && !isset($br[$tv])) {
+                                $br[$tv] = $oldRateObj;
+                            }
+                        }
+
+                        if ($oldVendorName !== '' && !in_array($oldVendorName, $targetVendors, true)) {
+                            unset($br[$oldVendorName]);
+                        }
+
                         $stUp->execute([json_encode($br, JSON_UNESCAPED_UNICODE), $rr['route_code']]);
                         $updatedRoutes++;
                     }
@@ -2301,19 +2367,22 @@ try {
                 }
             }
 
+            $vLabel = implode(', ', $targetVendors);
             echo json_encode([
                 'ok'             => true,
-                'vendor_name'    => $vendorName,
+                'vendor_name'    => $vLabel,
                 'carriers'       => $carriers,
                 'updated_routes' => $updatedRoutes,
-                'message'        => $sourceCarrier !== ''
-                    ? "Đã lưu Vendor [$vendorName] và áp nhanh giá cước giống [$sourceCarrier] cho $updatedRoutes tuyến đường!"
-                    : "Đã thêm mới Vendor [$vendorName] vào bảng giá!"
+                'message'        => $oldVendorName !== ''
+                    ? "Đã cập nhật Vendor [$oldVendorName] ➔ [$vLabel] trên toàn bộ $updatedRoutes tuyến đường!"
+                    : ($sourceCarrier !== ''
+                        ? "Đã thêm Vendor [$vLabel] và áp nhanh giá cước cho $updatedRoutes tuyến đường!"
+                        : "Đã thêm mới Vendor [$vLabel] vào bảng giá!")
             ]);
             exit;
         }
 
-        // POST cuoc/delete-vendor: Xóa 1 cột Vendor khỏi bảng giá
+        // POST cuoc/delete-vendor: Xóa 1 cột Vendor khỏi bảng giá và dọn dữ liệu base_rates_json
         if ($route === 'cuoc/delete-vendor') {
             $vendorName = strtoupper(trim($jsonBody['vendor_name'] ?? ''));
             if ($vendorName === '' || $vendorName === 'VIETSUN') {
@@ -2332,6 +2401,24 @@ try {
                 ON DUPLICATE KEY UPDATE config_val = VALUES(config_val)
             ");
             $stCfg->execute([json_encode($carriers, JSON_UNESCAPED_UNICODE)]);
+
+            // Xóa key của vendor này trong base_rates_json
+            $allRoutes = $pdo->query("SELECT route_code, base_rates_json FROM tms_routes")->fetchAll();
+            $stUp = $pdo->prepare("UPDATE tms_routes SET base_rates_json = ? WHERE route_code = ?");
+            $pdo->beginTransaction();
+            try {
+                foreach ($allRoutes as $rr) {
+                    $br = json_decode($rr['base_rates_json'] ?? '{}', true) ?: [];
+                    if (isset($br[$vendorName])) {
+                        unset($br[$vendorName]);
+                        $stUp->execute([json_encode($br, JSON_UNESCAPED_UNICODE), $rr['route_code']]);
+                    }
+                }
+                $pdo->commit();
+            } catch (Exception $ex) {
+                if ($pdo->inTransaction()) $pdo->rollBack();
+            }
+
             echo json_encode(['ok' => true, 'carriers' => $carriers, 'message' => "Đã xóa Vendor [$vendorName] khỏi bảng giá!"]);
             exit;
         }
