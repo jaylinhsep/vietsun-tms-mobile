@@ -671,8 +671,10 @@
           <select id="whStatusFilter" class="select" onchange="resetAndRenderWarehouses()">
             <option value="ALL">📊 Tất cả Kho năm 2026</option>
             <option value="MATCHED">✅ Đã gán Mã Tuyến Đường</option>
-            <option value="UNMATCHED">⚠️ Chưa gán Mã Tuyến (Cần định danh)</option>
-            <option value="SPECIAL">⚓ Rút ruột tại Cảng / Sà Lan</option>
+            <option value="DEBIT_MATCH">💰 Gán tự động theo lịch sử giá Debit 25/08</option>
+            <option value="EXCEPTION">🟣 Kho Ngoại Lệ (Giữ nguyên giá đã Debit)</option>
+            <option value="UNMATCHED">⚠️ Chưa gán Mã Tuyến (Chưa phát sinh Debit)</option>
+            <option value="SPECIAL">⚓ Rút ruột tại Cảng / Sà Lan / Bãi CY</option>
           </select>
           <select id="whFlowFilter" class="select" onchange="resetAndRenderWarehouses()">
             <option value="ALL">🔄 Cả Hàng Nhập & Hàng Xuất</option>
@@ -922,8 +924,16 @@
             <input type="text" id="fmWhCustomers" class="input" placeholder="VD: Cty 4 Oranges, Cty Trung Hải..." />
           </div>
           <div class="form-group full">
-            <label>MÃ TUYẾN ĐƯỜNG GÁN CHO KHO NÀY</label>
-            <input type="text" list="routesDatalist" id="fmWhRouteCode" class="input" placeholder="Gõ Mã tuyến hoặc Tên KCN..." />
+            <label>MÃ TUYẾN ĐƯỜNG GÁN CHO KHO NÀY (Gõ NGOAI-LE nếu là Kho Ngoại Lệ dùng giá Debit riêng)</label>
+            <input type="text" list="routesDatalist" id="fmWhRouteCode" class="input" placeholder="Gõ Mã tuyến, Tên KCN hoặc NGOAI-LE..." />
+          </div>
+          <div class="form-group">
+            <label>GIÁ DEBIT NGOẠI LỆ CONT 20' (VNĐ - Nếu là Kho Ngoại Lệ)</label>
+            <input type="number" id="fmWhCustom20" class="input" placeholder="VD: 6800000" />
+          </div>
+          <div class="form-group">
+            <label>GIÁ DEBIT NGOẠI LỆ CONT 40' (VNĐ - Nếu là Kho Ngoại Lệ)</label>
+            <input type="number" id="fmWhCustom40" class="input" placeholder="VD: 6800000" />
           </div>
         </div>
       </div>
@@ -1079,10 +1089,12 @@
         whMap[w.wh_code] = w;
         const c = Number(w.total_count || 0);
         totalConts += c;
-        if (w.route_code && routeMap[w.route_code]) {
+        if ((w.route_code && routeMap[w.route_code]) || w.route_code === 'NGOAI-LE' || w.match_confidence === 'EXCEPTION') {
           matchedWh++;
           matchedConts += c;
-          routeWhCountMap[w.route_code] = (routeWhCountMap[w.route_code] || 0) + 1;
+          if (w.route_code && routeMap[w.route_code]) {
+            routeWhCountMap[w.route_code] = (routeWhCountMap[w.route_code] || 0) + 1;
+          }
         } else if (w.match_confidence === 'SPECIAL') {
           specialConts += c;
         }
@@ -1104,13 +1116,14 @@
       const adjPct = ((appData.config.adj_percent || 0) * 100).toFixed(2);
       document.getElementById('statAdjDisplay').textContent = (adjPct >= 0 ? '+' : '') + adjPct + '%';
 
-      // Build datalist for route pickers
+      // Build datalist for route pickers (including NGOAI-LE option)
       const dl = document.getElementById('routesDatalist');
-      dl.innerHTML = appData.routes.map(r => {
-        const vs20 = fmtMoney(getEffectiveRate(r.base_rates?.VIETSUN?.c20));
-        const vs40 = fmtMoney(getEffectiveRate(r.base_rates?.VIETSUN?.c40));
-        return `<option value="${r.route_code}">${r.dia_diem} (${r.tinh}) — VS 20': ${vs20} | 40': ${vs40}</option>`;
-      }).join('');
+      dl.innerHTML = `<option value="NGOAI-LE">🟣 KHO NGOẠI LỆ — Giữ nguyên giá đã Debit lịch sử trước đó</option>` +
+        appData.routes.map(r => {
+          const vs20 = fmtMoney(getEffectiveRate(r.base_rates?.VIETSUN?.c20));
+          const vs40 = fmtMoney(getEffectiveRate(r.base_rates?.VIETSUN?.c40));
+          return `<option value="${r.route_code}">${r.dia_diem} (${r.tinh}) — VS 20': ${vs20} | 40': ${vs40}</option>`;
+        }).join('');
 
       // Render pricing notes
       const notesList = document.getElementById('pricingNotesList');
@@ -1247,9 +1260,14 @@
       tbody.innerHTML = list.map((r, idx) => {
         const br = r.base_rates || {};
         const whCnt = routeWhCountMap[r.route_code] || 0;
+        const vsBase20 = br['VIETSUN']?.c20 || 0;
+        const vsBase40 = br['VIETSUN']?.c40 || 0;
         const cells = carriers.map(c => {
-          const c20 = getEffectiveRate(br[c]?.c20);
-          const c40 = getEffectiveRate(br[c]?.c40);
+          // Yêu cầu 1: Những ô cước mà Vendor đang để trống (0) thì tự động lấy bằng giá VIETSUN
+          const raw20 = (br[c]?.c20 && br[c].c20 > 0) ? br[c].c20 : vsBase20;
+          const raw40 = (br[c]?.c40 && br[c].c40 > 0) ? br[c].c40 : vsBase40;
+          const c20 = getEffectiveRate(raw20);
+          const c40 = getEffectiveRate(raw40);
           const cls = c === 'VIETSUN' ? 'num num-vs' : 'num';
           return `<td class="${cls}">${fmtMoney(c20)}</td><td class="${cls}">${fmtMoney(c40)}</td>`;
         }).join('');
@@ -1430,8 +1448,11 @@
       filteredWarehouses = appData.warehouses.filter(w => {
         if ((w.total_count || 0) < minVol) return false;
         if (prov && w.tinh_tms !== prov) return false;
-        if (st === 'MATCHED' && !w.route_code) return false;
-        if (st === 'UNMATCHED' && (w.route_code || w.match_confidence === 'SPECIAL')) return false;
+        const isException = w.route_code === 'NGOAI-LE' || w.match_confidence === 'EXCEPTION';
+        if (st === 'MATCHED' && (!w.route_code || isException)) return false;
+        if (st === 'DEBIT_MATCH' && w.match_confidence !== 'DEBIT_MATCH') return false;
+        if (st === 'EXCEPTION' && !isException) return false;
+        if (st === 'UNMATCHED' && (w.route_code || w.match_confidence === 'SPECIAL' || isException)) return false;
         if (st === 'SPECIAL' && w.match_confidence !== 'SPECIAL') return false;
         if (flow === 'NHAP' && w.nhap_count <= 0) return false;
         if (flow === 'XUAT' && w.xuat_count <= 0) return false;
@@ -1464,18 +1485,26 @@
 
       const tbody = document.getElementById('warehousesTbody');
       tbody.innerHTML = pageItems.map(w => {
-        const r = w.route_code ? routeMap[w.route_code] : null;
-        const vs20 = r ? getEffectiveRate(r.base_rates?.VIETSUN?.c20) : 0;
-        const vs40 = r ? getEffectiveRate(r.base_rates?.VIETSUN?.c40) : 0;
+        const isException = w.route_code === 'NGOAI-LE' || w.match_confidence === 'EXCEPTION';
+        const r = (!isException && w.route_code) ? routeMap[w.route_code] : null;
+        const vs20 = isException
+          ? Number(w.custom_rates?.c20 || w.custom_rates?.c40 || 0)
+          : (r ? getEffectiveRate(r.base_rates?.VIETSUN?.c20) : 0);
+        const vs40 = isException
+          ? Number(w.custom_rates?.c40 || w.custom_rates?.c20 || 0)
+          : (r ? getEffectiveRate(r.base_rates?.VIETSUN?.c40) : 0);
         const isChecked = selectedWhCodes.has(w.wh_code);
 
         let statusHtml = '';
-        if (r) {
-          statusHtml = `<div style="font-size:11px; color:#15803d; font-weight:600; margin-top:2px;">✅ ${r.dia_diem} (${r.tinh})</div>`;
+        if (isException) {
+          statusHtml = `<div style="font-size:11px; color:#7c3aed; font-weight:700; margin-top:2px;">🟣 ${w.match_reason || 'Kho Ngoại Lệ — Giữ nguyên giá đã Debit'}</div>`;
+        } else if (r) {
+          const badgePrefix = w.match_confidence === 'DEBIT_MATCH' ? '💰 ' : '✅ ';
+          statusHtml = `<div style="font-size:11px; color:#15803d; font-weight:600; margin-top:2px;">${badgePrefix}${w.match_confidence === 'DEBIT_MATCH' && w.match_reason ? w.match_reason : `${r.dia_diem} (${r.tinh})`}</div>`;
         } else if (w.match_confidence === 'SPECIAL') {
-          statusHtml = `<div style="font-size:11px; color:#64748b; margin-top:2px;">⚓ ${w.match_reason || 'Rút ruột / Sà lan'}</div>`;
+          statusHtml = `<div style="font-size:11px; color:#64748b; margin-top:2px;">⚓ ${w.match_reason || 'Rút ruột / Sà lan / Bãi CY'}</div>`;
         } else {
-          statusHtml = `<div style="font-size:11px; color:#d97706; margin-top:2px;">⚠️ Chưa gán mã tuyến</div>`;
+          statusHtml = `<div style="font-size:11px; color:#d97706; margin-top:2px;">⚠️ Chưa gán mã tuyến (Chưa có lịch sử Debit)</div>`;
         }
 
         return `
@@ -1497,18 +1526,19 @@
                 <input
                   type="text"
                   list="routesDatalist"
-                  class="route-input-picker ${r ? 'has-route' : ''}"
+                  class="route-input-picker ${(r || isException) ? 'has-route' : ''}"
+                  style="${isException ? 'border-color:#7c3aed; background:#f5f3ff; color:#6d28d9;' : ''}"
                   value="${w.route_code || ''}"
-                  placeholder="Gõ Mã tuyến hoặc KCN..."
+                  placeholder="Gõ Mã tuyến, KCN hoặc NGOAI-LE..."
                   onchange="assignSingleWarehouseRoute('${w.wh_code}', this.value)"
                 />
               </div>
               ${statusHtml}
             </td>
-            <td class="num num-vs">${fmtMoney(vs20)}</td>
-            <td class="num num-vs">${fmtMoney(vs40)}</td>
+            <td class="num num-vs" style="${isException ? 'background:#f5f3ff; color:#6d28d9;' : ''}">${fmtMoney(vs20)}</td>
+            <td class="num num-vs" style="${isException ? 'background:#f5f3ff; color:#6d28d9;' : ''}">${fmtMoney(vs40)}</td>
             <td style="text-align:center; white-space:nowrap;">
-              <button class="btn btn-sm btn-light" onclick="openWarehouseModal('${w.wh_code}')" title="Sửa thông tin kho">✏️</button>
+              <button class="btn btn-sm btn-light" onclick="openWarehouseModal('${w.wh_code}')" title="Sửa thông tin kho & giá ngoại lệ">✏️</button>
               <button class="btn btn-sm btn-light" style="color:#dc2626;" onclick="deleteSingleWarehouse('${w.wh_code}')" title="Xóa mã kho này">🗑️</button>
             </td>
           </tr>
@@ -1524,8 +1554,10 @@
     function extractRouteCodeFromInput(rawVal) {
       const val = String(rawVal || '').trim().toUpperCase();
       if (!val) return '';
+      if (val === 'NGOAI-LE' || val.includes('NGOẠI LỆ') || val.includes('NGOAI LE')) return 'NGOAI-LE';
       if (routeMap[val]) return val;
       const token = val.split(/\s+/)[0];
+      if (token === 'NGOAI-LE') return 'NGOAI-LE';
       if (routeMap[token]) return token;
       const nVal = normStr(val);
       const found = appData.routes.find(r => normStr(r.route_code) === nVal || normStr(r.dia_diem).includes(nVal));
@@ -1534,13 +1566,15 @@
 
     async function assignSingleWarehouseRoute(whCode, rawInput) {
       const routeCode = extractRouteCodeFromInput(rawInput);
-      if (routeCode !== '' && !routeMap[routeCode]) {
+      if (routeCode !== '' && routeCode !== 'NGOAI-LE' && !routeMap[routeCode]) {
         showToast(`Mã tuyến "${routeCode}" không tồn tại trong bảng giá!`, '#dc2626');
         renderWarehousesPage();
         return;
       }
       const r = routeMap[routeCode];
-      const reason = r ? `${r.dia_diem} (${r.tinh})` : '';
+      const reason = routeCode === 'NGOAI-LE'
+        ? 'Kho Ngoại Lệ — Giữ nguyên giá đã Debit'
+        : (r ? `${r.dia_diem} (${r.tinh})` : '');
 
       try {
         const res = await fetch('/api/index.php?route=cuoc/assign-warehouse', {
@@ -1554,12 +1588,17 @@
         const targetWh = appData.warehouses.find(w => w.wh_code === whCode);
         if (targetWh) {
           targetWh.route_code = routeCode;
-          targetWh.match_confidence = routeCode ? 'MANUAL' : 'NONE';
+          targetWh.match_confidence = routeCode === 'NGOAI-LE' ? 'EXCEPTION' : (routeCode ? 'MANUAL' : 'NONE');
           targetWh.match_reason = reason;
         }
         rebuildMapsAndStats();
         renderWarehousesPage();
-        showToast(routeCode ? `Đã gán ${whCode} ➔ ${routeCode} (${r.dia_diem})` : `Đã gỡ mã tuyến của ${whCode}`, '#16a34a');
+        showToast(
+          routeCode === 'NGOAI-LE'
+            ? `Đã chuyển ${whCode} sang chế độ Kho Ngoại Lệ (Giữ giá Debit)!`
+            : (routeCode ? `Đã gán ${whCode} ➔ ${routeCode} (${r.dia_diem})` : `Đã gỡ mã tuyến của ${whCode}`),
+          '#16a34a'
+        );
       } catch (err) {
         showToast('Lỗi gán mã tuyến: ' + err.message, '#dc2626');
       }
@@ -1742,21 +1781,29 @@
           if (!hay.includes(q)) return;
         }
         const { wh, route } = resolveWarehouseAndRouteForShipment(item);
+        const isException = wh && (wh.route_code === 'NGOAI-LE' || wh.match_confidence === 'EXCEPTION');
         const is40 = Number(item.cont40Po || 0) > 0;
         const sizeKey = is40 ? 'c40' : 'c20';
-        const vsRate = route ? getEffectiveRate(route.base_rates?.VIETSUN?.[sizeKey]) : 0;
+        const vsRate = isException
+          ? Number(wh.custom_rates?.[sizeKey] || wh.custom_rates?.c40 || wh.custom_rates?.c20 || 0)
+          : (route ? getEffectiveRate(route.base_rates?.VIETSUN?.[sizeKey]) : 0);
 
         const carrierKey = resolveVendorCarrierKey(item.donViVcPo);
-        const vendorRate = (route && carrierKey && route.base_rates?.[carrierKey])
-          ? getEffectiveRate(route.base_rates[carrierKey][sizeKey])
-          : 0;
+        let vendorRate = 0;
+        if (isException) {
+          vendorRate = vsRate;
+        } else if (route && carrierKey) {
+          const rawVRate = route.base_rates?.[carrierKey]?.[sizeKey];
+          const fallbackVs = route.base_rates?.VIETSUN?.[sizeKey];
+          vendorRate = getEffectiveRate((rawVRate && rawVRate > 0) ? rawVRate : fallbackVs);
+        }
 
-        if (route) {
+        if (route || isException) {
           matchedCnt++;
           totalVsMoney += vsRate;
           totalVendorMoney += vendorRate;
         }
-        rows.push({ item, wh, route, is40, vsRate, vendorRate, carrierKey });
+        rows.push({ item, wh, route, isException, is40, vsRate, vendorRate, carrierKey });
       });
 
       document.getElementById('calcSummaryText').textContent =
@@ -1773,6 +1820,12 @@
         const xnBadge = it.xuatNhapPo === 'X'
           ? `<span class="status-tag" style="background:#dbeafe; color:#1d4ed8;">📤 Xuất</span>`
           : `<span class="status-tag" style="background:#dcfce7; color:#15803d;">📥 Nhập</span>`;
+        let routeCellHtml = `<span class="status-tag status-unmatched">⚠️ Chưa gán tuyến</span>`;
+        if (r.isException) {
+          routeCellHtml = `<span class="code-badge" style="background:#f3e8ff; color:#6d28d9; border-color:#d8b4fe;">NGOAI-LE</span><div style="font-size:11px; color:#7c3aed; font-weight:700; margin-top:2px;">🟣 Kho Ngoại Lệ (Giá Debit cũ)</div>`;
+        } else if (r.route) {
+          routeCellHtml = `<span class="code-badge">${r.route.route_code}</span><div style="font-size:11px; color:#15803d; font-weight:600; margin-top:2px;">${r.route.dia_diem} (${r.route.tinh})</div>`;
+        }
         return `
           <tr>
             <td style="text-align:center; color:#64748b;">${idx + 1}</td>
@@ -1788,11 +1841,7 @@
               <div style="font-size:11.5px; color:#475569;">${it.diaChiNhanPo || ''}</div>
             </td>
             <td>${r.wh ? `<span class="wh-badge">${r.wh.wh_code}</span>` : `<span style="color:#94a3b8;">Chưa có</span>`}</td>
-            <td>
-              ${r.route
-                ? `<span class="code-badge">${r.route.route_code}</span><div style="font-size:11px; color:#15803d; font-weight:600; margin-top:2px;">${r.route.dia_diem} (${r.route.tinh})</div>`
-                : `<span class="status-tag status-unmatched">⚠️ Chưa gán tuyến</span>`}
-            </td>
+            <td>${routeCellHtml}</td>
             <td>
               <div style="font-weight:700; color:#0f3a6d;">${it.donViVcPo || '-'}</div>
               <div style="font-size:11.5px; color:#475569;">${it.soXePo || ''}</div>
@@ -1905,6 +1954,8 @@
       document.getElementById('fmWhDiaChi').value = w ? (w.dia_chi || '') : '';
       document.getElementById('fmWhCustomers').value = w ? (w.customers || '') : '';
       document.getElementById('fmWhRouteCode').value = w ? (w.route_code || '') : '';
+      document.getElementById('fmWhCustom20').value = w?.custom_rates?.c20 || '';
+      document.getElementById('fmWhCustom40').value = w?.custom_rates?.c40 || '';
       document.getElementById('btnDeleteWhInModal').style.display = w ? 'inline-flex' : 'none';
       document.getElementById('whModal').classList.add('show');
     }
@@ -1916,13 +1967,17 @@
     async function submitSaveWarehouse() {
       const whCode = document.getElementById('fmWhCode').value.trim().toUpperCase();
       const existing = whCode ? whMap[whCode] : null;
+      const custom20 = Number(document.getElementById('fmWhCustom20').value || 0);
+      const custom40 = Number(document.getElementById('fmWhCustom40').value || 0);
+      const routeCode = extractRouteCodeFromInput(document.getElementById('fmWhRouteCode').value);
       const payload = {
         wh_code: whCode,
         tinh_tms: normalizeMergedProvince(document.getElementById('fmWhTinh').value.trim()),
         kho_name: document.getElementById('fmWhName').value.trim(),
         dia_chi: document.getElementById('fmWhDiaChi').value.trim(),
         customers: document.getElementById('fmWhCustomers').value.trim(),
-        route_code: extractRouteCodeFromInput(document.getElementById('fmWhRouteCode').value),
+        route_code: routeCode,
+        custom_rates: (custom20 > 0 || custom40 > 0) ? { c20: custom20 || custom40, c40: custom40 || custom20 } : (existing?.custom_rates || null),
         total_count: existing ? existing.total_count : 0,
         nhap_count: existing ? existing.nhap_count : 0,
         xuat_count: existing ? existing.xuat_count : 0
@@ -1969,6 +2024,8 @@
 
         appData.routes.forEach((r, idx) => {
           const br = r.base_rates || {};
+          const vsBase20 = br['VIETSUN']?.c20 || 0;
+          const vsBase40 = br['VIETSUN']?.c40 || 0;
           const row = [
             idx + 1,
             r.route_code,
@@ -1977,7 +2034,9 @@
             routeWhCountMap[r.route_code] || 0
           ];
           carriers.forEach(c => {
-            row.push(getEffectiveRate(br[c]?.c20), getEffectiveRate(br[c]?.c40));
+            const raw20 = (br[c]?.c20 && br[c].c20 > 0) ? br[c].c20 : vsBase20;
+            const raw40 = (br[c]?.c40 && br[c].c40 > 0) ? br[c].c40 : vsBase40;
+            row.push(getEffectiveRate(raw20), getEffectiveRate(raw40));
           });
           ws1.addRow(row);
         });
@@ -1987,10 +2046,17 @@
         ws2.addRow([
           'MÃ KHO', 'TÊN KHO (TMS)', 'ĐỊA CHỈ CHI TIẾT', 'TỈNH (SAU SÁP NHẬP)', 'KHÁCH HÀNG',
           'TỔNG CONT 2026', 'CONT NHẬP', 'CONT XUẤT',
-          'MÃ TUYẾN ĐƯỜNG', 'TÊN TUYẾN / KCN', "CƯỚC VIETSUN 20'", "CƯỚC VIETSUN 40'"
+          'MÃ TUYẾN ĐƯỜNG', 'TÊN TUYẾN / KCN / GHI CHÚ', "CƯỚC VIETSUN 20'", "CƯỚC VIETSUN 40'"
         ]);
         appData.warehouses.forEach(w => {
-          const r = w.route_code ? routeMap[w.route_code] : null;
+          const isException = w.route_code === 'NGOAI-LE' || w.match_confidence === 'EXCEPTION';
+          const r = (!isException && w.route_code) ? routeMap[w.route_code] : null;
+          const c20 = isException
+            ? Number(w.custom_rates?.c20 || w.custom_rates?.c40 || 0)
+            : (r ? getEffectiveRate(r.base_rates?.VIETSUN?.c20) : 0);
+          const c40 = isException
+            ? Number(w.custom_rates?.c40 || w.custom_rates?.c20 || 0)
+            : (r ? getEffectiveRate(r.base_rates?.VIETSUN?.c40) : 0);
           ws2.addRow([
             w.wh_code,
             w.kho_name,
@@ -2001,9 +2067,9 @@
             w.nhap_count,
             w.xuat_count,
             w.route_code || '',
-            r ? `${r.dia_diem} (${r.tinh})` : '',
-            r ? getEffectiveRate(r.base_rates?.VIETSUN?.c20) : 0,
-            r ? getEffectiveRate(r.base_rates?.VIETSUN?.c40) : 0
+            isException ? (w.match_reason || 'Kho Ngoại Lệ — Giữ nguyên giá đã Debit') : (r ? `${r.dia_diem} (${r.tinh})` : ''),
+            c20,
+            c40
           ]);
         });
 
