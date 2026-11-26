@@ -1563,7 +1563,7 @@ function update_tms_field($idPo, $codePo, $fieldName, $val) {
             'cv'       => 3,
             'loai'     => 1,
             'iddt'     => 1,
-            'cot'      => "b18newtruck<<|4<<|50<<|{$idPo}<<|soXePo<<|{$codePo}",
+            'cot'      => "b18<<|4<<|50<<|{$idPo}<<|soXePo<<|{$codePo}",
             'thongtin' => $val
         ]);
     }
@@ -1775,12 +1775,26 @@ try {
             WHERE d.is_active = 1 AND v.vendor_code != 'VIETSUN'
             ORDER BY v.vendor_name ASC, d.assigned_plate ASC
         ")->fetchAll();
+        foreach ($drivers as &$drvRow) {
+            $drvRow['vendor'] = normalize_vendor_name($drvRow['vendor'] ?? '');
+        }
+        unset($drvRow);
+
+        $vendorNames = [];
+        $vRows = $pdo->query("SELECT vendor_name FROM vendors WHERE is_active = 1 AND vendor_code != 'VIETSUN' ORDER BY vendor_name ASC")->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($vRows as $vn) {
+            $normVn = normalize_vendor_name($vn);
+            if ($normVn !== '' && !in_array($normVn, $vendorNames, true)) {
+                $vendorNames[] = $normVn;
+            }
+        }
 
         echo json_encode([
             'ok'           => true,
             'vietsun'      => $vietsunFleet,
             'vietsunCount' => count($vietsunFleet),
             'vendors'      => $drivers,
+            'vendorNames'  => $vendorNames,
             'vendorCount'  => count($drivers),
             'total'        => count($vietsunFleet) + count($drivers)
         ]);
@@ -2284,6 +2298,26 @@ try {
             $idPo = $r['id_po'];
             $codePo = $r['code_po'];
             $changes = json_decode($r['changes_json'] ?? '{}', true) ?: [];
+            if (isset($changes['soXePo']['new']) && trim((string)$changes['soXePo']['new']) !== '') {
+                $pCleanChk = to_clean_code($changes['soXePo']['new']);
+                if ($pCleanChk) {
+                    $stVChk = $pdo->prepare("
+                        SELECT v.vendor_name
+                        FROM drivers d
+                        JOIN vendors v ON d.vendor_id = v.id
+                        WHERE d.assigned_plate = ? AND v.vendor_code != 'VIETSUN'
+                        LIMIT 1
+                    ");
+                    $stVChk->execute([$pCleanChk]);
+                    $vFromAdmin = normalize_vendor_name($stVChk->fetchColumn() ?: '');
+                    if ($vFromAdmin !== '') {
+                        $changes['donViVcPo'] = [
+                            'old' => $changes['donViVcPo']['old'] ?? '',
+                            'new' => $vFromAdmin
+                        ];
+                    }
+                }
+            }
             foreach ($changes as $fieldName => $diff) {
                 $newVal = $diff['new'] ?? '';
                 if ($fieldName === 'donViVcPo') {

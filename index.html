@@ -2769,17 +2769,14 @@
         </div>
         <div class="info-banner" style="margin-top:10px;background:#f0fdf4;border-color:#bbf7d0;color:#166534;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-            <strong>🚛 Đồng bộ Đội xe TMS & Vendor (Google Sheet):</strong>
+            <strong>🚛 Đồng bộ Đội xe VIETSUN (TMS) & Vendor (admin.vietsun.site):</strong>
             <button type="button" class="mini-btn" style="background:#16a34a;color:#fff;border:none;" onclick="syncLiveDriverDatabase(true)">↻ Đồng bộ ngay</button>
           </div>
           <div id="driverSyncStatusText" style="margin-top:4px;font-size:12px;">
-            Tự động cập nhật Đội xe VIETSUN từ TMS & Đội xe Vendor từ Google Sheet mỗi lần mở App.
-          </div>
-          <div style="margin-top:4px;font-size:11.5px;">
-            📄 <a href="https://docs.google.com/spreadsheets/d/13ndQsSmBsKlHjIRQR0S0MO5BPqqL6J4CECBAYfQi1oo/edit?gid=1046738475#gid=1046738475" target="_blank" style="color:#15803d;font-weight:700;text-decoration:underline;">Mở bảng Google Sheet Đội xe Vendor</a>
+            Chỉ lấy đội xe VIETSUN từ TMS Gốc; các đơn vị Vendor còn lại ưu tiên lấy từ đội xe trong admin.vietsun.site.
           </div>
           <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
-            <a href="/admin" target="_blank" style="background:#1e3a8a;color:#fff;padding:5px 10px;border-radius:6px;font-size:11.5px;font-weight:700;text-decoration:none;">⚙️ Quản lý User (/admin)</a>
+            <a href="/admin" target="_blank" style="background:#1e3a8a;color:#fff;padding:5px 10px;border-radius:6px;font-size:11.5px;font-weight:700;text-decoration:none;">⚙️ Quản lý Đội xe (/admin)</a>
             <a href="/vendor" target="_blank" style="background:#0284c7;color:#fff;padding:5px 10px;border-radius:6px;font-size:11.5px;font-weight:700;text-decoration:none;">🏢 Cổng Vendor (/vendor)</a>
             <a href="/driver" target="_blank" style="background:#16a34a;color:#fff;padding:5px 10px;border-radius:6px;font-size:11.5px;font-weight:700;text-decoration:none;">🚛 App Tài xế (/driver)</a>
           </div>
@@ -2913,11 +2910,13 @@
     // Database Đội xe VENDOR từ Google Sheet (Tự động đồng bộ live mỗi khi mở App)
     const INITIAL_VENDOR_DRIVER_DB = {"50E65375":{"vendor":"AN THANH PHAT","name":"LƯƠNG THẾ DUY","phone":"0888352428","cccd":"040093028954","gplx":"400131030660"},"50E65951":{"vendor":"AN THANH PHAT","name":"HUỲNH VĂN HOÀI","phone":"0356615616","cccd":"058085005988","gplx":"740116000256"},"50F09323":{"vendor":"BAO NAM PHAT","name":"CAO THANH HÀ","phone":"0918959143","cccd":"044090013803","gplx":"440128001907"},"61H13200":{"vendor":"DUY LINH PHAT","name":"PHẠM NGỌC SÁNG","phone":"0865150567","cccd":"042094002527","gplx":"740149000715"},"50E34934":{"vendor":"DUY LINH PHAT","name":"PHẠM TRUNG THÀNH","phone":"0962678328","cccd":"042091005641","gplx":"Đang Cập Nhật"},"50E36061":{"vendor":"DUY LINH PHAT","name":"TRẦN HOÀI NAM","phone":"0979345291","cccd":"042086007623","gplx":"Đang Cập Nhật"},"50E65255":{"vendor":"HOANG LONG PHAT","name":"TRƯƠNG VĂN VƯƠNG","phone":"0377111572","cccd":"040095005341","gplx":"310187036636"},"50E65490":{"vendor":"HOANG LONG PHAT","name":"VÕ QUANG TRÀ","phone":"0962199166","cccd":"44090000239","gplx":"740155014797"},"50E32542":{"vendor":"HOANG LONG PHAT","name":"HOÀNG VĂN HẠNH","phone":"0377526846","cccd":"40084026157","gplx":"790140907355"},"50H90438":{"vendor":"HOANG LONG PHAT","name":"TRẦN KIM HOÀNG","phone":"0962655237","cccd":"40091018132","gplx":"750123004257"},"50E47317":{"vendor":"HOANG LONG PHAT","name":"NGUYỄN XUÂN THÀNH","phone":"0973101711","cccd":"40083012978","gplx":"310160865442"},"61H16670":{"vendor":"HOANG LONG PHAT","name":"HOÀNG VĂN HIẾU","phone":"0988339961","cccd":"40082015118","gplx":"Đang Cập Nhật"},"61H17260":{"vendor":"HOANG LONG PHAT","name":"HOÀNG TÙNG HIÊN","phone":"0908520359","cccd":"40081035719","gplx":"790148939862"},"50E39861":{"vendor":"HOANG LONG PHAT","name":"BÙI VĂN VỸ","phone":"0869308684","cccd":"40084024922","gplx":"400149029045"},"50E48367":{"vendor":"HOANG LONG PHAT","name":"LÊ ĐĂNG HIẾU","phone":"0988753861","cccd":"40090027025","gplx":"740151016368"},"51C12474":{"vendor":"LONG DAT","name":"PHẠM TUẤN PHONG","phone":"0901473423","cccd":"075078015607","gplx":"Đang Cập Nhật"},"50E81550":{"vendor":"NHAN BAO PHAT","name":"NGUYỄN TRỌNG TUẤN","phone":"0988062493","cccd":"042084009898","gplx":"740163007170"},"61H11280":{"vendor":"NHAT SON","name":"NÔNG THÀNH NHƠN","phone":"0979193442","cccd":"019078012146","gplx":"740102000956"},"51C50602":{"vendor":"NHAT SON","name":"NÔNG MẠNH HÙNG","phone":"0938465862","cccd":"019091010032","gplx":"790131013629"},"50E31341":{"vendor":"NHAT SON","name":"LÊ ĐỨC KHÁNH","phone":"0976713778","cccd":"042091006497","gplx":"790140962813"},"61H00804":{"vendor":"NHAT SON","name":"NGUYỄN MINH HẢI","phone":"0971416122","cccd":"075086010901","gplx":"660118809593"},"50H76338":{"vendor":"NHAT SON","name":"NGUYỄN VĂN TÁM","phone":"0989411427","cccd":"038086031466","gplx":"790100004928"},"50H08207":{"vendor":"TAN HOANG QUANG","name":"VŨ ĐÌNH QUANG","phone":"0941119990","cccd":"042074000729","gplx":"640152780236"},"50E44057":{"vendor":"AN THANH PHAT","name":"VŨ ĐÌNH ĐỨC","phone":"0967594486","cccd":"079070032340","gplx":"790126011573"},"50E64009":{"vendor":"NGOC SANG","name":"HOÀNG LIÊN SƠN","phone":"0976044156","cccd":"40083031314","gplx":"709103005326"},"61H02908":{"vendor":"NGOC SANG","name":"HOÀNG LIÊN SƠN","phone":"0976044156","cccd":"40083031314","gplx":"709103005326"},"61H18983":{"vendor":"NGOC SANG","name":"BIỆN VĂN SỸ","phone":"0984225866","cccd":"42089019684","gplx":"420117000487"},"61H18956":{"vendor":"NGOC SANG","name":"NGUYỄN TIẾN NAM","phone":"0967676191","cccd":"66088007336","gplx":"660098801837"},"50E46727":{"vendor":"NGOC SANG","name":"TRẦN TRUNG ANH","phone":"0365766107","cccd":"40095005664","gplx":"790186088997"},"51C92758":{"vendor":"TRANCO","name":"PHẠM XUÂN THÀNH","phone":"0919920606","cccd":"34078006055","gplx":"790108009813"},"50E64511":{"vendor":"TRANCO","name":"PHAN THANH HẢI","phone":"0936713738","cccd":"094091002766","gplx":"790151084638"},"51D49674":{"vendor":"TRANCO","name":"CA CHÍ LINH","phone":"0945111033","cccd":"95085001585","gplx":"740116010976"},"50H44818":{"vendor":"TRANCO","name":"CA CHÍ LUÂN","phone":"0938525450","cccd":"95090005271","gplx":"790155186369"},"50H91518":{"vendor":"TRANCO","name":"PHẠM VĂN HIỂN","phone":"0932035841","cccd":"082088018626","gplx":"790176107446"},"51D14461":{"vendor":"TRANCO","name":"VÕ VĂN CỌP","phone":"0984932852","cccd":"094093008021","gplx":"940122000105"},"51D44303":{"vendor":"TRANCO","name":"NGUYỄN TẤN THÀNH","phone":"0355977727","cccd":"92093005581","gplx":"790140987564"},"50E76112":{"vendor":"PHUC AN","name":"MAI THANH TUẤN","phone":"0764153826","cccd":"51084007153","gplx":"790122230314"},"51C24203":{"vendor":"PHUC AN","name":"PHẠM VĂN THẮNG","phone":"0332609828","cccd":"37073011281","gplx":"790063005376"},"50H63178":{"vendor":"PHUC AN","name":"VỎ NGỌC CHÁNH","phone":"0909589764","cccd":"51085007848","gplx":"079117234884"},"61E03747":{"vendor":"NHAT SON","name":"NGUYỄN VĂN HƯNG","phone":"0972284449","cccd":"42081007010","gplx":"740108001690"},"61H20933":{"vendor":"NHAT SON","name":"CAO VĂN HIẾU","phone":"0703368267","cccd":"44093012924","gplx":"440149000565"},"61H12006":{"vendor":"NHAT SON","name":"NGUYỄN ĐÌNH LƯU","phone":"0962938537","cccd":"40093012668","gplx":"790136757755"},"61C41926":{"vendor":"NHAT SON","name":"CAO ĐỨC SƠN","phone":"0394423593","cccd":"44093004938","gplx":"440116002897"},"61C41405":{"vendor":"NHAT SON","name":"LƯƠNG VĂN LONG","phone":"0347068826","cccd":"038090043631","gplx":"790197296879"},"61H10617":{"vendor":"NHAT SON","name":"TRẦN BÁ NAM","phone":"0963871670","cccd":"4409601067","gplx":"790223014918"},"61H18984":{"vendor":"NHAT SON","name":"NGUYỄN VĂN ĐẠO","phone":"0869607757","cccd":"44096002563","gplx":"790174083630"},"50H71376":{"vendor":"TUAN HUNG","name":"PHAN HÒA VINH","phone":"0972609079","cccd":"66093011471","gplx":"660164016143"},"51C70823":{"vendor":"TUAN HUNG","name":"LÊ TRỌNG THẮNG","phone":"0373455800","cccd":"4008702238","gplx":"790111227327"},"50E60924":{"vendor":"VUONG PHAT","name":"TRẦN HỮU TINH","phone":"0339676007","cccd":"42075015762","gplx":"660101001809"},"50E64826":{"vendor":"VUONG PHAT","name":"TRẦN HẢI NAM","phone":"0862768559","cccd":"044098006799","gplx":"790213015459"},"50H67539":{"vendor":"VUONG PHAT","name":"CAO NGỌC LÊ","phone":"0366189811","cccd":"0440930310422","gplx":"750228035374"},"50E67400":{"vendor":"VUONG PHAT","name":"PHẠM VĂN KÝ","phone":"0975334334","cccd":"042088007658","gplx":"740156006283"},"61C15993":{"vendor":"PHUC TRUONG AN","name":"LÊ NGỌC NGÀ","phone":"0964298181","cccd":"66087103543","gplx":"640093006558"},"50E31803":{"vendor":"PHUC TRUONG AN","name":"NGUYỄN NGỌC CÔNG THÀNH","phone":"0971787679","cccd":"040084015706","gplx":"790178119715"},"61H00797":{"vendor":"PHUC TRUONG AN","name":"NGUYỄN VĂN TÙNG","phone":"0975200338","cccd":"042093019869","gplx":"420145004091"},"61E03709":{"vendor":"PHUC TRUONG AN","name":"ĐẶNG SỸ HẢI","phone":"0899335116","cccd":"040081024057","gplx":"740149013045"},"61H11121":{"vendor":"PHUC TRUONG AN","name":"PHẠM VĂN HUY","phone":"0784868678","cccd":"042086005529","gplx":"740103017148"},"50E88503":{"vendor":"NHAN BAO PHAT","name":"NGUYỄN VĂN HUY","phone":"0975664423","cccd":"042083002403","gplx":"790117003088"},"50E90884":{"vendor":"NHAN BAO PHAT","name":"NGUYỄN VĂN QUÝ","phone":"0968368665","cccd":"042075001054","gplx":"790104003725"},"38H03141":{"vendor":"NHAN BAO PHAT","name":"NGUYỄN VĂN HẢI","phone":"0963236546","cccd":"042080012499","gplx":"420107000370"},"50E80187":{"vendor":"NHAN BAO PHAT","name":"NGUYỄN VĂN THUẬN","phone":"0929919298","cccd":"070096003624","gplx":"680199000717"},"37H00745":{"vendor":"ANH DUC","name":"PHẠM VĂN TÀI","phone":"0367308298","cccd":"40091027080","gplx":"400121016449"},"50H46207":{"vendor":"GIA KHANG","name":"NGÔ NGỌC TRUNG","phone":"0387618457","cccd":"77094004769","gplx":"790164019380"},"50F09314":{"vendor":"THIEN PHUC PHAT","name":"NGUYỄN TRỌNG PHÚC","phone":"0901464743","cccd":"42085015705","gplx":"790108009499"},"50F07996":{"vendor":"THIEN PHUC PHAT","name":"NGUYỄN NGỌC HÀ","phone":"0333470682","cccd":"79078001175","gplx":"790026241939"},"50F07610":{"vendor":"THIEN PHUC PHAT","name":"HUỲNH THANH TÚ","phone":"0333376115","cccd":"52085019130","gplx":"790159221192"},"61H16720":{"vendor":"NGOC SANG","name":"VÕ HOÀNG VĂN","phone":"0971891362","cccd":"009409317243","gplx":"790171925001"},"50H47386":{"vendor":"GIA KHANG","name":"NGUYỄN VĂN LÂU","phone":"0938327078","cccd":"077092006919","gplx":"790144904325"},"50H70989":{"vendor":"GIA KHANG","name":"PHẠM PHÚ KIÊN","phone":"0932636387","cccd":"082097002570","gplx":"820154004437"},"50H47265":{"vendor":"GIA KHANG","name":"VĂN THANH HÙNG","phone":"0901455673","cccd":"060072000200","gplx":"740125002117"},"50H46817":{"vendor":"GIA KHANG","name":"TRẦN NGỌC TỨ","phone":"0782482587","cccd":"070090004773","gplx":"790120256107"},"50E77282":{"vendor":"GIA KHANG","name":"NGUYỄN CHÍ KIÊN","phone":"0788937807","cccd":"086086013500","gplx":"74013600710"},"50E32110":{"vendor":"TRANCO","name":"LÊ QUÝ SƠN","phone":"0989322411","cccd":"079083008027","gplx":"790105016353"},"50E89021":{"vendor":"HOANG LONG PHAT","name":"NGUYỄN QUỐC VIỆT","phone":"0975322746","cccd":"044094000961","gplx":"440169000527"},"50E47942":{"vendor":"MAI NHAT ANH","name":"ĐOÀN QUỐC XIÊM","phone":"0764850270","cccd":"","gplx":""},"50E46720":{"vendor":"MAI NHAT ANH","name":"NGUYỄN THÀNH ĐƯỢC","phone":"0947395620","cccd":"","gplx":""},"50E48450":{"vendor":"MAI NHAT ANH","name":"NGUYỄN CHÍ HƯỚNG","phone":"0777508000","cccd":"","gplx":""},"50E48074":{"vendor":"MAI NHAT ANH","name":"DƯƠNG ĐẠI HÀO","phone":"0968065464","cccd":"","gplx":""},"50H25079":{"vendor":"DUONG NGUYEN","name":"KIỀU GIA NGỌC","phone":"0876450913","cccd":"058089001180","gplx":"790137788347"},"50H46638":{"vendor":"GIA KHANG","name":"PHẠM THÀNH NHÂN","phone":"0939143102","cccd":"082096001875","gplx":"790155722714"},"50H16154":{"vendor":"GIA KHANG","name":"HUỲNH VĂN DUẨN","phone":"0777805689","cccd":"091085013755","gplx":"790106003330"},"50H24509":{"vendor":"DUONG NGUYEN","name":"NGUYỄN TRUNG BÌNH","phone":"0903631292","cccd":"079070003223","gplx":"790143789279"},"50H24419":{"vendor":"DUONG NGUYEN","name":"PHẠM VĂN THẢO","phone":"0962852047","cccd":"066091005627","gplx":"790126243611"},"61H07722":{"vendor":"NHAT SON","name":"VI THÁI BÌNH","phone":"0974411698","cccd":"038095014861","gplx":"790220087375"},"50E14850":{"vendor":"DUONG NGUYEN","name":"TRẦN QUANG BÉ","phone":"0986222784","cccd":"052068023764","gplx":"640132001962"},"50H91801":{"vendor":"DUONG NGUYEN","name":"NGUYỄN THÀNH HẢI","phone":"0902897928","cccd":"080085009060","gplx":"790176015376"},"50H08622":{"vendor":"DUONG NGUYEN","name":"DƯƠNG THANH TĨNH","phone":"0971213742","cccd":"054092009544","gplx":"790173082072"},"50H54182":{"vendor":"TRUC ANH","name":"LÊ VĂN DŨNG","phone":"0989667444","cccd":"044084012790","gplx":""},"50E14570":{"vendor":"DUONG NGUYEN","name":"KIỀU GIA NGÀ","phone":"0935584402","cccd":"058092005948","gplx":"790148026117"},"51D31338":{"vendor":"TRANCO","name":"NGÔ ANH KIỆT","phone":"0913683141","cccd":"079076014400","gplx":"790114015514"},"50E15514":{"vendor":"DUONG NGUYEN","name":"HÀ MINH HẬU","phone":"0388580088","cccd":"054085007992","gplx":""},"50H24580":{"vendor":"DUONG NGUYEN","name":"LÊ VĂN GIÀU","phone":"0933363774","cccd":"092087004728","gplx":"790117233047"},"51D35878":{"vendor":"DUONG NGUYEN","name":"HUỲNH NGỌC TOÀN","phone":"0394797939","cccd":"060098008301","gplx":"790196274755"},"50E14613":{"vendor":"DUONG NGUYEN","name":"DƯƠNG ĐÌNH KHOA","phone":"0327155050","cccd":"183664365","gplx":"790163163208"},"50H44778":{"vendor":"DUONG NGUYEN","name":"TRẦN NGỌC NGHĨA","phone":"0971463239","cccd":"052091008859","gplx":"520135002804"},"51C40249":{"vendor":"HIEU THUAN THANH","name":"TRẦN VĂN THÁI","phone":"0767599616","cccd":"040092039083","gplx":"790151215740"},"50H08397":{"vendor":"HIEU THUAN THANH","name":"VÕ PHÚ TIẾN","phone":"0347344739","cccd":"094091007316","gplx":"740160001740"},"50H75283":{"vendor":"TRANCO","name":"VÕ VĂN HIẾU","phone":"0909409079","cccd":"094085003898","gplx":"790172020367"},"50H68351":{"vendor":"TRANCO","name":"NGUYỄN NGỌC THANH","phone":"0764754733","cccd":"079074028029","gplx":"790094010189"},"50H75912":{"vendor":"TRANCO","name":"NGUYỄN VĂN HIẾU","phone":"0947906767","cccd":"087084013978","gplx":"830151003470"},"50H47324":{"vendor":"GIA KHANG","name":"CHÂU CHÍ THÀNH","phone":"0968018724","cccd":"084085005489","gplx":"790116022428"},"50H31241":{"vendor":"GIA KHANG","name":"TRẦN TUẤN THÀNH","phone":"0966921015","cccd":"082096007987","gplx":"790143967064"},"51C96068":{"vendor":"TRANCO","name":"NGUYỄN KHẮC DUY","phone":"0822678132","cccd":"087084017883","gplx":"790132399830"},"51C98819":{"vendor":"GIA BAO","name":"NGUYỄN MINH SĨ","phone":"0967952544","cccd":"064093007650","gplx":""},"50E40521":{"vendor":"TRANCO","name":"PHAN VĂN HẬU","phone":"0934038315","cccd":"082092009808","gplx":"790142806728"},"50H70423":{"vendor":"DUC HAI","name":"NGUYỄN THANH TỈNH","phone":"0926381168","cccd":"042085000345","gplx":"7901060033790"},"67H04431":{"vendor":"DANG HUNG","name":"ĐẶNG NGỌC NHU","phone":"0973439438","cccd":"","gplx":"740123005536"},"50E14923":{"vendor":"DUONG NGUYEN","name":"TRẦN ĐÌNH BẢO","phone":"0909736747","cccd":"079092025653","gplx":"790159190467"},"51C48540":{"vendor":"GIA KHANG","name":"LÊ BÉ LONG","phone":"0706336749","cccd":"092076003333","gplx":"790159088759"},"50H03656":{"vendor":"DUC HAI","name":"NGUYỄN VĂN KHIÊM","phone":"0908820932","cccd":"025075013027","gplx":"740117000239"},"50H75046":{"vendor":"TRANCO","name":"VÕ VĂN LÂM","phone":"0937905891","cccd":"086086013218","gplx":"790121015060"},"50F09325":{"vendor":"THIEN PHUC PHAT","name":"LÊ KHẮC HOẠT","phone":"0765876315","cccd":"038084012067","gplx":"790077010940"},"50H78733":{"vendor":"GIA BAO","name":"PHAN THANH THẢO","phone":"0966340732","cccd":"080093016662","gplx":""},"51D64911":{"vendor":"DUONG NGUYEN","name":"HUỲNH VĂN TUẤN","phone":"0336786549","cccd":"054099009789","gplx":"640225014484"},"50H78894":{"vendor":"GIA BAO","name":"NGUYỄN HOÀNG ANH","phone":"0938723620","cccd":"080091009105","gplx":""},"51C91569":{"vendor":"DUONG NGUYEN","name":"PHẠM LONG BÌNH","phone":"0932041042","cccd":"079086017688","gplx":"790114027629"},"51C13223":{"vendor":"DUONG NGUYEN","name":"HỒ VĂN SẼ","phone":"0908330553","cccd":"083088015808","gplx":"790067231856"},"50H43304":{"vendor":"DUONG NGUYEN","name":"NGUYỄN THÀNH TẤN","phone":"0363615064","cccd":"054091005727","gplx":"540140001708"}};
 
-    // Unified live Driver Database (VIETSUN + VENDOR)
+    // Unified live Driver Database (VIETSUN từ TMS Gốc + VENDOR từ admin.vietsun.site)
     const DRIVER_DB = {};
     const DRIVER_DOCS_BY_NAME = {};
+    let adminVendorNamesList = [];
 
     function initBaseDriverDb() {
+      for (const k of Object.keys(DRIVER_DB)) delete DRIVER_DB[k];
       for (const [plate, info] of Object.entries(VIETSUN_DRIVER_DB)) {
         DRIVER_DB[plate] = {
           vendor: "VIETSUN",
@@ -2933,24 +2932,35 @@
           };
         }
       }
-      for (const [plate, info] of Object.entries(INITIAL_VENDOR_DRIVER_DB)) {
-        DRIVER_DB[plate] = {
-          vendor: info.vendor || "VENDOR",
-          name: info.name || "",
-          phone: info.phone || "",
-          cccd: info.cccd || "",
-          gplx: info.gplx || ""
-        };
-      }
-      // Load cached live updates from localStorage if available
+      // Load cached live updates from admin.vietsun.site if available, otherwise fallback to INITIAL_VENDOR_DRIVER_DB until sync completes
+      let hasCachedAdminDb = false;
       try {
-        const cached = JSON.parse(localStorage.getItem("vs_live_driver_db") || "null");
-        if (cached && typeof cached === "object") {
+        const cached = JSON.parse(localStorage.getItem("vs_live_driver_db_v2") || "null");
+        if (cached && typeof cached === "object" && Object.keys(cached).length > 0) {
           for (const [plate, info] of Object.entries(cached)) {
             DRIVER_DB[plate] = Object.assign({}, DRIVER_DB[plate] || {}, info);
           }
+          hasCachedAdminDb = true;
+        }
+        const cachedVendors = JSON.parse(localStorage.getItem("vs_admin_vendor_names_v2") || "null");
+        if (Array.isArray(cachedVendors) && cachedVendors.length > 0) {
+          adminVendorNamesList = cachedVendors;
         }
       } catch (_) {}
+
+      if (!hasCachedAdminDb) {
+        for (const [plate, info] of Object.entries(INITIAL_VENDOR_DRIVER_DB)) {
+          if (!DRIVER_DB[plate]) {
+            DRIVER_DB[plate] = {
+              vendor: info.vendor || "VENDOR",
+              name: info.name || "",
+              phone: info.phone || "",
+              cccd: info.cccd || "",
+              gplx: info.gplx || ""
+            };
+          }
+        }
+      }
     }
     initBaseDriverDb();
 
@@ -2989,6 +2999,8 @@
       const clean = (raw || "").toUpperCase().trim();
       const noSp = clean.replace(/\s+/g, "");
       if (VENDOR_NAME_NORMALIZE[noSp]) return VENDOR_NAME_NORMALIZE[noSp];
+      const matchedAdmin = adminVendorNamesList.find(v => v.replace(/\s+/g, "") === noSp);
+      if (matchedAdmin) return matchedAdmin;
       // Also match against DEFAULT_VENDORS without spaces
       const matched = DEFAULT_VENDORS.find(v => v.replace(/\s+/g, "") === noSp);
       return matched || clean;
@@ -2996,7 +3008,7 @@
 
     async function syncLiveDriverDatabase(showNotify = false) {
       const statusEl = document.getElementById("driverSyncStatusText");
-      if (statusEl) statusEl.textContent = "⏳ Đang đồng bộ Đội xe từ TMS & Google Sheet...";
+      if (statusEl) statusEl.textContent = "⏳ Đang đồng bộ Đội xe VIETSUN (TMS) & Vendor (admin.vietsun.site)...";
       let vsUpdated = 0;
       let vdUpdated = 0;
 
@@ -3018,12 +3030,24 @@
         }
 
         if (data && data.ok) {
+          // Reset DRIVER_DB để loại bỏ triệt để mapping Vendor cũ (chỉ giữ VIETSUN từ TMS Gốc + Vendor từ admin.vietsun.site)
+          for (const k of Object.keys(DRIVER_DB)) delete DRIVER_DB[k];
+          for (const [plate, info] of Object.entries(VIETSUN_DRIVER_DB)) {
+            DRIVER_DB[plate] = {
+              vendor: "VIETSUN",
+              name: info.name || "",
+              phone: info.phone || "",
+              cccd: info.cccd || "",
+              gplx: info.gplx || ""
+            };
+          }
+
           // 1. Update Vietsun Fleet from live TMS ajax-gvt.php (loai=26)
           if (Array.isArray(data.vietsun)) {
             data.vietsun.forEach(item => {
               const p = (item.plate || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
               if (!p) return;
-              const prev = DRIVER_DB[p] || {};
+              const prev = VIETSUN_DRIVER_DB[p] || DRIVER_DB[p] || {};
               const nameUpper = (item.name || "").toUpperCase().trim();
               const docsByName = DRIVER_DOCS_BY_NAME[nameUpper] || {};
               DRIVER_DB[p] = {
@@ -3038,7 +3062,14 @@
             });
           }
 
-          // 2. Update Vendor Fleet from live Google Sheet
+          // 2. Update Vendor Fleet from admin.vietsun.site (Ưu tiên cao nhất cho mọi xe Vendor)
+          if (Array.isArray(data.vendorNames) && data.vendorNames.length > 0) {
+            adminVendorNamesList = data.vendorNames.map(v => normalizeVendorNameClient(v)).filter(Boolean);
+            try {
+              localStorage.setItem("vs_admin_vendor_names_v2", JSON.stringify(adminVendorNamesList));
+            } catch (_) {}
+          }
+
           if (Array.isArray(data.vendors)) {
             data.vendors.forEach(item => {
               const p = (item.plate || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -3054,51 +3085,41 @@
               vdUpdated++;
             });
           }
-        } else {
-          // Fallback: Fetch Google Sheet CSV directly from browser
-          const sheetCsvUrl = "https://docs.google.com/spreadsheets/d/13ndQsSmBsKlHjIRQR0S0MO5BPqqL6J4CECBAYfQi1oo/export?format=csv&gid=1046738475";
-          const r = await fetch(sheetCsvUrl, { cache: "no-store" });
-          if (r.ok) {
-            const csvText = await r.text();
-            const lines = csvText.split(/\r?\n/);
-            for (let i = 1; i < lines.length; i++) {
-              const line = lines[i].trim();
-              if (!line) continue;
-              const cols = line.split(",");
-              if (cols.length < 2) continue;
-              const p = (cols[1] || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
-              if (!p) continue;
-              const normVendor = normalizeVendorNameClient(cols[0]);
-              DRIVER_DB[p] = {
-                vendor: normVendor || "VENDOR",
-                name: (cols[2] || "").trim(),
-                phone: (cols[3] || "").trim(),
-                cccd: (cols[4] || "").trim(),
-                gplx: (cols[5] || "").trim()
-              };
-              vdUpdated++;
-            }
-          }
-        }
 
-        try {
-          localStorage.setItem("vs_live_driver_db", JSON.stringify(DRIVER_DB));
-        } catch (_) {}
+          try {
+            localStorage.removeItem("vs_live_driver_db");
+            localStorage.setItem("vs_live_driver_db_v2", JSON.stringify(DRIVER_DB));
+            // Cập nhật lại vs_recent_trucks theo đúng Vendor mới từ admin.vietsun.site
+            const recent = JSON.parse(localStorage.getItem("vs_recent_trucks") || "[]");
+            if (Array.isArray(recent) && recent.length > 0) {
+              const cleanedRecent = recent.map(r => {
+                if (!r || !r.plate) return null;
+                const cleanP = r.plate.toUpperCase().replace(/[^A-Z0-9]/g, "");
+                const dbEntry = DRIVER_DB[cleanP];
+                return {
+                  plate: cleanP,
+                  vendor: (dbEntry && dbEntry.vendor) ? dbEntry.vendor : (DEFAULT_XE_VIETSUN.includes(cleanP) ? "VIETSUN" : (r.vendor || ""))
+                };
+              }).filter(Boolean);
+              localStorage.setItem("vs_recent_trucks", JSON.stringify(cleanedRecent));
+            }
+          } catch (_) {}
+        }
 
         populateDynamicDropdowns();
         if (allShipments.length > 0) renderShipmentList();
 
         const totalPlates = Object.keys(DRIVER_DB).length;
         if (statusEl) {
-          statusEl.innerHTML = `✅ Đã đồng bộ <b>${totalPlates} xe</b> (VIETSUN: ${vsUpdated || 74} xe • Vendor Google Sheet: ${vdUpdated || 118} xe) lúc ${new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`;
+          statusEl.innerHTML = `✅ Đã đồng bộ <b>${totalPlates} xe</b> (VIETSUN TMS: ${vsUpdated || DEFAULT_XE_VIETSUN.length} xe • Đội xe Admin: ${vdUpdated} xe) lúc ${new Date().toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`;
         }
         if (showNotify) {
-          showToast(`Đã đồng bộ ${totalPlates} xe & tài xế từ TMS và Google Sheet!`, "success");
+          showToast(`Đã đồng bộ ${totalPlates} xe (VIETSUN từ TMS & Vendor từ admin.vietsun.site)!`, "success");
         }
       } catch (err) {
         console.warn("Driver sync warning:", err);
         if (statusEl) {
-          statusEl.textContent = `Đang dùng danh bạ lưu sẵn (${Object.keys(DRIVER_DB).length} xe VIETSUN & Vendor).`;
+          statusEl.textContent = `Đang dùng danh bạ đội xe (${Object.keys(DRIVER_DB).length} xe VIETSUN & Vendor).`;
         }
       }
     }
@@ -3527,31 +3548,38 @@
 
     function populateDynamicDropdowns() {
       // Populate Datalists & Custom Autocomplete Maps
+      // Chỉ lấy đơn vị VIETSUN từ TMS Gốc, các đơn vị còn lại ưu tiên lấy từ đội xe trong admin.vietsun.site
       const xeSet = new Set(DEFAULT_XE_VIETSUN);
-      const vendorSet = new Set(DEFAULT_VENDORS);
+      const vendorSet = new Set(["VIETSUN", ...adminVendorNamesList, ...DEFAULT_VENDORS]);
       const provSet = new Set(DEFAULT_PROVINCES);
 
       knownTruckMap.clear();
       DEFAULT_XE_VIETSUN.forEach(x => {
-        if (x) knownTruckMap.set(x, { plate: x, vendor: "VIETSUN", count: 1 });
+        if (x) knownTruckMap.set(x, { plate: x, vendor: "VIETSUN", count: 5 });
       });
 
-      // Add all trucks from DRIVER_DB (both VIETSUN and Google Sheet Vendor trucks)
+      // Add all trucks from DRIVER_DB (VIETSUN from TMS + Vendor Fleet from admin.vietsun.site)
       for (const [plate, info] of Object.entries(DRIVER_DB)) {
         if (!plate) continue;
-        const vName = (info.vendor || "").toUpperCase().trim();
-        knownTruckMap.set(plate, { plate, vendor: vName || "VENDOR", count: 5 });
+        const vName = normalizeVendorNameClient(info.vendor || "");
+        knownTruckMap.set(plate, { plate, vendor: vName || "VENDOR", count: 20 });
         xeSet.add(plate);
         if (vName) vendorSet.add(vName);
       }
 
-      // Also load user's recently typed trucks from localStorage
+      // Also load user's recently typed trucks from localStorage, but NEVER override Vendor from DRIVER_DB (admin.vietsun.site)
       try {
         const recent = JSON.parse(localStorage.getItem("vs_recent_trucks") || "[]");
         recent.forEach(r => {
           if (r && r.plate) {
-            knownTruckMap.set(r.plate, { plate: r.plate, vendor: r.vendor || "", count: 50 });
-            xeSet.add(r.plate);
+            const cleanP = r.plate.toUpperCase().replace(/[^A-Z0-9]/g, "");
+            if (!cleanP) return;
+            const dbInfo = DRIVER_DB[cleanP];
+            const authoritativeVendor = (dbInfo && dbInfo.vendor)
+              ? normalizeVendorNameClient(dbInfo.vendor)
+              : (DEFAULT_XE_VIETSUN.includes(cleanP) ? "VIETSUN" : normalizeVendorNameClient(r.vendor || ""));
+            knownTruckMap.set(cleanP, { plate: cleanP, vendor: authoritativeVendor, count: 50 });
+            xeSet.add(cleanP);
           }
         });
       } catch (_) {}
@@ -3560,16 +3588,16 @@
         const rawXe = (s.soXePo || "").toUpperCase().replace(/\s+/g, "").trim();
         const rawDv = normalizeVendorNameClient(s.donViVcPo || "");
         if (rawXe) {
-          xeSet.add(rawXe);
           const existing = knownTruckMap.get(rawXe);
           if (existing) {
             existing.count++;
-            if (!existing.vendor && rawDv) existing.vendor = rawDv;
-          } else {
-            knownTruckMap.set(rawXe, { plate: rawXe, vendor: rawDv, count: 1 });
+            // Chỉ lấy thông tin từ chuyến TMS Gốc nếu là xe VIETSUN; tuyệt đối không lấy tên Vendor cũ từ lịch sử chuyến TMS ghi đè đội xe Admin
+            if (!existing.vendor && rawDv === "VIETSUN") existing.vendor = "VIETSUN";
+          } else if (rawDv === "VIETSUN") {
+            xeSet.add(rawXe);
+            knownTruckMap.set(rawXe, { plate: rawXe, vendor: "VIETSUN", count: 1 });
           }
         }
-        if (rawDv) vendorSet.add(rawDv);
         if (s.tinhNhanPo && s.tinhNhanPo !== "THONG BAO SAU") provSet.add(s.tinhNhanPo.toUpperCase());
       });
 
@@ -4450,8 +4478,9 @@
         } else if (fieldName === "soXePo") {
           const drv = getDriverForPlate(rawVal);
           const dvInp = document.getElementById(`pc_dv_${po.idPo}`);
-          let autoVendor = (drv && drv.vendor) || "";
-          if (!autoVendor && DEFAULT_XE_VIETSUN.includes(rawVal)) autoVendor = "VIETSUN";
+          let autoVendor = (drv && drv.vendor) ? normalizeVendorNameClient(drv.vendor) : "";
+          const isVietsunTruck = autoVendor === "VIETSUN" || (!autoVendor && DEFAULT_XE_VIETSUN.includes(rawVal));
+          if (isVietsunTruck) autoVendor = "VIETSUN";
 
           // 1. Luôn lưu Số xe chắc chắn bằng lệnh b18 chuẩn
           await postCrudUpdate({
@@ -4465,33 +4494,30 @@
           });
           po.soXePo = rawVal;
 
-          // 2. Gửi thêm b18newtruck để TMS nhận diện xe Vietsun
-          let htmlResp = "";
-          try {
-            htmlResp = await postCrudUpdate({
-              TenDangNhap: state.username,
-              userString: state.userString,
-              cv: 3,
-              loai: 1,
-              iddt: 1,
-              cot: `b18newtruck<<|4<<|50<<|${po.idPo}<<|soXePo<<|${po.codePo}`,
-              thongtin: rawVal
-            });
-          } catch (_) {}
-
-          if (htmlResp && htmlResp.includes("reload_input_ajax")) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlResp, "text/html");
-            const kqDv = doc.getElementById(`kq_donViVcPo_${po.idPo}`);
-            if (kqDv && kqDv.textContent && kqDv.textContent.trim()) {
-              autoVendor = kqDv.textContent.trim().toUpperCase();
-            }
+          // 2. Chỉ gửi b18newtruck và đồng bộ ĐVVT từ TMS Gốc duy nhất cho xe đội VIETSUN.
+          // Tuyệt đối KHÔNG gọi b18newtruck cho các xe Vendor để tránh TMS Gốc tự nhảy về tên Vendor cũ (VD: LONG DAT thay vì DAI LONG PHAT).
+          if (isVietsunTruck) {
+            try {
+              await postCrudUpdate({
+                TenDangNhap: state.username,
+                userString: state.userString,
+                cv: 3,
+                loai: 1,
+                iddt: 1,
+                cot: `b18newtruck<<|4<<|50<<|${po.idPo}<<|soXePo<<|${po.codePo}`,
+                thongtin: rawVal
+              });
+            } catch (_) {}
           }
 
-          if (autoVendor && po.donViVcPo !== autoVendor) {
-            po.donViVcPo = autoVendor;
+          // Nếu người dùng đã nhập ĐVVT trên ô input mà khác với po.donViVcPo (hoặc xe thuộc đội xe trong admin.vietsun.site) thì lưu đúng ĐVVT mới
+          const curTypedVendor = dvInp ? normalizeVendorNameClient(dvInp.value) : "";
+          const targetVendor = autoVendor || curTypedVendor;
+
+          if (targetVendor) {
+            po.donViVcPo = targetVendor;
             if (dvInp) {
-              dvInp.value = autoVendor;
+              dvInp.value = targetVendor;
               dvInp.classList.add("pc-saved");
             }
             await postCrudUpdate({
@@ -4501,10 +4527,10 @@
               loai: 1,
               iddt: 1,
               cot: `b18<<|4<<|30<<|${po.idPo}<<|donViVcPo<<|${po.codePo}`,
-              thongtin: autoVendor
+              thongtin: targetVendor
             });
           }
-          saveRecentTruck(rawVal, po.donViVcPo || autoVendor);
+          saveRecentTruck(rawVal, targetVendor || po.donViVcPo);
         } else if (fieldName === "donViVcPo") {
           // Lưu Đơn vị vận tải bằng b18 chuẩn
           await postCrudUpdate({
@@ -5212,12 +5238,16 @@
     function saveRecentTruck(plate, vendor) {
       if (!plate) return;
       try {
-        const cleanPlate = plate.toUpperCase().replace(/\s+/g, "").trim();
-        const cleanVendor = (vendor || "").toUpperCase().trim();
-        knownTruckMap.set(cleanPlate, { plate: cleanPlate, vendor: cleanVendor, count: 99 });
+        const cleanPlate = plate.toUpperCase().replace(/[^A-Z0-9]/g, "");
+        if (!cleanPlate) return;
+        const drv = getDriverForPlate(cleanPlate);
+        const authoritativeVendor = (drv && drv.vendor)
+          ? normalizeVendorNameClient(drv.vendor)
+          : (DEFAULT_XE_VIETSUN.includes(cleanPlate) ? "VIETSUN" : normalizeVendorNameClient(vendor || ""));
+        knownTruckMap.set(cleanPlate, { plate: cleanPlate, vendor: authoritativeVendor, count: 99 });
         let recent = JSON.parse(localStorage.getItem("vs_recent_trucks") || "[]");
-        recent = recent.filter(r => r.plate !== cleanPlate);
-        recent.unshift({ plate: cleanPlate, vendor: cleanVendor });
+        recent = recent.filter(r => r && r.plate !== cleanPlate);
+        recent.unshift({ plate: cleanPlate, vendor: authoritativeVendor });
         localStorage.setItem("vs_recent_trucks", JSON.stringify(recent.slice(0, 50)));
       } catch (_) {}
     }
@@ -5424,6 +5454,11 @@
           currentEditingPo.ngayTauChayPo = rawVal || "";
         } else if (fieldName === "soXePo") {
           rawVal = rawVal.toUpperCase();
+          const drv = getDriverForPlate(rawVal);
+          let autoDv = (drv && drv.vendor) ? normalizeVendorNameClient(drv.vendor) : "";
+          const isVietsunTruck = autoDv === "VIETSUN" || (!autoDv && DEFAULT_XE_VIETSUN.includes(rawVal));
+          if (isVietsunTruck) autoDv = "VIETSUN";
+
           // 1. Luôn lưu Số xe chắc chắn bằng lệnh b18 chuẩn
           await postCrudUpdate({
             TenDangNhap: state.username,
@@ -5436,41 +5471,29 @@
           });
           currentEditingPo.soXePo = rawVal;
 
-          // 2. Gửi thêm b18newtruck để TMS nhận diện xe Vietsun
-          let htmlResp = "";
-          try {
-            htmlResp = await postCrudUpdate({
-              TenDangNhap: state.username,
-              userString: state.userString,
-              cv: 3,
-              loai: 1,
-              iddt: 1,
-              cot: `b18newtruck<<|4<<|50<<|${idPo}<<|soXePo<<|${codePo}`,
-              thongtin: rawVal
-            });
-          } catch (_) {}
+          // 2. Chỉ gửi b18newtruck duy nhất cho xe đội VIETSUN.
+          // Tuyệt đối không gọi b18newtruck cho các xe Vendor để tránh TMS Gốc tự nhảy về tên Vendor cũ.
+          if (isVietsunTruck) {
+            try {
+              await postCrudUpdate({
+                TenDangNhap: state.username,
+                userString: state.userString,
+                cv: 3,
+                loai: 1,
+                iddt: 1,
+                cot: `b18newtruck<<|4<<|50<<|${idPo}<<|soXePo<<|${codePo}`,
+                thongtin: rawVal
+              });
+            } catch (_) {}
+          }
 
           const curDvInp = document.getElementById("inp_donViVcPo");
-          saveRecentTruck(rawVal, curDvInp ? curDvInp.value : "");
+          const curTypedVendor = curDvInp ? normalizeVendorNameClient(curDvInp.value) : "";
+          const targetVendor = autoDv || curTypedVendor;
 
-          // Tự động nhận diện Vendor nếu có
-          let autoDv = "";
-          if (htmlResp && htmlResp.includes("reload_input_ajax")) {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(htmlResp, "text/html");
-            const kqDv = doc.getElementById(`kq_donViVcPo_${idPo}`);
-            if (kqDv && kqDv.textContent && kqDv.textContent.trim()) {
-              autoDv = kqDv.textContent.trim().toUpperCase();
-            }
-          }
-          if (!autoDv && rawVal) {
-            const drv = getDriverForPlate(rawVal);
-            if (drv && drv.vendor) autoDv = drv.vendor;
-            else if (DEFAULT_XE_VIETSUN.includes(rawVal)) autoDv = "VIETSUN";
-          }
-          if (autoDv && curDvInp && (!curDvInp.value || curDvInp.value === "VIETSUN" || curDvInp.value !== autoDv)) {
-            curDvInp.value = autoDv;
-            currentEditingPo.donViVcPo = autoDv;
+          if (targetVendor && curDvInp) {
+            curDvInp.value = targetVendor;
+            currentEditingPo.donViVcPo = targetVendor;
             curDvInp.classList.add("saved");
             await postCrudUpdate({
               TenDangNhap: state.username,
@@ -5479,9 +5502,10 @@
               loai: 1,
               iddt: 1,
               cot: `b18<<|4<<|30<<|${idPo}<<|donViVcPo<<|${codePo}`,
-              thongtin: autoDv
+              thongtin: targetVendor
             });
           }
+          saveRecentTruck(rawVal, targetVendor || (curDvInp ? curDvInp.value : ""));
         } else if (fieldName === "donViVcPo") {
           rawVal = rawVal.toUpperCase();
           await postCrudUpdate({
