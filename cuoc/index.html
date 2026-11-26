@@ -639,6 +639,9 @@
           <select id="routeProvinceFilter" class="select" onchange="renderRoutesTable()">
             <option value="">📍 Tất cả Tỉnh / Thành phố (Sau sáp nhập)</option>
           </select>
+          <select id="routeCarrierFilter" class="select" onchange="renderRoutesTable()" style="font-weight:700; color:#0f3a6d;">
+            <option value="">🚛 Tất cả Đơn vị vận chuyển</option>
+          </select>
           <button class="btn btn-purple btn-sm" onclick="openVendorModal()">🚛 + Thêm Vendor / Sao chép nhanh giá cước</button>
         </div>
         <div style="font-size:12px; color:var(--muted); font-weight:600;" id="routeFilterSummary">
@@ -742,6 +745,9 @@
             <option value="ALL">🔄 Tất cả Hàng Nhập & Xuất</option>
             <option value="N">📥 Chỉ Hàng Nhập (N)</option>
             <option value="X">📤 Chỉ Hàng Xuất (X)</option>
+          </select>
+          <select id="calcCarrierFilter" class="select" onchange="renderLivePricingTable()" style="font-weight:700; color:#0f3a6d;">
+            <option value="">🚛 Tất cả Đơn vị vận chuyển</option>
           </select>
           <input type="text" id="calcSearchInput" class="input search-input" placeholder="🔍 Lọc theo Số Cont, Khách hàng, Kho, Nhà xe, Số xe..." oninput="renderLivePricingTable()" />
           <button class="btn btn-primary" onclick="loadLiveShipmentsForPricing()">🔄 Tải & Tính Cước Tự Động</button>
@@ -1308,6 +1314,24 @@
       wpSel.innerHTML = `<option value="">📍 Tất cả Tỉnh sau sáp nhập (${whProvs.length})</option>` +
         whProvs.map(p => `<option value="${p}">${p}</option>`).join('');
       wpSel.value = currWp;
+
+      const carriers = getCarriers();
+      const rcSel = document.getElementById('routeCarrierFilter');
+      if (rcSel) {
+        const currRc = rcSel.value;
+        rcSel.innerHTML = `<option value="">🚛 Tất cả Đơn vị vận chuyển (${carriers.length})</option>` +
+          `<option value="__ONLY_VIETSUN__">⭐ Chỉ xem bảng chuẩn VIETSUN</option>` +
+          carriers.filter(c => c !== 'VIETSUN').map(c => `<option value="${c}">🚛 ${c} (So sánh cùng VIETSUN)</option>`).join('');
+        if ([...rcSel.options].some(o => o.value === currRc)) rcSel.value = currRc;
+      }
+
+      const ccSel = document.getElementById('calcCarrierFilter');
+      if (ccSel) {
+        const currCc = ccSel.value;
+        ccSel.innerHTML = `<option value="">🚛 Tất cả Đơn vị vận chuyển</option>` +
+          carriers.map(c => `<option value="${c}">🚛 ${c}</option>`).join('');
+        if ([...ccSel.options].some(o => o.value === currCc)) ccSel.value = currCc;
+      }
     }
 
     function switchTab(tab) {
@@ -1477,12 +1501,19 @@
     }
 
     function renderRoutesTable() {
-      const carriers = getCarriers();
+      const allCarriers = getCarriers();
+      const selectedCarrier = document.getElementById('routeCarrierFilter')?.value || '';
+      const carriers = selectedCarrier === '__ONLY_VIETSUN__'
+        ? ['VIETSUN']
+        : (selectedCarrier && allCarriers.includes(selectedCarrier)
+            ? ['VIETSUN', selectedCarrier]
+            : allCarriers);
       const thead = document.getElementById('routesThead');
       const vatBadgeText = vatMode === 'vat' ? 'GỒM VAT 8%' : 'CHƯA VAT';
       const carrierGroupHeaders = carriers.map(c => {
         const isVs = c === 'VIETSUN';
-        const bg = isVs ? 'background:#15803d;' : '';
+        const isHighlighted = selectedCarrier && c === selectedCarrier;
+        const bg = isVs ? 'background:#15803d;' : (isHighlighted ? 'background:#0369a1;' : '');
         const safeC = escJsStr(c);
         const actionBtns = !isVs
           ? `<span style="display:inline-flex; gap:3px; margin-left:6px; vertical-align:middle;">
@@ -1497,7 +1528,8 @@
 
       const carrierSubHeaders = carriers.map(c => {
         const isVs = c === 'VIETSUN';
-        const bg = isVs ? 'background:#166534;' : '';
+        const isHighlighted = selectedCarrier && c === selectedCarrier;
+        const bg = isVs ? 'background:#166534;' : (isHighlighted ? 'background:#075985;' : '');
         return `<th style="${bg}">Cont 20'</th><th style="${bg}">Cont 40'</th>`;
       }).join('');
 
@@ -1529,8 +1561,11 @@
       });
 
       const pm = getCurrentPeriodMeta();
+      const carrierNote = selectedCarrier === '__ONLY_VIETSUN__'
+        ? ' • ĐVVT: CHỈ VIETSUN'
+        : (selectedCarrier ? ` • ĐVVT: ${selectedCarrier}` : '');
       document.getElementById('routeFilterSummary').textContent =
-        `Đang hiển thị ${list.length} / ${appData.routes.length} mã tuyến • ${pm.label} • Chế độ: ${vatMode === 'vat' ? 'GIÁ CƯỚC BAO GỒM VAT 8% (CHUẨN)' : 'GIÁ CƯỚC CHƯA BAO GỒM VAT'}`;
+        `Đang hiển thị ${list.length} / ${appData.routes.length} mã tuyến${carrierNote} • ${pm.label} • Chế độ: ${vatMode === 'vat' ? 'GIÁ CƯỚC BAO GỒM VAT 8% (CHUẨN)' : 'GIÁ CƯỚC CHƯA BAO GỒM VAT'}`;
 
       const tbody = document.getElementById('routesTbody');
       tbody.innerHTML = list.map((r, idx) => {
@@ -2074,6 +2109,7 @@
 
     function renderLivePricingTable() {
       const flow = document.getElementById('calcFlowFilter').value;
+      const carrierFilter = document.getElementById('calcCarrierFilter')?.value || '';
       const q = normStr(document.getElementById('calcSearchInput').value);
 
       const rows = [];
@@ -2084,6 +2120,8 @@
       liveShipments.forEach(item => {
         const xn = item.xuatNhapPo || 'N';
         if (flow !== 'ALL' && xn !== flow) return;
+        const carrierKey = resolveVendorCarrierKey(item.donViVcPo);
+        if (carrierFilter && carrierKey !== carrierFilter && normStr(item.donViVcPo) !== normStr(carrierFilter)) return;
         if (q) {
           const hay = normStr(`${item.soContPo} ${item.tenKhachPo} ${item.khoNhanHangPo} ${item.diaChiNhanPo} ${item.donViVcPo} ${item.soXePo}`);
           if (!hay.includes(q)) return;
@@ -2096,7 +2134,6 @@
           ? Number(wh.custom_rates?.[sizeKey] || wh.custom_rates?.c40 || wh.custom_rates?.c20 || 0)
           : (route ? getRouteCarrierRate(route, 'VIETSUN', sizeKey) : 0);
 
-        const carrierKey = resolveVendorCarrierKey(item.donViVcPo);
         let vendorRate = 0;
         if (isException) {
           vendorRate = vsRate;
