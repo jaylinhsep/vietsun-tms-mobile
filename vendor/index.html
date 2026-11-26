@@ -1281,12 +1281,20 @@
 
     function initDates() {
       const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
-      const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, '0');
-      const prevMm = String(now.getMonth() === 0 ? 12 : now.getMonth()).padStart(2, '0');
-      const prevYyyy = now.getMonth() === 0 ? yyyy - 1 : yyyy;
-      document.getElementById('reportFromDate').value = `${prevYyyy}-${prevMm}-26`;
-      document.getElementById('reportToDate').value = `${yyyy}-${mm}-25`;
+      let endY = now.getFullYear();
+      let endM = now.getMonth() + 1; // 1..12
+      // Nếu hôm nay đã sang ngày >= 26 thì kỳ mới bắt đầu từ 26 tháng này đến 25 tháng sau.
+      // Tuy nhiên khi ở ngày 26..31, mặc định hiển thị kỳ vừa chốt (26 tháng trước -> 25 tháng này) để đối soát & xuất Excel ngay,
+      // hoặc nếu đã sang ngày >= 5 tháng sau thì tự động nhảy kỳ.
+      if (now.getDate() >= 26 && now.getDate() <= 31) {
+        // Giữ nguyên kỳ vừa kết thúc (26 tháng trước -> 25 tháng hiện tại) để Vendor xuất bảng kê tháng vừa xong
+      }
+      const startM = endM === 1 ? 12 : (endM - 1);
+      const startY = endM === 1 ? (endY - 1) : endY;
+      const mm = String(endM).padStart(2, '0');
+      const prevMm = String(startM).padStart(2, '0');
+      document.getElementById('reportFromDate').value = `${startY}-${prevMm}-26`;
+      document.getElementById('reportToDate').value = `${endY}-${mm}-25`;
 
       // Đồng bộ chế độ hiển thị thẻ / bảng
       setDebitViewMode(debitViewMode, false);
@@ -1429,7 +1437,12 @@
       }
 
       try {
-        const url = `${API_BASE}/vendor/trips&date=${encodeURIComponent(planSelectedDate)}${forceRefresh ? '&refresh=1' : ''}`;
+        const fromEl = document.getElementById('reportFromDate');
+        const toEl = document.getElementById('reportToDate');
+        const rFrom = fromEl ? fromEl.value : '';
+        const rTo = toEl ? toEl.value : '';
+        const rangeParams = (rFrom && rTo) ? `&fromDate=${encodeURIComponent(rFrom)}&toDate=${encodeURIComponent(rTo)}` : '';
+        const url = `${API_BASE}/vendor/trips&date=${encodeURIComponent(planSelectedDate)}${rangeParams}${forceRefresh ? '&refresh=1' : ''}`;
         const resLive = await fetch(url, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -2281,10 +2294,21 @@
       }
     }
 
+    let lastLoadedRangeKey = '';
+
     async function loadDebitReport() {
       const token = localStorage.getItem('vs_vendor_token');
       const fromDate = document.getElementById('reportFromDate').value;
       const toDate = document.getElementById('reportToDate').value;
+
+      // Nếu người dùng đổi khoảng Từ ngày -> Đến ngày trên tab Đối soát, tải bổ sung đầy đủ chuyến & cước Debit của khoảng ngày đó
+      const rangeKey = `${fromDate}_${toDate}`;
+      if (fromDate && toDate && lastLoadedRangeKey && lastLoadedRangeKey !== rangeKey) {
+        lastLoadedRangeKey = rangeKey;
+        await loadVendorTrips(false);
+      } else if (fromDate && toDate && !lastLoadedRangeKey) {
+        lastLoadedRangeKey = rangeKey;
+      }
 
       try {
         const resRev = await fetch(`${API_BASE}/vendor/revenue-report&fromDate=${fromDate}&toDate=${toDate}`, {

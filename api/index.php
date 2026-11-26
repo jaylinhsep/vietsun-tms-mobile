@@ -1031,10 +1031,30 @@ function fetch_live_vietsun_fleet($forceRefresh = false) {
     return $list;
 }
 
+function build_date_windows($startDate, $endDate, $windowDays = 10) {
+    $startTs = strtotime($startDate);
+    $endTs   = strtotime($endDate);
+    if (!$startTs) $startTs = time() - 35 * 86400;
+    if (!$endTs)   $endTs   = time() + 10 * 86400;
+    if ($startTs > $endTs) {
+        $tmp = $startTs;
+        $startTs = $endTs;
+        $endTs = $tmp;
+    }
+    $windows = [];
+    $cur = $startTs;
+    while ($cur <= $endTs) {
+        $winEnd = min($endTs, $cur + ($windowDays - 1) * 86400);
+        $windows[] = [date('Y-m-d', $cur), date('Y-m-d', $winEnd)];
+        $cur = $winEnd + 86400;
+    }
+    return $windows;
+}
+
 function fetch_tms_debit_map($startDate, $endDate, $forceRefresh = false) {
     global $COOKIE_FILE;
     $safeKey = preg_replace('/[^0-9\-]/', '', $startDate . '_' . $endDate);
-    $cacheFile = sys_get_temp_dir() . '/vietsun_debit_map_v5_' . $safeKey . '.json';
+    $cacheFile = sys_get_temp_dir() . '/vietsun_debit_map_v6_' . $safeKey . '.json';
     // Cache bảng giá 2 ngày (48 giờ = 172800s) theo yêu cầu để giảm tải máy chủ và mở tab siêu tốc
     if (!$forceRefresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 172800)) {
         $cached = json_decode(file_get_contents($cacheFile), true);
@@ -1048,7 +1068,12 @@ function fetch_tms_debit_map($startDate, $endDate, $forceRefresh = false) {
     $userString = 'trucking14<<|7<<|a0b923820d<<|1<<|0.0.0.0.0.0.1.0.1.1.0.1.0.1.';
     $map = [];
 
-    // 1. Lấy cước Debit toàn bộ Hàng Nhập qua view NHẬP (kieuXemTrucking = 6, idxem = 6: giới hạn 4000 dòng, bao phủ tới idPo mới nhất)
+    // Chia nhỏ khoảng thời gian thành các cửa sổ 10 ngày cho NHẬP (tránh hoàn toàn giới hạn LIMIT 1700/4000 dòng của SQL trên TMS)
+    // và các cửa sổ 14 ngày cho XUẤT, bao phủ trọn vẹn 100% từ $startDate đến $endDate (kỳ 26 tháng trước -> 25 tháng này)
+    $nhapWindows = build_date_windows($startDate, $endDate, 10);
+    $xuatWindows = build_date_windows($startDate, $endDate, 14);
+
+    // 1. Lấy cước Debit toàn bộ Hàng Nhập qua view NHẬP (kieuXemTrucking = 6, idxem = 6) theo từng cửa sổ 10 ngày
     call_tms_post('index-crud.php', [
         'TenDangNhap' => 'trucking14',
         'userString'  => $userString,
@@ -1058,43 +1083,47 @@ function fetch_tms_debit_map($startDate, $endDate, $forceRefresh = false) {
         'cot'         => 't9<<|1<<|1<<|20<<|kieuXemTrucking',
         'thongtin'    => '6'
     ]);
-    $htmlNhap6 = call_tms_post('index-ajax.php', [
-        'userString' => $userString,
-        'cv'         => 78,
-        'idxem'      => 6,
-        'kieuxem'    => 0,
-        'loaiload'   => 4,
-        'startDate'  => $startDate,
-        'endDate'    => $endDate,
-        'widthmh'    => 1920
-    ]);
-    if (strpos($htmlNhap6, 'donGiaDebitPo') === false) {
-        vietsun_login();
-        call_tms_post('index-crud.php', [
-            'TenDangNhap' => 'trucking14',
-            'userString'  => $userString,
-            'cv'          => 3,
-            'loai'        => 1,
-            'iddt'        => 1,
-            'cot'         => 't9<<|1<<|1<<|20<<|kieuXemTrucking',
-            'thongtin'    => '6'
-        ]);
+    $loggedRetried = false;
+    foreach ($nhapWindows as $win) {
         $htmlNhap6 = call_tms_post('index-ajax.php', [
             'userString' => $userString,
             'cv'         => 78,
             'idxem'      => 6,
             'kieuxem'    => 0,
             'loaiload'   => 4,
-            'startDate'  => $startDate,
-            'endDate'    => $endDate,
+            'startDate'  => $win[0],
+            'endDate'    => $win[1],
             'widthmh'    => 1920
         ]);
+        if (!$loggedRetried && strpos($htmlNhap6, 'donGiaDebitPo') === false && strpos($htmlNhap6, 'donGia1ThucTraChoxePo') === false) {
+            $loggedRetried = true;
+            vietsun_login();
+            call_tms_post('index-crud.php', [
+                'TenDangNhap' => 'trucking14',
+                'userString'  => $userString,
+                'cv'          => 3,
+                'loai'        => 1,
+                'iddt'        => 1,
+                'cot'         => 't9<<|1<<|1<<|20<<|kieuXemTrucking',
+                'thongtin'    => '6'
+            ]);
+            $htmlNhap6 = call_tms_post('index-ajax.php', [
+                'userString' => $userString,
+                'cv'         => 78,
+                'idxem'      => 6,
+                'kieuxem'    => 0,
+                'loaiload'   => 4,
+                'startDate'  => $win[0],
+                'endDate'    => $win[1],
+                'widthmh'    => 1920
+            ]);
+        }
+        parse_tms_ajax_debit_html($htmlNhap6, $map);
+        $htmlNhap6 = null;
     }
-    parse_tms_ajax_debit_html($htmlNhap6, $map);
-    $htmlNhap6 = null;
 
-    // 2. Lấy thêm chi tiết Hàng Nhập (Chi hộ bốc xếp, Vé cầu đường, Phí khác, Hình thức kết hợp) qua NHẬP - ALL (kieuXemTrucking = 7, idxem = 7)
-    // Chia 2 khoảng 12 ngày để không chạm ngưỡng LIMIT 1700 dòng của SQL trên TMS
+    // 2. Lấy thêm chi tiết Hàng Nhập (Đơn giá Vendor, Chi hộ bốc xếp, Vé cầu đường, Phí khác, Hình thức kết hợp) qua NHẬP - ALL (kieuXemTrucking = 7, idxem = 7)
+    // Duyệt đầy đủ tất cả các cửa sổ 10 ngày từ $startDate đến $endDate để không bị hụt các cont Hàng Nhập đầu kỳ (26/10 -> 13/11)
     call_tms_post('index-crud.php', [
         'TenDangNhap' => 'trucking14',
         'userString'  => $userString,
@@ -1104,11 +1133,6 @@ function fetch_tms_debit_map($startDate, $endDate, $forceRefresh = false) {
         'cot'         => 't9<<|1<<|1<<|20<<|kieuXemTrucking',
         'thongtin'    => '7'
     ]);
-    $endTs = strtotime($endDate) ?: time();
-    $nhapWindows = [
-        [date('Y-m-d', $endTs - 24 * 86400), date('Y-m-d', $endTs - 12 * 86400)],
-        [date('Y-m-d', $endTs - 11 * 86400), $endDate]
-    ];
     foreach ($nhapWindows as $win) {
         $htmlNhap7 = call_tms_post('index-ajax.php', [
             'userString' => $userString,
@@ -1125,7 +1149,6 @@ function fetch_tms_debit_map($startDate, $endDate, $forceRefresh = false) {
     }
 
     // 3. Lấy cước Debit, Chi hộ bốc xếp & Tỷ lệ kết hợp của Hàng Xuất (XUẤT - CHI PHÍ: kieuXemTrucking = 3, idxem = 2, kieuxem = 0)
-    // Chia 2 khoảng để không chạm ngưỡng LIMIT 1200 dòng của SQL trên TMS
     call_tms_post('index-crud.php', [
         'TenDangNhap' => 'trucking14',
         'userString'  => $userString,
@@ -1135,12 +1158,6 @@ function fetch_tms_debit_map($startDate, $endDate, $forceRefresh = false) {
         'cot'         => 't9<<|1<<|1<<|20<<|kieuXemTrucking',
         'thongtin'    => '3'
     ]);
-    $startTs = strtotime($startDate) ?: ($endTs - 35 * 86400);
-    $midTs   = (int)(($startTs + $endTs) / 2);
-    $xuatWindows = [
-        [$startDate, date('Y-m-d', $midTs)],
-        [date('Y-m-d', $midTs + 86400), $endDate]
-    ];
     foreach ($xuatWindows as $win) {
         $htmlXuat = call_tms_post('index-ajax.php', [
             'userString' => $userString,
@@ -1181,14 +1198,23 @@ function get_shipment_date_iso($item) {
     return '';
 }
 
-function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false, $includeDebit = true) {
+function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false, $includeDebit = true, $fromDate = null, $toDate = null) {
     $baseTs = $targetDate ? strtotime($targetDate) : time();
     if (!$baseTs) $baseTs = time();
 
+    $fromTs = ($fromDate && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fromDate)) ? strtotime($fromDate) : null;
+    $toTs   = ($toDate   && preg_match('/^\d{4}-\d{2}-\d{2}$/', $toDate))   ? strtotime($toDate)   : null;
+    if ($fromTs && $toTs && $fromTs > $toTs) {
+        $tmp = $fromTs;
+        $fromTs = $toTs;
+        $toTs = $tmp;
+    }
+
     // Cache danh sách chuyến: 60s để nhận chuyến mới/xe mới nhanh chóng (giá cước vẫn giữ cache 48h riêng biệt bên dưới)
     $cacheType = $includeDebit ? 'full' : 'nodbt';
-    $cacheDateKey = date('Y-m-d', $baseTs);
-    $cacheFile = sys_get_temp_dir() . "/vietsun_shipments_v5_{$cacheType}_{$cacheDateKey}.json";
+    $rangeSuffix = ($fromTs && $toTs) ? ('_' . date('Ymd', $fromTs) . '_' . date('Ymd', $toTs)) : '';
+    $cacheDateKey = date('Y-m-d', $baseTs) . $rangeSuffix;
+    $cacheFile = sys_get_temp_dir() . "/vietsun_shipments_v6_{$cacheType}_{$cacheDateKey}.json";
     $cacheTtl = 60;
 
     $merged = null;
@@ -1205,11 +1231,20 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false, $inc
     }
 
     if ($merged === null) {
-        $cycles = array_unique([
+        // Mặc định lấy cả chu kỳ trước (-35 ngày), chu kỳ hiện tại và chu kỳ tới (+15 ngày)
+        // để luôn bao phủ trọn vẹn kỳ 26 tháng trước -> 25 tháng này ngay cả khi đang ở ngày 26..31 đầu kỳ mới!
+        $rawCycles = [
+            get_billing_cycle_param(date('Y-m-d', $baseTs - 35 * 86400)),
             get_billing_cycle_param(date('Y-m-d', $baseTs - 20 * 86400)),
             get_billing_cycle_param(date('Y-m-d', $baseTs)),
             get_billing_cycle_param(date('Y-m-d', $baseTs + 15 * 86400))
-        ]);
+        ];
+        if ($fromTs && $toTs) {
+            for ($ts = $fromTs - 5 * 86400; $ts <= $toTs + 25 * 86400; $ts += 15 * 86400) {
+                $rawCycles[] = get_billing_cycle_param(date('Y-m-d', $ts));
+            }
+        }
+        $cycles = array_values(array_unique(array_filter($rawCycles)));
 
         $merged = [];
         foreach ($cycles as $c) {
@@ -1257,9 +1292,14 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false, $inc
         }
     } catch (Exception $e) {}
 
-    // Lấy bảng giá Debit & Chi hộ bốc xếp & Tỷ lệ kết hợp từ TMS trong khoảng [baseTs - 35 ngày, baseTs + 10 ngày]
-    $startDate = date('Y-m-d', $baseTs - 35 * 86400);
-    $endDate   = date('Y-m-d', $baseTs + 10 * 86400);
+    // Lấy bảng giá Debit & Chi hộ bốc xếp & Tỷ lệ kết hợp từ TMS
+    // Mặc định lùi 40 ngày để luôn bao phủ từ ngày 26 tháng trước dù đang ở cuối tháng
+    $defaultStartTs = $baseTs - 40 * 86400;
+    $defaultEndTs   = $baseTs + 10 * 86400;
+    $effStartTs = $fromTs ? min($defaultStartTs, $fromTs) : $defaultStartTs;
+    $effEndTs   = $toTs   ? max($defaultEndTs, $toTs)     : $defaultEndTs;
+    $startDate = date('Y-m-d', $effStartTs);
+    $endDate   = date('Y-m-d', $effEndTs);
     $debitMap  = fetch_tms_debit_map($startDate, $endDate, $forceRefresh);
 
     // Gắn thông tin cước và chi phí phát sinh từ TMS Vietsun
@@ -4031,6 +4071,8 @@ try {
         $vName = strtoupper(trim($user['vendorName'] ?? ''));
         $vCode = to_clean_code($user['vendorCode'] ?? $vName);
         $targetDate = $_GET['date'] ?? null;
+        $fromDate = $_GET['fromDate'] ?? null;
+        $toDate = $_GET['toDate'] ?? null;
         $forceRefresh = !empty($_GET['refresh']);
 
         // Lấy danh sách biển số xe thuộc Vendor này để đối chiếu cả theo số xe lẫn tên ĐVVT
@@ -4073,8 +4115,8 @@ try {
             }
         } catch (Exception $e) {}
 
-        // Vendor cần cước Debit để xem tab Chuyến xe & Đối soát
-        $all = fetch_vietsun_shipments($targetDate, $forceRefresh, true);
+        // Vendor cần cước Debit để xem tab Chuyến xe & Đối soát (bao phủ đầy đủ kỳ fromDate -> toDate)
+        $all = fetch_vietsun_shipments($targetDate, $forceRefresh, true, $fromDate, $toDate);
         $vendorTrips = [];
         $todayIso = date('Y-m-d');
         foreach ($all as $item) {
