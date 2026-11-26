@@ -508,7 +508,10 @@
             <option value="">-- Tất cả Nhà xe (Vendor) --</option>
           </select>
         </div>
-        <button class="btn btn-primary" onclick="openDriverModal()">➕ Thêm Xe / Tài xế mới</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;" onclick="openDriverHistoryModal('')">📜 Lịch sử Bàn giao Xe & Tài xế cũ</button>
+          <button class="btn btn-primary" onclick="openDriverModal()">➕ Thêm Xe / Tài xế mới</button>
+        </div>
       </div>
 
       <div class="table-card">
@@ -533,6 +536,22 @@
       </div>
     </div>
   </main>
+
+  <!-- MODAL LỊCH SỬ BÀN GIAO XE & CHUYẾN ĐÃ CHỐT TÍNH LƯƠNG -->
+  <div class="modal-overlay" id="driverHistoryModal">
+    <div class="modal-box" style="max-width:860px;max-height:88vh;display:flex;flex-direction:column;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;">
+        <div>
+          <h3 style="margin:0;color:var(--primary);font-size:17px;" id="driverHistoryTitle">📜 Lịch sử Bàn giao Xe & Tài xế (Tính lương)</h3>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Lưu vết toàn bộ tài xế cũ/mới theo từng biển số xe & danh sách chuyến đã chốt</div>
+        </div>
+        <button class="btn btn-sm" style="background:#e2e8f0;font-weight:800;" onclick="closeModal('driverHistoryModal')">✕ Đóng</button>
+      </div>
+      <div style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;" id="driverHistoryContent">
+        <div style="text-align:center;padding:24px;color:var(--text-muted);">Đang tải lịch sử...</div>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL VENDOR -->
   <div class="modal-overlay" id="vendorModal">
@@ -1375,7 +1394,8 @@
           <td>${d.cccd || '--'}</td>
           <td>${d.gplx || '--'}</td>
           <td>
-            <button class="btn btn-sm" style="background:#f1f5f9;border:1px solid var(--border);" onclick='openDriverModal(${JSON.stringify(d).replace(/'/g, "&#39;")})'>✏️ Sửa / Đổi MK</button>
+            <button class="btn btn-sm" style="background:#f1f5f9;border:1px solid var(--border);" onclick='openDriverModal(${JSON.stringify(d).replace(/'/g, "&#39;")})'>✏️ Sửa / Đổi TX</button>
+            <button class="btn btn-sm" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;margin-left:4px;" onclick="openDriverHistoryModal('${d.assigned_plate}')">📜 Lịch sử TX</button>
             <button class="btn btn-sm" style="background:#fee2e2;color:#b91c1c;margin-left:4px;" onclick="deleteDriver(${d.id}, '${d.assigned_plate}')">🗑️ Xóa</button>
           </td>
         </tr>
@@ -1516,6 +1536,134 @@
       });
       const data = await res.json();
       if (data.ok) loadOverview();
+    }
+
+    async function openDriverHistoryModal(plate = '') {
+      const modal = document.getElementById('driverHistoryModal');
+      const titleEl = document.getElementById('driverHistoryTitle');
+      const contentEl = document.getElementById('driverHistoryContent');
+      if (!modal || !contentEl) return;
+
+      titleEl.textContent = plate
+        ? `📜 Lịch sử Tài xế & Chuyến đã chạy — Xe ${plate}`
+        : `📜 Lịch sử Bàn giao Xe & Tài xế toàn hệ thống`;
+      contentEl.innerHTML = `<div style="text-align:center;padding:28px;color:var(--text-muted);">⏳ Đang tải lịch sử bàn giao xe và các chuyến đã chốt...</div>`;
+      modal.classList.add('open');
+
+      try {
+        const vFilter = document.getElementById('filterVendorSelect')?.value || '';
+        const url = `${API_BASE}/admin/driver-history${plate ? `&plate=${encodeURIComponent(plate)}` : (vFilter ? `&vendor_id=${encodeURIComponent(vFilter)}` : '')}`;
+        const res = await fetch(url, { headers: getAdminHeaders() });
+        const data = await res.json();
+        if (!data.ok) {
+          contentEl.innerHTML = `<div style="color:var(--danger);padding:16px;">Lỗi: ${data.error || 'Không thể tải lịch sử'}</div>`;
+          return;
+        }
+        const history = data.history || [];
+        const snapshots = data.snapshots || [];
+
+        // Nhóm thống kê số chuyến đã chốt theo từng Tài xế + Biển số xe
+        const statsMap = {};
+        snapshots.forEach(s => {
+          const key = `${s.driver_name || 'CHƯA RÕ'}__${s.assigned_plate || ''}`;
+          if (!statsMap[key]) {
+            statsMap[key] = {
+              driver_name: s.driver_name || '--',
+              plate: s.assigned_plate || '--',
+              vendor_name: s.vendor_name || '--',
+              total: 0,
+              nhap: 0,
+              xuat: 0,
+              minDate: s.trip_date || '',
+              maxDate: s.trip_date || ''
+            };
+          }
+          statsMap[key].total++;
+          if (s.xuat_nhap === 'X') statsMap[key].xuat++;
+          else statsMap[key].nhap++;
+          if (s.trip_date && (!statsMap[key].minDate || s.trip_date < statsMap[key].minDate)) statsMap[key].minDate = s.trip_date;
+          if (s.trip_date && (!statsMap[key].maxDate || s.trip_date > statsMap[key].maxDate)) statsMap[key].maxDate = s.trip_date;
+        });
+        const statsArr = Object.values(statsMap);
+
+        const histRowsHtml = history.length
+          ? history.map((h, i) => {
+              const isCurrent = !h.assigned_to;
+              const statusBadge = isCurrent
+                ? `<span style="background:#dcfce7;color:#15803d;padding:2px 7px;border-radius:6px;font-weight:800;font-size:11px;">🟢 Đang phụ trách</span>`
+                : `<span style="background:#f1f5f9;color:#475569;padding:2px 7px;border-radius:6px;font-weight:700;font-size:11px;">⚪ Tài xế cũ (Đã bàn giao)</span>`;
+              return `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td><span class="badge-code">${h.assigned_plate}</span></td>
+                  <td><b>${h.driver_name || '--'}</b></td>
+                  <td>${h.phone || '--'}</td>
+                  <td>${h.vendor_name || '--'}</td>
+                  <td>${(h.assigned_from || '').slice(0, 16)}</td>
+                  <td>${h.assigned_to ? h.assigned_to.slice(0, 16) : '<b style="color:#16a34a;">Hiện tại</b>'}</td>
+                  <td>${statusBadge}</td>
+                </tr>
+              `;
+            }).join('')
+          : `<tr><td colspan="8" style="text-align:center;padding:18px;color:var(--text-muted);">Chưa có lịch sử bàn giao.</td></tr>`;
+
+        const statsRowsHtml = statsArr.length
+          ? statsArr.map((st, i) => `
+              <tr>
+                <td>${i + 1}</td>
+                <td><b style="color:#0f172a;">👨‍✈️ ${st.driver_name}</b></td>
+                <td><span class="badge-code">${st.plate}</span></td>
+                <td>${st.vendor_name}</td>
+                <td><b style="color:var(--primary);font-size:14px;">${st.total} chuyến</b> <span style="font-size:11.5px;color:#64748b;">(Nhập: ${st.nhap} • Xuất: ${st.xuat})</span></td>
+                <td style="font-size:12px;color:#475569;">${st.minDate || '--'} ➔ ${st.maxDate || '--'}</td>
+              </tr>
+            `).join('')
+          : `<tr><td colspan="6" style="text-align:center;padding:18px;color:var(--text-muted);">Chưa có chuyến nào được chốt snapshot.</td></tr>`;
+
+        contentEl.innerHTML = `
+          <div>
+            <div style="font-weight:800;font-size:13.5px;color:#1e3a8a;margin-bottom:6px;">1️⃣ Quá trình Bàn giao & Đổi Tài xế trên Biển số xe (${history.length} bản ghi)</div>
+            <div class="table-card">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Số Xe</th>
+                    <th>Họ tên Tài xế</th>
+                    <th>SĐT</th>
+                    <th>Nhà xe</th>
+                    <th>Nhận xe từ</th>
+                    <th>Đến lúc</th>
+                    <th>Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody>${histRowsHtml}</tbody>
+              </table>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-weight:800;font-size:13.5px;color:#15803d;margin-bottom:6px;">2️⃣ Tổng hợp Số chuyến đã chốt theo từng Tài xế để tính lương (Bao gồm cả Tài xế cũ)</div>
+            <div class="table-card">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Họ tên Tài xế</th>
+                    <th>Số Xe đã chạy</th>
+                    <th>Nhà xe</th>
+                    <th>Tổng chuyến đã chốt</th>
+                    <th>Giai đoạn chạy</th>
+                  </tr>
+                </thead>
+                <tbody>${statsRowsHtml}</tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        contentEl.innerHTML = `<div style="color:var(--danger);padding:16px;">Lỗi kết nối máy chủ!</div>`;
+      }
     }
 
     function closeModal(id) {

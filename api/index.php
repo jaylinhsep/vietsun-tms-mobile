@@ -167,13 +167,52 @@ function validate_container_iso($contStr) {
 // - Nhiều xe có thể dùng chung SĐT tài xế
 // - Lưu thêm CCCD, GPLX
 function ensure_schema($pdo) {
-    $flagFile = sys_get_temp_dir() . '/vietsun_schema_v12.flag';
+    $flagFile = sys_get_temp_dir() . '/vietsun_schema_v13.flag';
     if (file_exists($flagFile)) {
         return;
     }
 
-    // 1. Đảm bảo bảng tms_pending_approvals, tms_bb_templates và tms_tt_status tồn tại
+    // 1. Đảm bảo bảng tms_pending_approvals, tms_bb_templates, tms_tt_status, driver_assignment_history và trip_driver_snapshots tồn tại
     try {
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `driver_assignment_history` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `assigned_plate` VARCHAR(32) NOT NULL,
+                `vendor_id` INT NOT NULL DEFAULT 0,
+                `vendor_name` VARCHAR(120) NOT NULL DEFAULT '',
+                `driver_name` VARCHAR(120) NOT NULL,
+                `phone` VARCHAR(30) NULL,
+                `cccd` VARCHAR(100) NULL,
+                `gplx` VARCHAR(100) NULL,
+                `assigned_from` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                `assigned_to` DATETIME NULL DEFAULT NULL,
+                `changed_by` VARCHAR(64) NOT NULL DEFAULT 'SYSTEM',
+                `note` VARCHAR(255) NULL DEFAULT NULL,
+                INDEX `idx_plate_dates` (`assigned_plate`, `assigned_from`, `assigned_to`),
+                INDEX `idx_driver_name` (`driver_name`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
+        $pdo->exec("
+            CREATE TABLE IF NOT EXISTS `trip_driver_snapshots` (
+                `id_po` VARCHAR(32) PRIMARY KEY,
+                `code_po` VARCHAR(64) NOT NULL DEFAULT '',
+                `trip_date` VARCHAR(20) NOT NULL DEFAULT '',
+                `xuat_nhap` VARCHAR(10) NOT NULL DEFAULT '',
+                `cont_size` VARCHAR(10) NOT NULL DEFAULT '20',
+                `khach_kho` VARCHAR(255) NOT NULL DEFAULT '',
+                `so_cont` VARCHAR(32) NOT NULL DEFAULT '',
+                `assigned_plate` VARCHAR(32) NOT NULL,
+                `driver_name` VARCHAR(120) NOT NULL,
+                `driver_phone` VARCHAR(30) NOT NULL DEFAULT '',
+                `driver_cccd` VARCHAR(100) NOT NULL DEFAULT '',
+                `driver_gplx` VARCHAR(100) NOT NULL DEFAULT '',
+                `vendor_name` VARCHAR(120) NOT NULL DEFAULT '',
+                `locked_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX `idx_plate_tripdate` (`assigned_plate`, `trip_date`),
+                INDEX `idx_driver_tripdate` (`driver_name`, `trip_date`),
+                INDEX `idx_vendor_tripdate` (`vendor_name`, `trip_date`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        ");
         $pdo->exec("
             CREATE TABLE IF NOT EXISTS `tms_tt_status` (
                 `id_po` VARCHAR(32) PRIMARY KEY,
@@ -308,9 +347,314 @@ function ensure_schema($pdo) {
                 }
             }
         }
+
+        // 4. Khởi tạo lịch sử bàn giao xe ban đầu từ bảng drivers & khôi phục snapshot lịch sử từ tms_pending_approvals
+        $histCnt = (int)$pdo->query("SELECT COUNT(*) FROM `driver_assignment_history`")->fetchColumn();
+        if ($histCnt === 0) {
+            $curDrivers = $pdo->query("
+                SELECT d.*, v.vendor_name
+                FROM drivers d
+                LEFT JOIN vendors v ON d.vendor_id = v.id
+            ")->fetchAll();
+            $stInsHist = $pdo->prepare("
+                INSERT INTO `driver_assignment_history`
+                (`assigned_plate`, `vendor_id`, `vendor_name`, `driver_name`, `phone`, `cccd`, `gplx`, `assigned_from`, `assigned_to`, `changed_by`, `note`)
+                VALUES (?, ?, ?, ?, ?, ?, ?, '2026-01-01 00:00:00', NULL, 'INIT', 'Khởi tạo từ danh sách đội xe')
+            ");
+            foreach ($curDrivers as $cd) {
+                $p = to_clean_code($cd['assigned_plate'] ?? '');
+                $dn = strtoupper(trim($cd['driver_name'] ?? ''));
+                if ($p && $dn) {
+                    $stInsHist->execute([
+                        $p,
+                        (int)($cd['vendor_id'] ?? 0),
+                        normalize_vendor_name($cd['vendor_name'] ?? ''),
+                        $dn,
+                        trim($cd['phone'] ?? ''),
+                        trim($cd['cccd'] ?? ''),
+                        trim($cd['gplx'] ?? '')
+                    ]);
+                }
+            }
+        }
+
+        // Khôi phục snapshot các chuyến đã từng được tài xế gửi duyệt trong tms_pending_approvals (bảo toàn tên tài xế cũ đã chạy)
+        $snapCnt = (int)$pdo->query("SELECT COUNT(*) FROM `trip_driver_snapshots`")->fetchColumn();
+        if ($snapCnt === 0) {
+            $pastDrvApprovals = $pdo->query("
+                SELECT * FROM `tms_pending_approvals`
+                WHERE `actor_role` = 'DRIVER' AND `status` IN ('APPROVED', 'PENDING')
+                ORDER BY `id` ASC
+            ")->fetchAll();
+            $stSnapInit = $pdo->prepare("
+                INSERT INTO `trip_driver_snapshots`
+                (`id_po`, `code_po`, `trip_date`, `xuat_nhap`, `cont_size`, `khach_kho`, `so_cont`, `assigned_plate`, `driver_name`, `vendor_name`, `locked_at`)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    `driver_name` = VALUES(`driver_name`),
+                    `assigned_plate` = VALUES(`assigned_plate`),
+                    `so_cont` = IF(VALUES(`so_cont`) != '', VALUES(`so_cont`), `so_cont`)
+            ");
+            foreach ($pastDrvApprovals as $pa) {
+                $parts = explode('-', (string)$pa['actor_name'], 2);
+                $pClean = to_clean_code($parts[0] ?? '');
+                $dNameSnap = strtoupper(trim($parts[1] ?? ($pa['actor_name'] ?? '')));
+                if (!$pClean || !$dNameSnap) continue;
+                $cj = json_decode($pa['changes_json'] ?? '{}', true) ?: [];
+                $soContSnap = strtoupper(trim($cj['soContPo']['new'] ?? ''));
+                $stSnapInit->execute([
+                    (string)$pa['id_po'],
+                    (string)($pa['code_po'] ?? ''),
+                    (string)($pa['trip_date'] ?? ''),
+                    (string)($pa['xuat_nhap'] ?? ''),
+                    (string)($pa['cont_size'] ?: '20'),
+                    (string)($pa['khach_kho'] ?? ''),
+                    $soContSnap,
+                    $pClean,
+                    $dNameSnap,
+                    normalize_vendor_name($pa['vendor_name'] ?? ''),
+                    $pa['created_at'] ?: date('Y-m-d H:i:s')
+                ]);
+            }
+        }
     } catch (Exception $e) {}
 
     @file_put_contents($flagFile, time());
+}
+
+// Ghi nhận lịch sử khi đổi tài xế trên cùng một biển số xe & cập nhật các yêu cầu đang PENDING
+function record_driver_assignment_change($pdo, $plate, $vendorId, $newDriverName, $phone, $cccd, $gplx, $changedBy = 'ADMIN') {
+    $cleanPlate = to_clean_code($plate);
+    $cleanNewName = strtoupper(trim($newDriverName));
+    if (!$cleanPlate || !$cleanNewName) return;
+
+    try {
+        $vName = '';
+        if ($vendorId > 0) {
+            $stV = $pdo->prepare("SELECT vendor_name FROM vendors WHERE id = ? LIMIT 1");
+            $stV->execute([$vendorId]);
+            $vName = normalize_vendor_name($stV->fetchColumn() ?: '');
+        }
+
+        // Kiểm tra bản ghi đang active (assigned_to IS NULL) của biển số này
+        $stCur = $pdo->prepare("
+            SELECT * FROM `driver_assignment_history`
+            WHERE `assigned_plate` = ? AND `assigned_to` IS NULL
+            ORDER BY `id` DESC LIMIT 1
+        ");
+        $stCur->execute([$cleanPlate]);
+        $curHist = $stCur->fetch();
+
+        if (!$curHist) {
+            // Nếu chưa có trong lịch sử, kiểm tra trong bảng drivers hiện tại trước khi ghi đè
+            $stOldDrv = $pdo->prepare("
+                SELECT d.*, v.vendor_name
+                FROM drivers d
+                LEFT JOIN vendors v ON d.vendor_id = v.id
+                WHERE d.assigned_plate = ? LIMIT 1
+            ");
+            $stOldDrv->execute([$cleanPlate]);
+            $oldDrv = $stOldDrv->fetch();
+            if ($oldDrv) {
+                $oldName = strtoupper(trim($oldDrv['driver_name'] ?? ''));
+                if ($oldName && $oldName !== $cleanNewName) {
+                    // Lưu lại giai đoạn của tài xế cũ đã kết thúc tại thời điểm bàn giao
+                    $stInsOld = $pdo->prepare("
+                        INSERT INTO `driver_assignment_history`
+                        (`assigned_plate`, `vendor_id`, `vendor_name`, `driver_name`, `phone`, `cccd`, `gplx`, `assigned_from`, `assigned_to`, `changed_by`, `note`)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, '2026-01-01 00:00:00', NOW(), ?, 'Tài xế cũ trước khi bàn giao xe')
+                    ");
+                    $stInsOld->execute([
+                        $cleanPlate,
+                        (int)($oldDrv['vendor_id'] ?? $vendorId),
+                        normalize_vendor_name($oldDrv['vendor_name'] ?? $vName),
+                        $oldName,
+                        trim($oldDrv['phone'] ?? ''),
+                        trim($oldDrv['cccd'] ?? ''),
+                        trim($oldDrv['gplx'] ?? ''),
+                        $changedBy
+                    ]);
+                }
+            }
+
+            // Mở bản ghi mới cho tài xế hiện tại
+            $stInsNew = $pdo->prepare("
+                INSERT INTO `driver_assignment_history`
+                (`assigned_plate`, `vendor_id`, `vendor_name`, `driver_name`, `phone`, `cccd`, `gplx`, `assigned_from`, `assigned_to`, `changed_by`, `note`)
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NULL, ?, 'Bắt đầu nhận xe')
+            ");
+            $stInsNew->execute([$cleanPlate, $vendorId, $vName, $cleanNewName, $phone, $cccd, $gplx, $changedBy]);
+        } else {
+            $oldHistName = strtoupper(trim($curHist['driver_name'] ?? ''));
+            if ($oldHistName !== $cleanNewName) {
+                // Đóng giai đoạn của tài xế cũ
+                $pdo->prepare("UPDATE `driver_assignment_history` SET `assigned_to` = NOW() WHERE `id` = ?")->execute([$curHist['id']]);
+                // Tạo giai đoạn mới cho tài xế mới nhận xe
+                $stInsNew = $pdo->prepare("
+                    INSERT INTO `driver_assignment_history`
+                    (`assigned_plate`, `vendor_id`, `vendor_name`, `driver_name`, `phone`, `cccd`, `gplx`, `assigned_from`, `assigned_to`, `changed_by`, `note`)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NULL, ?, ?)
+                ");
+                $stInsNew->execute([
+                    $cleanPlate,
+                    $vendorId,
+                    $vName,
+                    $cleanNewName,
+                    $phone,
+                    $cccd,
+                    $gplx,
+                    $changedBy,
+                    "Thay thế tài xế cũ: $oldHistName"
+                ]);
+            } else {
+                // Cùng một tài xế nhưng cập nhật SĐT / CCCD / GPLX / Nhà xe
+                $stUpdSame = $pdo->prepare("
+                    UPDATE `driver_assignment_history`
+                    SET `vendor_id` = ?, `vendor_name` = ?, `phone` = ?, `cccd` = ?, `gplx` = ?
+                    WHERE `id` = ?
+                ");
+                $stUpdSame->execute([$vendorId, $vName, $phone, $cccd, $gplx, $curHist['id']]);
+            }
+        }
+
+        // CHỈ cập nhật tên tài xế mới cho các yêu cầu ĐANG CHỜ DUYỆT (status = 'PENDING') của biển số xe này
+        // Các yêu cầu ĐÃ DUYỆT (status = 'APPROVED') trong quá khứ được GIỮ NGUYÊN 100% tên tài xế cũ đã chạy!
+        $newActorLabel = "$cleanPlate - $cleanNewName";
+        $stUpdPend = $pdo->prepare("
+            UPDATE `tms_pending_approvals`
+            SET `actor_name` = ?, `vendor_name` = IF(? != '', ?, `vendor_name`)
+            WHERE `actor_role` = 'DRIVER'
+              AND `status` = 'PENDING'
+              AND (`actor_name` LIKE ? OR `actor_name` = ?)
+        ");
+        $stUpdPend->execute([$newActorLabel, $vName, $vName, $cleanPlate . ' -%', $cleanPlate]);
+
+        // Cập nhật snapshot của riêng ngày hôm nay (nếu chuyến hôm nay đang PENDING hoặc vừa gán lại tài xế mới trong ngày)
+        $todayIso = date('Y-m-d');
+        $stUpdSnapToday = $pdo->prepare("
+            UPDATE `trip_driver_snapshots`
+            SET `driver_name` = ?, `driver_phone` = ?, `driver_cccd` = ?, `driver_gplx` = ?, `vendor_name` = IF(? != '', ?, `vendor_name`)
+            WHERE `assigned_plate` = ? AND `trip_date` >= ?
+              AND `id_po` IN (SELECT `id_po` FROM `tms_pending_approvals` WHERE `status` = 'PENDING')
+        ");
+        $stUpdSnapToday->execute([$cleanNewName, $phone, $cccd, $gplx, $vName, $vName, $cleanPlate, $todayIso]);
+    } catch (Exception $e) {}
+}
+
+// Chốt cứng (Snapshot) thông tin tài xế thực chạy vào chuyến hàng để phục vụ tính lương lâu dài
+function lock_trip_driver_snapshot($pdo, $idPo, $plate, $driverName = '', $driverPhone = '', $driverCccd = '', $driverGplx = '', $vendorName = '', $tripObj = null) {
+    $idPo = trim((string)$idPo);
+    $cleanPlate = to_clean_code($plate);
+    if ($idPo === '' || $cleanPlate === '') return;
+
+    try {
+        if ($driverName === '') {
+            $stD = $pdo->prepare("
+                SELECT d.driver_name, d.phone, d.cccd, d.gplx, v.vendor_name
+                FROM drivers d
+                LEFT JOIN vendors v ON d.vendor_id = v.id
+                WHERE d.assigned_plate = ? LIMIT 1
+            ");
+            $stD->execute([$cleanPlate]);
+            $dRow = $stD->fetch();
+            if ($dRow) {
+                $driverName  = strtoupper(trim($dRow['driver_name'] ?? ''));
+                $driverPhone = trim($dRow['phone'] ?? '');
+                $driverCccd  = trim($dRow['cccd'] ?? '');
+                $driverGplx  = trim($dRow['gplx'] ?? '');
+                if ($vendorName === '') {
+                    $vendorName = normalize_vendor_name($dRow['vendor_name'] ?? '');
+                }
+            }
+        }
+        if ($driverName === '') return;
+
+        $codePo   = (string)($tripObj['codePo'] ?? '');
+        $tripDate = $tripObj ? get_shipment_date_iso($tripObj) : date('Y-m-d');
+        $xuatNhap = (string)($tripObj['xuatNhapPo'] ?? '');
+        $contSize = ((int)($tripObj['cont40Po'] ?? 0) > 0) ? '40' : '20';
+        $khachKho = (string)(($tripObj['khoNhanHangPo'] ?? '') ?: ($tripObj['tenKhachPo'] ?? ''));
+        $soCont   = strtoupper(trim((string)($tripObj['soContPo'] ?? '')));
+
+        $stSnap = $pdo->prepare("
+            INSERT INTO `trip_driver_snapshots`
+            (`id_po`, `code_po`, `trip_date`, `xuat_nhap`, `cont_size`, `khach_kho`, `so_cont`, `assigned_plate`, `driver_name`, `driver_phone`, `driver_cccd`, `driver_gplx`, `vendor_name`)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                `code_po`        = IF(VALUES(`code_po`) != '', VALUES(`code_po`), `code_po`),
+                `trip_date`      = IF(VALUES(`trip_date`) != '', VALUES(`trip_date`), `trip_date`),
+                `xuat_nhap`      = IF(VALUES(`xuat_nhap`) != '', VALUES(`xuat_nhap`), `xuat_nhap`),
+                `cont_size`      = IF(VALUES(`cont_size`) != '', VALUES(`cont_size`), `cont_size`),
+                `khach_kho`      = IF(VALUES(`khach_kho`) != '', VALUES(`khach_kho`), `khach_kho`),
+                `so_cont`        = IF(VALUES(`so_cont`) != '', VALUES(`so_cont`), `so_cont`),
+                `assigned_plate` = VALUES(`assigned_plate`),
+                `driver_name`    = VALUES(`driver_name`),
+                `driver_phone`   = IF(VALUES(`driver_phone`) != '', VALUES(`driver_phone`), `driver_phone`),
+                `driver_cccd`    = IF(VALUES(`driver_cccd`) != '', VALUES(`driver_cccd`), `driver_cccd`),
+                `driver_gplx`    = IF(VALUES(`driver_gplx`) != '', VALUES(`driver_gplx`), `driver_gplx`),
+                `vendor_name`    = IF(VALUES(`vendor_name`) != '', VALUES(`vendor_name`), `vendor_name`)
+        ");
+        $stSnap->execute([
+            $idPo, $codePo, $tripDate, $xuatNhap, $contSize, $khachKho, $soCont,
+            $cleanPlate, strtoupper(trim($driverName)), $driverPhone, $driverCccd, $driverGplx, normalize_vendor_name($vendorName)
+        ]);
+    } catch (Exception $e) {}
+}
+
+// Tìm đúng tài xế đã chạy chuyến hàng (Ưu tiên: 1. Snapshot đã chốt -> 2. Lịch sử bàn giao theo ngày chuyến -> 3. Tài xế hiện tại)
+function resolve_driver_for_trip($idPo, $plate, $tripDateIso, &$snapshotsMap, &$historyByPlate, &$currentFleetMap) {
+    $pid = (string)$idPo;
+    $cleanPlate = to_clean_code($plate);
+    if ($cleanPlate === '') return null;
+
+    // 1. Nếu chuyến đã được chốt snapshot với chính biển số xe này -> trả về đúng tài xế đã chốt
+    if (isset($snapshotsMap[$pid])) {
+        $snap = $snapshotsMap[$pid];
+        if (to_clean_code($snap['assigned_plate'] ?? '') === $cleanPlate && !empty($snap['driver_name'])) {
+            return [
+                'plate'  => $cleanPlate,
+                'name'   => $snap['driver_name'],
+                'phone'  => $snap['driver_phone'] ?? '',
+                'cccd'   => $snap['driver_cccd'] ?? '',
+                'gplx'   => $snap['driver_gplx'] ?? '',
+                'source' => 'SNAPSHOT'
+            ];
+        }
+    }
+
+    // 2. Đối chiếu theo mốc thời gian bàn giao xe trong driver_assignment_history
+    if ($tripDateIso !== '' && isset($historyByPlate[$cleanPlate])) {
+        $tripDayEnd   = $tripDateIso . ' 23:59:59';
+        $tripDayStart = $tripDateIso . ' 00:00:00';
+        foreach ($historyByPlate[$cleanPlate] as $h) {
+            $from = $h['assigned_from'] ?? '2000-01-01 00:00:00';
+            $to   = $h['assigned_to'] ?? null;
+            if ($from <= $tripDayEnd && ($to === null || $to >= $tripDayStart)) {
+                return [
+                    'plate'  => $cleanPlate,
+                    'name'   => $h['driver_name'] ?? '',
+                    'phone'  => $h['phone'] ?? '',
+                    'cccd'   => $h['cccd'] ?? '',
+                    'gplx'   => $h['gplx'] ?? '',
+                    'source' => 'HISTORY'
+                ];
+            }
+        }
+    }
+
+    // 3. Mặc định lấy tài xế đang phụ trách xe hiện tại
+    if (isset($currentFleetMap[$cleanPlate])) {
+        $cur = $currentFleetMap[$cleanPlate];
+        return [
+            'plate'  => $cleanPlate,
+            'name'   => $cur['name'] ?? '',
+            'phone'  => $cur['phone'] ?? '',
+            'cccd'   => $cur['cccd'] ?? '',
+            'gplx'   => $cur['gplx'] ?? '',
+            'source' => 'CURRENT'
+        ];
+    }
+    return null;
 }
 
 // Đồng bộ trực tiếp từ Google Sheet Đội xe Vendor (loại trừ xe nhà VIETSUN)
@@ -411,7 +755,9 @@ function sync_from_google_sheet($pdo) {
 
         $vid = $vendorMap[$vCode];
         if ($vid) {
-            $stmtUpsertDriver->execute([$vid, $dName ?: "Tài xế $plate", $phone, $plate, $cccd, $gplx]);
+            $finalDName = strtoupper(trim($dName ?: "Tài xế $plate"));
+            record_driver_assignment_change($pdo, $plate, $vid, $finalDName, $phone, $cccd, $gplx, 'SHEET_SYNC');
+            $stmtUpsertDriver->execute([$vid, $finalDName, $phone, $plate, $cccd, $gplx]);
             $driverCount++;
         }
     }
@@ -1279,7 +1625,7 @@ try {
     }
 
     $pdo = get_db();
-    $schemaFlag = sys_get_temp_dir() . '/vietsun_schema_v12.flag';
+    $schemaFlag = sys_get_temp_dir() . '/vietsun_schema_v13.flag';
     if (!file_exists($schemaFlag)) {
         ensure_schema($pdo);
         $drvCnt = (int)$pdo->query("SELECT COUNT(*) FROM drivers")->fetchColumn();
@@ -1681,7 +2027,7 @@ try {
         $authPayload = verify_token($authHeader);
         $isAdmin = ($authPayload && ($authPayload['role'] ?? '') === 'admin');
         $adminLevel = $authPayload['level'] ?? 'super';
-        $isVendorFleetOp = ($authPayload && ($authPayload['role'] ?? '') === 'vendor' && in_array($route, ['admin/save-driver', 'admin/delete-driver'], true));
+        $isVendorFleetOp = ($authPayload && ($authPayload['role'] ?? '') === 'vendor' && in_array($route, ['admin/save-driver', 'admin/delete-driver', 'admin/driver-history'], true));
         if (!$isAdmin && !$isVendorFleetOp) {
             http_response_code(401);
             echo json_encode(['ok' => false, 'error' => 'Yêu cầu mật khẩu Quản trị viên (/admin)!']);
@@ -1699,10 +2045,51 @@ try {
     // Helper bổ sung thông tin changes & cont_size (20 / 40) cho các bản ghi chờ duyệt
     $enrichPendingRows = function(&$rows, $pdo) {
         $allShipmentsCache = null;
+        $liveDriverMap = null;
         foreach ($rows as &$pr) {
             $pr['changes'] = json_decode($pr['changes_json'] ?? '{}', true) ?: [];
             if ($pr['actor_role'] === 'VENDOR') {
                 $pr['actor_name'] = normalize_vendor_name($pr['actor_name']);
+            } elseif ($pr['actor_role'] === 'DRIVER' && ($pr['status'] ?? '') === 'PENDING') {
+                // Nếu yêu cầu ĐANG CHỜ DUYỆT (PENDING): Luôn đối chiếu lại tên tài xế hiện tại từ bảng drivers
+                // để không bao giờ bị hiển thị cache tên tài xế cũ từ token điện thoại.
+                // Còn các yêu cầu ĐÃ DUYỆT (APPROVED): Giữ nguyên 100% tên tài xế cũ đã chạy tại thời điểm đó!
+                if ($liveDriverMap === null) {
+                    $liveDriverMap = [];
+                    try {
+                        $stDrvAll = $pdo->query("
+                            SELECT d.assigned_plate, d.driver_name, v.vendor_name
+                            FROM drivers d
+                            LEFT JOIN vendors v ON d.vendor_id = v.id
+                        ");
+                        if ($stDrvAll) {
+                            foreach ($stDrvAll->fetchAll() as $dr) {
+                                $p = to_clean_code($dr['assigned_plate'] ?? '');
+                                if ($p) {
+                                    $liveDriverMap[$p] = [
+                                        'name'   => strtoupper(trim($dr['driver_name'] ?? '')),
+                                        'vendor' => normalize_vendor_name($dr['vendor_name'] ?? '')
+                                    ];
+                                }
+                            }
+                        }
+                    } catch (Exception $e) {}
+                }
+                $parts = explode('-', (string)($pr['actor_name'] ?? ''), 2);
+                $plateClean = to_clean_code($parts[0] ?? '');
+                if ($plateClean && isset($liveDriverMap[$plateClean]) && $liveDriverMap[$plateClean]['name'] !== '') {
+                    $freshActor = $plateClean . ' - ' . $liveDriverMap[$plateClean]['name'];
+                    if ($freshActor !== $pr['actor_name']) {
+                        $pr['actor_name'] = $freshActor;
+                        if (!empty($liveDriverMap[$plateClean]['vendor'])) {
+                            $pr['vendor_name'] = $liveDriverMap[$plateClean]['vendor'];
+                        }
+                        try {
+                            $pdo->prepare("UPDATE tms_pending_approvals SET actor_name = ?, vendor_name = ? WHERE id = ?")
+                                ->execute([$pr['actor_name'], $pr['vendor_name'], $pr['id']]);
+                        } catch (Exception $e) {}
+                    }
+                }
             }
             if (!empty($pr['vendor_name'])) {
                 $pr['vendor_name'] = normalize_vendor_name($pr['vendor_name']);
@@ -1908,6 +2295,36 @@ try {
                 }
                 update_tms_field($idPo, $codePo, $fieldName, $newVal);
             }
+            // Chốt cứng (Snapshot) tên tài xế thực chạy tại thời điểm duyệt đẩy TMS để bảo toàn lịch sử tính lương
+            if (($r['actor_role'] ?? '') === 'DRIVER') {
+                $parts = explode('-', (string)($r['actor_name'] ?? ''), 2);
+                $pClean = to_clean_code($parts[0] ?? '');
+                $dNameSnap = strtoupper(trim($parts[1] ?? ''));
+                if ($pClean) {
+                    $fakeTrip = [
+                        'codePo'        => $codePo,
+                        'ngayTraHang'   => $r['trip_date'] ?? '',
+                        'xuatNhapPo'    => $r['xuat_nhap'] ?? '',
+                        'cont40Po'      => ((string)($r['cont_size'] ?? '') === '40') ? 1 : 0,
+                        'khoNhanHangPo' => $r['khach_kho'] ?? '',
+                        'soContPo'      => $changes['soContPo']['new'] ?? ''
+                    ];
+                    lock_trip_driver_snapshot($pdo, $idPo, $pClean, $dNameSnap, '', '', '', $r['vendor_name'] ?? '', $fakeTrip);
+                }
+            } elseif (isset($changes['soXePo']['new']) && trim((string)$changes['soXePo']['new']) !== '') {
+                $pClean = to_clean_code($changes['soXePo']['new']);
+                if ($pClean) {
+                    $fakeTrip = [
+                        'codePo'        => $codePo,
+                        'ngayTraHang'   => $r['trip_date'] ?? '',
+                        'xuatNhapPo'    => $r['xuat_nhap'] ?? '',
+                        'cont40Po'      => ((string)($r['cont_size'] ?? '') === '40') ? 1 : 0,
+                        'khoNhanHangPo' => $r['khach_kho'] ?? '',
+                        'soContPo'      => $changes['soContPo']['new'] ?? ''
+                    ];
+                    lock_trip_driver_snapshot($pdo, $idPo, $pClean, '', '', '', '', $r['vendor_name'] ?? '', $fakeTrip);
+                }
+            }
             $stMark->execute([$r['id']]);
             $approvedCount++;
         }
@@ -2002,9 +2419,17 @@ try {
             exit;
         }
 
+        $finalDName = $dName ?: "Tài xế $plate";
+        $changedByRole = ($authPayload['role'] ?? '') === 'vendor'
+            ? ('VENDOR: ' . normalize_vendor_name($authPayload['vendorName'] ?? ''))
+            : 'ADMIN';
+
+        // Ghi nhận lịch sử bàn giao xe (lưu lại tài xế cũ trước khi cập nhật tài xế mới) & đồng bộ các yêu cầu PENDING
+        record_driver_assignment_change($pdo, $plate, $vendorId, $finalDName, $phone, $cccd, $gplx, $changedByRole);
+
         if ($id > 0) {
             $st = $pdo->prepare("UPDATE drivers SET vendor_id = ?, assigned_plate = ?, driver_name = ?, phone = ?, pin_code = ?, cccd = ?, gplx = ? WHERE id = ?");
-            $st->execute([$vendorId, $plate, $dName ?: "Tài xế $plate", $phone, $pin ?: '123456', $cccd, $gplx, $id]);
+            $st->execute([$vendorId, $plate, $finalDName, $phone, $pin ?: '123456', $cccd, $gplx, $id]);
         } else {
             $st = $pdo->prepare("
                 INSERT INTO drivers (vendor_id, assigned_plate, driver_name, phone, pin_code, cccd, gplx, is_active)
@@ -2017,9 +2442,68 @@ try {
                     cccd = VALUES(cccd),
                     gplx = VALUES(gplx)
             ");
-            $st->execute([$vendorId, $plate, $dName ?: "Tài xế $plate", $phone, $pin ?: '123456', $cccd, $gplx]);
+            $st->execute([$vendorId, $plate, $finalDName, $phone, $pin ?: '123456', $cccd, $gplx]);
         }
-        echo json_encode(['ok' => true, 'message' => 'Đã lưu thông tin Xe & Tài xế!']);
+        echo json_encode(['ok' => true, 'message' => 'Đã lưu thông tin Xe & Tài xế và ghi nhận lịch sử bàn giao xe!']);
+        exit;
+    }
+
+    // API Xem Lịch sử bàn giao xe & Thống kê chuyến theo từng Tài xế (kể cả tài xế cũ đã đổi xe) để tính lương
+    if ($route === 'admin/driver-history') {
+        $filterPlate = to_clean_code($_GET['plate'] ?? '');
+        $filterVendorId = (int)($_GET['vendor_id'] ?? 0);
+        if (($authPayload['role'] ?? '') === 'vendor') {
+            $filterVendorId = (int)($authPayload['vendorId'] ?? 0);
+        }
+
+        $whereHist = [];
+        $paramsHist = [];
+        if ($filterPlate !== '') {
+            $whereHist[] = "assigned_plate = ?";
+            $paramsHist[] = $filterPlate;
+        }
+        if ($filterVendorId > 0) {
+            $whereHist[] = "vendor_id = ?";
+            $paramsHist[] = $filterVendorId;
+        }
+        $sqlHist = "SELECT * FROM driver_assignment_history";
+        if (!empty($whereHist)) {
+            $sqlHist .= " WHERE " . implode(" AND ", $whereHist);
+        }
+        $sqlHist .= " ORDER BY assigned_plate ASC, id DESC LIMIT 500";
+        $stH = $pdo->prepare($sqlHist);
+        $stH->execute($paramsHist);
+        $historyList = $stH->fetchAll();
+
+        $whereSnap = [];
+        $paramsSnap = [];
+        if ($filterPlate !== '') {
+            $whereSnap[] = "assigned_plate = ?";
+            $paramsSnap[] = $filterPlate;
+        }
+        if ($filterVendorId > 0) {
+            $stVName = $pdo->prepare("SELECT vendor_name FROM vendors WHERE id = ? LIMIT 1");
+            $stVName->execute([$filterVendorId]);
+            $vNameForSnap = normalize_vendor_name($stVName->fetchColumn() ?: '');
+            if ($vNameForSnap !== '') {
+                $whereSnap[] = "vendor_name = ?";
+                $paramsSnap[] = $vNameForSnap;
+            }
+        }
+        $sqlSnap = "SELECT * FROM trip_driver_snapshots";
+        if (!empty($whereSnap)) {
+            $sqlSnap .= " WHERE " . implode(" AND ", $whereSnap);
+        }
+        $sqlSnap .= " ORDER BY trip_date DESC, id_po DESC LIMIT 1000";
+        $stS = $pdo->prepare($sqlSnap);
+        $stS->execute($paramsSnap);
+        $snapshotsList = $stS->fetchAll();
+
+        echo json_encode([
+            'ok'        => true,
+            'history'   => $historyList,
+            'snapshots' => $snapshotsList
+        ]);
         exit;
     }
 
@@ -3377,7 +3861,39 @@ try {
 
         $actorRole = ($user['role'] ?? '') === 'vendor' ? 'VENDOR' : 'DRIVER';
         $vName = normalize_vendor_name($user['vendorName'] ?? ($user['vendorCode'] ?? 'Vendor'));
-        $actorName = $actorRole === 'VENDOR' ? $vName : trim(($user['plate'] ?? '') . ' - ' . ($user['driverName'] ?? ''));
+        $liveDriverName = $user['driverName'] ?? '';
+        $liveDriverPhone = '';
+        $liveDriverCccd = '';
+        $liveDriverGplx = '';
+        $cleanUserPlate = to_clean_code($user['plate'] ?? '');
+
+        // LUÔN truy vấn tên tài xế và nhà xe mới nhất trực tiếp từ bảng drivers theo biển số xe,
+        // tuyệt đối không dùng $user['driverName'] cũ bị lưu cache trong JWT token trên điện thoại!
+        if ($actorRole === 'DRIVER' && $cleanUserPlate !== '') {
+            try {
+                $stLiveDrv = $pdo->prepare("
+                    SELECT d.driver_name, d.phone, d.cccd, d.gplx, v.vendor_name
+                    FROM drivers d
+                    LEFT JOIN vendors v ON d.vendor_id = v.id
+                    WHERE d.assigned_plate = ? LIMIT 1
+                ");
+                $stLiveDrv->execute([$cleanUserPlate]);
+                $liveRow = $stLiveDrv->fetch();
+                if ($liveRow) {
+                    if (!empty($liveRow['driver_name'])) {
+                        $liveDriverName = strtoupper(trim($liveRow['driver_name']));
+                    }
+                    $liveDriverPhone = trim($liveRow['phone'] ?? '');
+                    $liveDriverCccd  = trim($liveRow['cccd'] ?? '');
+                    $liveDriverGplx  = trim($liveRow['gplx'] ?? '');
+                    if (!empty($liveRow['vendor_name'])) {
+                        $vName = normalize_vendor_name($liveRow['vendor_name']);
+                    }
+                }
+            } catch (Exception $e) {}
+        }
+
+        $actorName = $actorRole === 'VENDOR' ? $vName : trim($cleanUserPlate . ' - ' . $liveDriverName);
         $vendorName = $vName;
         $qRes = queue_pending_tms_approval($pdo, $idPo, $codePo, $actorRole, $actorName, $vendorName, $fieldsToQueue);
         if (!$qRes['ok']) {
@@ -3385,10 +3901,21 @@ try {
             echo json_encode($qRes);
             exit;
         }
+
+        // Chốt snapshot tài xế thực chạy chuyến này vào trip_driver_snapshots để bảo toàn dữ liệu tính lương
+        if ($actorRole === 'DRIVER' && $cleanUserPlate !== '' && $liveDriverName !== '') {
+            $fakeTrip = [
+                'codePo'   => $codePo,
+                'soContPo' => $fieldsToQueue['soContPo'] ?? ''
+            ];
+            lock_trip_driver_snapshot($pdo, $idPo, $cleanUserPlate, $liveDriverName, $liveDriverPhone, $liveDriverCccd, $liveDriverGplx, $vendorName, $fakeTrip);
+        }
+
         echo json_encode([
-            'ok'      => true,
-            'pending' => true,
-            'message' => 'Đã gửi thông tin chờ Điều vận kiểm duyệt trước khi đẩy lên TMS!'
+            'ok'         => true,
+            'pending'    => true,
+            'driverName' => $liveDriverName,
+            'message'    => 'Đã gửi thông tin chờ Điều vận kiểm duyệt trước khi đẩy lên TMS!'
         ]);
         exit;
     }
@@ -3428,6 +3955,12 @@ try {
             echo json_encode($qRes);
             exit;
         }
+
+        // Chốt snapshot tài xế đang phụ trách xe tại thời điểm Chủ Vendor điều xe cho chuyến này
+        if ($soXe !== '') {
+            lock_trip_driver_snapshot($pdo, $idPo, $soXe, '', '', '', '', $vendorName, $currTrip);
+        }
+
         echo json_encode([
             'ok'      => true,
             'pending' => true,
@@ -3470,8 +4003,8 @@ try {
         $targetDate = $_GET['date'] ?? null;
         $forceRefresh = !empty($_GET['refresh']);
 
-        // Lấy danh sách biển số xe thuộc Vendor này để đối chiếu cả по số xe lẫn tên ĐVVT
-        $stDrv = $pdo->prepare("SELECT assigned_plate, driver_name, phone FROM drivers WHERE vendor_id = ?");
+        // Lấy danh sách biển số xe thuộc Vendor này để đối chiếu cả theo số xe lẫn tên ĐVVT
+        $stDrv = $pdo->prepare("SELECT assigned_plate, driver_name, phone, cccd, gplx FROM drivers WHERE vendor_id = ?");
         $stDrv->execute([$user['vendorId']]);
         $drvRows = $stDrv->fetchAll();
         $fleetMap = [];
@@ -3481,14 +4014,39 @@ try {
                 $fleetMap[$p] = [
                     'plate' => $p,
                     'name'  => $dr['driver_name'] ?? '',
-                    'phone' => $dr['phone'] ?? ''
+                    'phone' => $dr['phone'] ?? '',
+                    'cccd'  => $dr['cccd'] ?? '',
+                    'gplx'  => $dr['gplx'] ?? ''
                 ];
             }
         }
 
+        // Tải bảng snapshot tài xế theo chuyến & lịch sử bàn giao xe để các chuyến cũ luôn giữ đúng tên Tài xế cũ phục vụ tính lương
+        $snapshotsMap = [];
+        $historyByPlate = [];
+        try {
+            $stSnapAll = $pdo->query("SELECT id_po, assigned_plate, driver_name, driver_phone, driver_cccd, driver_gplx FROM trip_driver_snapshots");
+            if ($stSnapAll) {
+                foreach ($stSnapAll->fetchAll() as $sr) {
+                    $snapshotsMap[(string)$sr['id_po']] = $sr;
+                }
+            }
+            $stHistAll = $pdo->query("SELECT assigned_plate, driver_name, phone, cccd, gplx, assigned_from, assigned_to FROM driver_assignment_history ORDER BY id DESC");
+            if ($stHistAll) {
+                foreach ($stHistAll->fetchAll() as $hr) {
+                    $hp = to_clean_code($hr['assigned_plate'] ?? '');
+                    if ($hp) {
+                        $historyByPlate[$hp][] = $hr;
+                        // Bổ sung cả các biển số từng thuộc lịch sử của Vendor để không sót chuyến cũ
+                    }
+                }
+            }
+        } catch (Exception $e) {}
+
         // Vendor cần cước Debit để xem tab Chuyến xe & Đối soát
         $all = fetch_vietsun_shipments($targetDate, $forceRefresh, true);
         $vendorTrips = [];
+        $todayIso = date('Y-m-d');
         foreach ($all as $item) {
             $itemVendor = strtoupper(trim($item['donViVcPo'] ?? ''));
             $itemVCode = to_clean_code($itemVendor);
@@ -3498,9 +4056,39 @@ try {
             $matchPlate  = ($itemPlate !== '' && isset($fleetMap[$itemPlate]));
 
             if ($matchVendor || $matchPlate) {
-                if ($itemPlate !== '' && isset($fleetMap[$itemPlate])) {
-                    $item['_driverName']  = $fleetMap[$itemPlate]['name'];
-                    $item['_driverPhone'] = $fleetMap[$itemPlate]['phone'];
+                if ($itemPlate !== '') {
+                    $tripDateIso = get_shipment_date_iso($item);
+                    $resolvedDrv = resolve_driver_for_trip($item['idPo'] ?? '', $itemPlate, $tripDateIso, $snapshotsMap, $historyByPlate, $fleetMap);
+                    if ($resolvedDrv) {
+                        $item['_driverName']   = $resolvedDrv['name'];
+                        $item['_driverPhone']  = $resolvedDrv['phone'];
+                        $item['_driverCccd']   = $resolvedDrv['cccd'];
+                        $item['_driverGplx']   = $resolvedDrv['gplx'];
+                        $item['_driverSource'] = $resolvedDrv['source'];
+
+                        // Tự động chốt snapshot cho các chuyến đã chạy (ngày <= hôm nay) nhưng chưa có trong trip_driver_snapshots
+                        if (!isset($snapshotsMap[(string)($item['idPo'] ?? '')]) && $tripDateIso !== '' && $tripDateIso <= $todayIso && !empty($resolvedDrv['name'])) {
+                            lock_trip_driver_snapshot(
+                                $pdo,
+                                $item['idPo'],
+                                $itemPlate,
+                                $resolvedDrv['name'],
+                                $resolvedDrv['phone'],
+                                $resolvedDrv['cccd'],
+                                $resolvedDrv['gplx'],
+                                $vName,
+                                $item
+                            );
+                            $snapshotsMap[(string)$item['idPo']] = [
+                                'id_po'          => (string)$item['idPo'],
+                                'assigned_plate' => $itemPlate,
+                                'driver_name'    => $resolvedDrv['name'],
+                                'driver_phone'   => $resolvedDrv['phone'],
+                                'driver_cccd'    => $resolvedDrv['cccd'],
+                                'driver_gplx'    => $resolvedDrv['gplx']
+                            ];
+                        }
+                    }
                 }
                 $vendorTrips[] = $item;
             }
