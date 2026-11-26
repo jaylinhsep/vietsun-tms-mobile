@@ -365,8 +365,6 @@
     </div>
     <div class="nav-links">
       <button type="button" class="btn-install" id="btnInstallAdmin" onclick="handleInstallAdminApp()">📲 Cài App Admin</button>
-      <button class="btn-sync" onclick="syncFromGoogleSheet()" id="btnSyncSheet">🔄 Đồng bộ Sheet</button>
-      <a href="https://docs.google.com/spreadsheets/d/13ndQsSmBsKlHjIRQR0S0MO5BPqqL6J4CECBAYfQi1oo/edit?gid=1046738475#gid=1046738475" target="_blank" id="linkSheetGoc">📄 Sheet gốc</a>
       <a href="https://vietsun.site/vendor" id="linkVendorSite">🏢 Vendor</a>
       <a href="https://vietsun.site/driver" id="linkDriverSite">🚛 Tài Xế</a>
       <a href="https://vietsun.site" id="linkHomeSite">🏠 Trang Chủ</a>
@@ -739,8 +737,6 @@
       const tabBtnExport40 = document.getElementById('tabBtnExport40');
       const tabBtnVendors = document.getElementById('tabBtnVendors');
       const tabBtnDrivers = document.getElementById('tabBtnDrivers');
-      const btnSyncSheet = document.getElementById('btnSyncSheet');
-      const linkSheetGoc = document.getElementById('linkSheetGoc');
       const statTitleApprovals = document.getElementById('statTitleApprovals');
       const statDescApprovals = document.getElementById('statDescApprovals');
       const btnStickN = document.getElementById('btnStickN');
@@ -776,8 +772,6 @@
         }
         if (tabBtnVendors) tabBtnVendors.style.display = 'none';
         if (tabBtnDrivers) tabBtnDrivers.style.display = 'none';
-        if (btnSyncSheet) btnSyncSheet.style.display = 'none';
-        if (linkSheetGoc) linkSheetGoc.style.display = 'none';
         if (btnStickN) btnStickN.style.display = 'none';
         if (btnStickX) btnStickX.style.display = 'none';
         if (btnStickX40) {
@@ -805,8 +799,6 @@
         if (tabBtnExport40) tabBtnExport40.style.display = 'inline-flex';
         if (tabBtnVendors) tabBtnVendors.style.display = 'inline-flex';
         if (tabBtnDrivers) tabBtnDrivers.style.display = 'inline-flex';
-        if (btnSyncSheet) btnSyncSheet.style.display = 'inline-flex';
-        if (linkSheetGoc) linkSheetGoc.style.display = 'inline-flex';
         if (btnStickN) btnStickN.style.display = 'inline-flex';
         if (btnStickX) {
           btnStickX.style.display = 'inline-flex';
@@ -1400,30 +1392,6 @@
           </td>
         </tr>
       `).join('');
-    }
-
-    async function syncFromGoogleSheet() {
-      const btn = document.getElementById('btnSyncSheet');
-      btn.disabled = true;
-      btn.textContent = '⏳ Đang đồng bộ...';
-      try {
-        const res = await fetch(`${API_BASE}/admin/sync-sheet`, {
-          method: 'POST',
-          headers: getAdminHeaders()
-        });
-        const data = await res.json();
-        if (data.ok) {
-          alert(`✅ Đã đồng bộ thành công từ Google Sheet!\n- Nhà xe (Vendor): ${data.synced.totalVendors || data.synced.vendors || 0}\n- Số xe / Tài xế: ${data.synced.syncedDrivers || data.synced.drivers || 0}`);
-          loadOverview();
-        } else {
-          alert('Lỗi đồng bộ: ' + (data.error || 'Không xác định'));
-        }
-      } catch (err) {
-        alert('Lỗi kết nối máy chủ!');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '🔄 Đồng bộ Sheet';
-      }
     }
 
     function toCleanCode(str) {

@@ -1628,10 +1628,6 @@ try {
     $schemaFlag = sys_get_temp_dir() . '/vietsun_schema_v13.flag';
     if (!file_exists($schemaFlag)) {
         ensure_schema($pdo);
-        $drvCnt = (int)$pdo->query("SELECT COUNT(*) FROM drivers")->fetchColumn();
-        if ($drvCnt < 10) {
-            sync_from_google_sheet($pdo);
-        }
     }
 
     // ========================================================================
@@ -2133,10 +2129,10 @@ try {
         unset($pr);
     };
 
-    // API Đồng bộ Google Sheet ngay lập tức
+    // API Đồng bộ Google Sheet đã được vô hiệu hóa để tránh ghi đè dữ liệu chỉnh sửa trực tiếp trên admin.vietsun.site
     if ($route === 'admin/sync-sheet') {
-        $res = sync_from_google_sheet($pdo);
-        echo json_encode(['ok' => true, 'message' => 'Đã đồng bộ từ Google Sheet thành công!', 'stats' => $res, 'synced' => $res]);
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Tính năng đồng bộ từ Google Sheet đã được tắt. Mọi thông tin Nhà xe & Tài xế hiện được quản lý trực tiếp trên admin.vietsun.site!']);
         exit;
     }
 
