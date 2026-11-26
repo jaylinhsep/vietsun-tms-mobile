@@ -451,13 +451,6 @@
             </button>
           </div>
         </div>
-        <div id="export40ModeBanner" style="display:none;width:100%;background:#fff7ed;border:1.5px solid #fdba74;border-radius:9px;padding:8px 12px;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-          <div style="font-size:12.5px;font-weight:800;color:#9a3412;display:flex;align-items:center;gap:6px;">
-            <span>📦 ĐANG XEM PHÂN HỆ RIÊNG: HÀNG XUẤT CONT 40"</span>
-            <span style="font-weight:600;color:#c2410c;font-size:12px;">(Đã ẩn Nhập 20", Nhập 40", Xuất 20" để tránh duyệt nhầm)</span>
-          </div>
-          <button type="button" class="btn btn-sm" style="background:#1e40af;color:#fff;font-weight:800;" onclick="openMainApprovalsView()">⬅️ Quay về Main View (Nhập 20/40 & Xuất 20)</button>
-        </div>
         <div style="display:flex;gap:8px;width:100%; sm:width:auto;">
           <button class="btn btn-success" style="width:100%;justify-content:center;" onclick="approveAllPending()" id="btnApproveAll">✅ Duyệt tất cả Main View (Nhập 20/40 & Xuất 20) & Đẩy TMS</button>
         </div>
@@ -870,10 +863,6 @@
       if (sectionApprovalsVisible) {
         if (tabApprovals) tabApprovals.classList.toggle('active', !isX40Mode);
         if (tabExport40) tabExport40.classList.toggle('active', isX40Mode);
-      }
-
-      if (bannerX40) {
-        bannerX40.style.display = isX40Mode ? 'flex' : 'none';
       }
 
       if (btnApproveAll) {
