@@ -4033,19 +4033,12 @@ try {
                 $toDate = date('Y-m-d', $toTs);
             }
 
-            $stQuery = $pdo->prepare("
-                SELECT `payload_json`, `updated_at`
-                FROM `tms_ketoan_bookings_cache`
-                WHERE `trip_date` BETWEEN ? AND ?
-                ORDER BY `trip_date` DESC, CAST(`id_po` AS UNSIGNED) DESC
-            ");
-            $stQuery->execute([$fromDate, $toDate]);
-            $cachedRows = $stQuery->fetchAll();
+            $cntExisting = (int)$pdo->query("SELECT COUNT(*) FROM `tms_ketoan_bookings_cache` WHERE `trip_date` BETWEEN " . $pdo->quote($fromDate) . " AND " . $pdo->quote($toDate))->fetchColumn();
 
             $needsCostSync = false;
             // Nếu MySQL Cache đang trống trong khoảng ngày này: Nạp tức thì danh sách booking từ return_json.php (chỉ 2 request JSON nhẹ ~0.8s)
             // kết hợp với bất kỳ file cache vietsun_debit_map_v8_*.json nào đang có sẵn trong /tmp để hiển thị ngay lập tức!
-            if (empty($cachedRows)) {
+            if ($cntExisting === 0) {
                 $rawCycles = [];
                 for ($ts = $fromTs - 5 * 86400; $ts <= $toTs + 15 * 86400; $ts += 15 * 86400) {
                     $rawCycles[] = get_billing_cycle_param(date('Y-m-d', $ts));
@@ -4112,12 +4105,10 @@ try {
                 } catch (Exception $e) {
                     if ($pdo->inTransaction()) $pdo->rollBack();
                 }
-
-                $stQuery->execute([$fromDate, $toDate]);
-                $cachedRows = $stQuery->fetchAll();
             }
 
-            $filtered = [];
+            // Tối ưu cực đại: Ghép trực tiếp chuỗi payload_json từ MySQL mà KHÔNG json_decode + json_encode lại 6,500 dòng (~5MB)
+            $jsonFragments = [];
             $nhapCount = 0;
             $xuatCount = 0;
             $c20Count = 0;
@@ -4125,38 +4116,48 @@ try {
             $hasAnyCostCount = 0;
             $lastUpdatedAt = '';
 
-            foreach ($cachedRows as $cr) {
-                $item = json_decode($cr['payload_json'], true);
-                if (!is_array($item)) continue;
+            $stFast = $pdo->prepare("
+                SELECT `xuat_nhap`, `cont_40`, `payload_json`, `updated_at`
+                FROM `tms_ketoan_bookings_cache`
+                WHERE `trip_date` BETWEEN ? AND ?
+                ORDER BY `trip_date` DESC, CAST(`id_po` AS UNSIGNED) DESC
+            ");
+            $stFast->execute([$fromDate, $toDate]);
+            while ($cr = $stFast->fetch()) {
+                $pJson = $cr['payload_json'] ?? '';
+                if ($pJson === '') continue;
                 if ($lastUpdatedAt === '' || ($cr['updated_at'] ?? '') > $lastUpdatedAt) {
                     $lastUpdatedAt = $cr['updated_at'] ?? '';
                 }
-                if (($item['xuatNhapPo'] ?? 'N') === 'X') $xuatCount++; else $nhapCount++;
-                if ((int)($item['cont40Po'] ?? 0) > 0) $c40Count++; else $c20Count++;
-                if (!empty($item['donGia1ThucTraChoxePo']) || !empty($item['donGiaDebitPo']) || !empty($item['_tmsBocXep']) || !empty($item['_veCauDuong']) || !empty($item['_tmsCpKhac'])) {
+                if (($cr['xuat_nhap'] ?? 'N') === 'X') $xuatCount++; else $nhapCount++;
+                if ((int)($cr['cont_40'] ?? 0) > 0) $c40Count++; else $c20Count++;
+                if (strpos($pJson, '"donGia1ThucTraChoxePo":null') === false
+                    || strpos($pJson, '"donGiaDebitPo":null') === false
+                    || strpos($pJson, '"_tmsBocXep":0') === false
+                    || strpos($pJson, '"_veCauDuong":0') === false
+                    || strpos($pJson, '"_tmsCpKhac":0') === false) {
                     $hasAnyCostCount++;
                 }
-                $filtered[] = $item;
+                $jsonFragments[] = $pJson;
             }
 
-            if (count($filtered) > 0 && $hasAnyCostCount === 0) {
+            $totalCount = count($jsonFragments);
+            if ($totalCount > 0 && $hasAnyCostCount === 0) {
                 $needsCostSync = true;
             }
 
-            echo json_encode([
-                'ok'              => true,
-                'fromDate'        => $fromDate,
-                'toDate'          => $toDate,
-                'total'           => count($filtered),
-                'nhapCount'       => $nhapCount,
-                'xuatCount'       => $xuatCount,
-                'c20Count'        => $c20Count,
-                'c40Count'        => $c40Count,
-                'hasAnyCostCount' => $hasAnyCostCount,
-                'needsCostSync'   => $needsCostSync,
-                'lastUpdatedAt'   => $lastUpdatedAt,
-                'bookings'        => $filtered
-            ]);
+            echo '{"ok":true'
+                . ',"fromDate":' . json_encode($fromDate)
+                . ',"toDate":' . json_encode($toDate)
+                . ',"total":' . $totalCount
+                . ',"nhapCount":' . $nhapCount
+                . ',"xuatCount":' . $xuatCount
+                . ',"c20Count":' . $c20Count
+                . ',"c40Count":' . $c40Count
+                . ',"hasAnyCostCount":' . $hasAnyCostCount
+                . ',"needsCostSync":' . ($needsCostSync ? 'true' : 'false')
+                . ',"lastUpdatedAt":' . json_encode($lastUpdatedAt)
+                . ',"bookings":[' . implode(',', $jsonFragments) . ']}';
             exit;
         }
     }
