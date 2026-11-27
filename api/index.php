@@ -926,7 +926,9 @@ function parse_tms_ajax_debit_html($html, &$map) {
         'cpduongcam',
         'cpkhacpo',
         'chiHoNangContPo',
-        'chiHoHaContPo'
+        'chiHoHaContPo',
+        'tienCuocPo',
+        'cuocVanChuyenPo'
     ];
     foreach ($numFields as $prefix) {
         if (preg_match_all('/id="' . $prefix . '(\d+)"[^>]*value="([^"]*)"/i', $html, $matches, PREG_SET_ORDER)) {
@@ -1283,11 +1285,22 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false, $inc
         $dInfo = $debitMap[$idPo] ?? [];
         $item['donGiaDebitPo']         = isset($dInfo['donGiaDebitPo']) && $dInfo['donGiaDebitPo'] > 0 ? (int)$dInfo['donGiaDebitPo'] : null;
         $item['donGia1ThucTraChoxePo'] = isset($dInfo['donGia1ThucTraChoxePo']) && $dInfo['donGia1ThucTraChoxePo'] > 0 ? (int)$dInfo['donGia1ThucTraChoxePo'] : null;
+        $item['donGIaPhuLuc']          = isset($dInfo['donGIaPhuLuc']) && $dInfo['donGIaPhuLuc'] > 0 ? (int)$dInfo['donGIaPhuLuc'] : null;
+        $item['bocXep1GnChiPo']        = isset($dInfo['bocXep1GnChiPo']) && $dInfo['bocXep1GnChiPo'] > 0 ? (int)$dInfo['bocXep1GnChiPo'] : 0;
+        $item['chiHoNangContPo']       = isset($dInfo['chiHoNangContPo']) && $dInfo['chiHoNangContPo'] > 0 ? (int)$dInfo['chiHoNangContPo'] : 0;
+        $item['chiHoHaContPo']         = isset($dInfo['chiHoHaContPo']) && $dInfo['chiHoHaContPo'] > 0 ? (int)$dInfo['chiHoHaContPo'] : 0;
+        $item['neoXeDuongCamPo']       = isset($dInfo['neoXeDuongCamPo']) && $dInfo['neoXeDuongCamPo'] > 0 ? (int)$dInfo['neoXeDuongCamPo'] : 0;
+        $item['cpduongcam']            = isset($dInfo['cpduongcam']) && $dInfo['cpduongcam'] > 0 ? (int)$dInfo['cpduongcam'] : 0;
+        $item['cpkhacpo']              = isset($dInfo['cpkhacpo']) && $dInfo['cpkhacpo'] > 0 ? (int)$dInfo['cpkhacpo'] : 0;
+        $item['chiPhiNeoXePo']         = isset($dInfo['chiPhiNeoXePo']) && $dInfo['chiPhiNeoXePo'] > 0 ? (int)$dInfo['chiPhiNeoXePo'] : 0;
         if (!empty($dInfo['hinhThucKHopPo'])) {
             $item['hinhThucKHopPo'] = $dInfo['hinhThucKHopPo'];
         }
         if (!empty($dInfo['ghiChuPo']) && $dInfo['ghiChuPo'] !== '.') {
             $item['ghiChuPo'] = $dInfo['ghiChuPo'];
+        }
+        if (!empty($dInfo['notePo']) && $dInfo['notePo'] !== '.') {
+            $item['notePo'] = $dInfo['notePo'];
         }
 
         // Chi hộ bốc xếp (TMS hoặc Tài xế báo)
@@ -3714,6 +3727,119 @@ try {
                 'ok'      => true,
                 'deleted' => count($whCodes),
                 'message' => 'Đã xóa ' . count($whCodes) . ' mã kho khỏi danh sách!'
+            ]);
+            exit;
+        }
+
+        // GET/POST cuoc/ketoan-vs: Tải danh sách booking Nhập & Xuất trong vòng 30 ngày trước (hoặc từ ngày -> đến ngày) từ TMS gốc (return_json.php + index-ajax.php) kèm đầy đủ chi phí để tra cứu & report Kế Toán VS
+        if ($route === 'cuoc/ketoan-vs') {
+            $days = isset($_GET['days']) ? max(1, min(120, (int)$_GET['days'])) : 30;
+            $toDate = trim((string)($_GET['toDate'] ?? ($jsonBody['toDate'] ?? date('Y-m-d'))));
+            $fromDate = trim((string)($_GET['fromDate'] ?? ($jsonBody['fromDate'] ?? '')));
+            $forceRefresh = !empty($_GET['refresh']) || !empty($jsonBody['refresh']);
+
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $toDate)) {
+                $toDate = date('Y-m-d');
+            }
+            $toTs = strtotime($toDate) ?: time();
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fromDate)) {
+                $fromTs = $toTs - ($days * 86400);
+                $fromDate = date('Y-m-d', $fromTs);
+            } else {
+                $fromTs = strtotime($fromDate) ?: ($toTs - ($days * 86400));
+            }
+            if ($fromTs > $toTs) {
+                $tmp = $fromTs; $fromTs = $toTs; $toTs = $tmp;
+                $fromDate = date('Y-m-d', $fromTs);
+                $toDate = date('Y-m-d', $toTs);
+            }
+
+            // Gọi fetch_vietsun_shipments với includeDebit = true để quét cả return_json.php và index-ajax.php (NHẬP kieuxem=7, XUẤT kieuxem=3)
+            $all = fetch_vietsun_shipments($toDate, $forceRefresh, true, $fromDate, $toDate);
+
+            // Ghép thêm thông tin Tài xế (Snapshot / History / Current) để Kế Toán VS có đầy đủ tên tài xế, SĐT, CCCD
+            $fleetMap = [];
+            $snapshotsMap = [];
+            $historyByPlate = [];
+            try {
+                $stDrv = $pdo->query("SELECT assigned_plate, driver_name, phone, cccd, gplx FROM drivers");
+                if ($stDrv) {
+                    foreach ($stDrv->fetchAll() as $dr) {
+                        $p = to_clean_code($dr['assigned_plate'] ?? '');
+                        if ($p) {
+                            $fleetMap[$p] = [
+                                'plate' => $p,
+                                'name'  => $dr['driver_name'] ?? '',
+                                'phone' => $dr['phone'] ?? '',
+                                'cccd'  => $dr['cccd'] ?? '',
+                                'gplx'  => $dr['gplx'] ?? ''
+                            ];
+                        }
+                    }
+                }
+                foreach (fetch_live_vietsun_fleet(false) as $vsDrv) {
+                    $p = to_clean_code($vsDrv['plate'] ?? '');
+                    if ($p && !isset($fleetMap[$p])) {
+                        $fleetMap[$p] = [
+                            'plate' => $p,
+                            'name'  => $vsDrv['name'] ?? '',
+                            'phone' => $vsDrv['phone'] ?? '',
+                            'cccd'  => '',
+                            'gplx'  => ''
+                        ];
+                    }
+                }
+                $stSnapAll = $pdo->query("SELECT id_po, assigned_plate, driver_name, driver_phone, driver_cccd, driver_gplx FROM trip_driver_snapshots");
+                if ($stSnapAll) {
+                    foreach ($stSnapAll->fetchAll() as $sr) {
+                        $snapshotsMap[(string)$sr['id_po']] = $sr;
+                    }
+                }
+                $stHistAll = $pdo->query("SELECT assigned_plate, driver_name, phone, cccd, gplx, assigned_from, assigned_to FROM driver_assignment_history ORDER BY id DESC");
+                if ($stHistAll) {
+                    foreach ($stHistAll->fetchAll() as $hr) {
+                        $hp = to_clean_code($hr['assigned_plate'] ?? '');
+                        if ($hp) $historyByPlate[$hp][] = $hr;
+                    }
+                }
+            } catch (Exception $e) {}
+
+            $filtered = [];
+            $nhapCount = 0;
+            $xuatCount = 0;
+            $c20Count = 0;
+            $c40Count = 0;
+
+            foreach ($all as $item) {
+                $dIso = get_shipment_date_iso($item);
+                if ($dIso === '' || $dIso < $fromDate || $dIso > $toDate) {
+                    continue;
+                }
+                $itemPlate = to_clean_code($item['soXePo'] ?? '');
+                if ($itemPlate !== '') {
+                    $resolvedDrv = resolve_driver_for_trip($item['idPo'] ?? '', $itemPlate, $dIso, $snapshotsMap, $historyByPlate, $fleetMap);
+                    if ($resolvedDrv) {
+                        $item['_driverName']  = $resolvedDrv['name'];
+                        $item['_driverPhone'] = $resolvedDrv['phone'];
+                        $item['_driverCccd']  = $resolvedDrv['cccd'];
+                        $item['_driverGplx']  = $resolvedDrv['gplx'];
+                    }
+                }
+                if (($item['xuatNhapPo'] ?? 'N') === 'X') $xuatCount++; else $nhapCount++;
+                if ((int)($item['cont40Po'] ?? 0) > 0) $c40Count++; else $c20Count++;
+                $filtered[] = $item;
+            }
+
+            echo json_encode([
+                'ok'        => true,
+                'fromDate'  => $fromDate,
+                'toDate'    => $toDate,
+                'total'     => count($filtered),
+                'nhapCount' => $nhapCount,
+                'xuatCount' => $xuatCount,
+                'c20Count'  => $c20Count,
+                'c40Count'  => $c40Count,
+                'bookings'  => $filtered
             ]);
             exit;
         }

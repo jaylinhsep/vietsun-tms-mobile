@@ -569,6 +569,7 @@
       </div>
     </div>
     <div class="top-actions">
+      <button class="btn" style="background:linear-gradient(135deg,#0f766e 0%,#0d9488 100%);color:#fff;box-shadow:0 2px 8px rgba(13,148,136,0.35);" onclick="openKeToanVsTab()">📊 Kế Toán VS (30 Ngày)</button>
       <button class="btn btn-purple" onclick="openVendorModal()">🚛 Thêm Vendor & Áp Nhanh Giá</button>
       <button class="btn btn-warning" onclick="openRouteModal()">➕ Thêm Mã Tuyến</button>
       <button class="btn btn-success" onclick="openWarehouseModal()">🏭 Thêm Mã Kho</button>
@@ -615,6 +616,10 @@
         </button>
         <button class="tab-btn" id="tabBtnCalculator" onclick="switchTab('calculator')">
           ⚡ 3. Tra Cứu & Áp Giá Cước Chuyến Hàng (Live TMS)
+        </button>
+        <button class="tab-btn" id="tabBtnKeToanVs" onclick="switchTab('ketoanvs')" style="border:1.5px solid #0d9488; color:#0f766e;">
+          📊 4. Kế Toán VS (Booking & Report Chi Phí 30 Ngày)
+          <span class="tab-count" id="cntKeToanVs" style="background:#ccfbf1;color:#0f766e;">30d</span>
         </button>
       </div>
 
@@ -774,6 +779,123 @@
               </tr>
             </thead>
             <tbody id="calcTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- TAB 4: KẾ TOÁN VS - TẢI BOOKING NHẬP XUẤT 30 NGÀY & REPORT CHI PHÍ -->
+    <!-- =================================================================== -->
+    <section id="panelKeToanVs" style="display:none;">
+      <!-- Summary KPI Cards for Kế Toán VS -->
+      <div class="stats-grid" style="margin-bottom:12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+        <div class="stat-card" style="border-left:4px solid #0d9488;">
+          <span class="stat-label">📦 Tổng Booking (30 Ngày)</span>
+          <div class="stat-value" id="ktStatTotal" style="color:#0f766e;">0</div>
+          <span class="stat-sub" id="ktStatSubCount">Nhập: 0 • Xuất: 0 | 20': 0 • 40': 0</span>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #16a34a;">
+          <span class="stat-label">💰 Cước Chuẩn Vietsun (Bảng Giá)</span>
+          <div class="stat-value" id="ktStatVsStandard" style="color:#15803d; font-size:19px;">0 đ</div>
+          <span class="stat-sub" id="ktStatMatchedRoutes">Đã nhận diện tuyến: 0 chuyến</span>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #0284c7;">
+          <span class="stat-label">🏛️ Cước TMS Đã Nhập (Debit / Thực Trả)</span>
+          <div class="stat-value" id="ktStatTmsRate" style="color:#0369a1; font-size:19px;">0 đ</div>
+          <span class="stat-sub" id="ktStatTmsDebitSub">Đơn giá Debit KH: 0 đ</span>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #d97706;">
+          <span class="stat-label">🧾 Tổng Chi Phí Phát Sinh (TMS)</span>
+          <div class="stat-value" id="ktStatTotalExp" style="color:#b45309; font-size:19px;">0 đ</div>
+          <span class="stat-sub" id="ktStatExpBreakdown">Bốc xếp: 0 • Vé CĐ: 0 • Neo/ĐC/Khác: 0</span>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #7c3aed;">
+          <span class="stat-label">💎 Tổng Cộng Chi Phí (Cước + Phát Sinh)</span>
+          <div class="stat-value" id="ktStatGrandTotal" style="color:#6d28d9; font-size:19px;">0 đ</div>
+          <span class="stat-sub" id="ktStatDriverExpSub">TX báo qua App: 0 đ</span>
+        </div>
+      </div>
+
+      <!-- Filter & Action Toolbar -->
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label style="font-weight:800; font-size:12.5px; color:#0f766e;">📅 Khoảng ngày TMS:</label>
+          <input type="date" id="ktFromDate" class="input" style="font-weight:700;" onchange="onKtDateInputChange()" />
+          <span style="font-weight:700; color:#64748b;">➔</span>
+          <input type="date" id="ktToDate" class="input" style="font-weight:700;" onchange="onKtDateInputChange()" />
+          <button class="btn btn-sm btn-light" onclick="setKtQuickDays(30)" title="Lấy 30 ngày gần nhất">30 ngày trước</button>
+          <button class="btn btn-sm btn-light" onclick="setKtQuickCycle()" title="Lấy theo chu kỳ kế toán 26 tháng trước -> 25 tháng này">Kỳ 26➔25</button>
+
+          <select id="ktFlowFilter" class="select" onchange="renderKeToanVsTable()">
+            <option value="ALL">🔄 Cả Nhập & Xuất</option>
+            <option value="N">📥 Hàng Nhập (N)</option>
+            <option value="X">📤 Hàng Xuất (X)</option>
+          </select>
+
+          <select id="ktSizeFilter" class="select" onchange="renderKeToanVsTable()">
+            <option value="ALL">📦 Mọi cỡ Cont (20' & 40')</option>
+            <option value="20">Cont 20'</option>
+            <option value="40">Cont 40'</option>
+          </select>
+
+          <select id="ktCarrierFilter" class="select" onchange="renderKeToanVsTable()" style="font-weight:700; color:#0f3a6d;">
+            <option value="">🚛 Tất cả ĐVVT / Nhà xe</option>
+          </select>
+
+          <select id="ktCostFilter" class="select" onchange="renderKeToanVsTable()">
+            <option value="ALL">📊 Tất cả Booking</option>
+            <option value="HAS_EXP">💸 Có chi phí phát sinh (Bốc xếp / Vé / Neo / Khác)</option>
+            <option value="HAS_TMS_RATE">💰 Đã có Đơn giá trên TMS</option>
+            <option value="NO_TMS_RATE">⏳ Chưa nhập Đơn giá trên TMS</option>
+            <option value="RATE_DIFF">⚠️ Lệch giá TMS so với Bảng giá chuẩn</option>
+            <option value="UNMATCHED_ROUTE">❓ Kho chưa gán Mã tuyến đường</option>
+          </select>
+
+          <input type="text" id="ktSearchInput" class="input search-input" style="min-width:260px;" placeholder="🔍 Tìm Số Cont, Booking/PO, Khách hàng, Kho, Số xe, Tài xế, Ghi chú..." oninput="renderKeToanVsTable()" />
+        </div>
+
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <button class="btn" style="background:#0d9488; color:#fff;" onclick="loadKeToanVsBookings(true)">🔄 Tải Từ TMS Gốc (30 Ngày)</button>
+          <button class="btn btn-success" onclick="exportKeToanVsExcel()">📥 Xuất Excel Report Chi Phí</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <div id="ktSummaryText" style="font-size:12.5px; font-weight:700; color:#0f3a6d;"></div>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span id="ktPageInfo" style="font-size:12px; color:#475569; font-weight:600;"></span>
+          <button class="btn btn-sm btn-light" id="btnPrevKt" onclick="changeKtPage(-1)">⬅ Trang trước</button>
+          <button class="btn btn-sm btn-light" id="btnNextKt" onclick="changeKtPage(1)">Trang tiếp ➡</button>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-scroll" style="max-height:70vh;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:42px; text-align:center;">STT</th>
+                <th style="width:88px;">NGÀY</th>
+                <th style="width:90px;">MÃ PO / LOẠI</th>
+                <th style="width:120px;">SỐ CONT / SEAL</th>
+                <th style="min-width:155px;">KHÁCH HÀNG</th>
+                <th style="min-width:230px;">KHO ĐÓNG / TRẢ & ĐỊA CHỈ</th>
+                <th style="min-width:170px;">MÃ KHO & TUYẾN ĐƯỜNG</th>
+                <th style="min-width:135px;">ĐVVT / SỐ XE / TÀI XẾ</th>
+                <th style="width:70px; text-align:center;">KẾT HỢP</th>
+                <th style="width:110px; text-align:right; background:#15803d;">CƯỚC BẢNG GIÁ</th>
+                <th style="width:110px; text-align:right; background:#0369a1;">ĐƠN GIÁ TMS</th>
+                <th style="width:95px; text-align:right; background:#0f766e;">BỐC XẾP</th>
+                <th style="width:95px; text-align:right; background:#0f766e;">VÉ CẦU ĐƯỜNG</th>
+                <th style="width:95px; text-align:right; background:#0f766e;">NEO / ĐC / KHÁC</th>
+                <th style="width:115px; text-align:right; background:#6d28d9;">TỔNG CHI PHÍ</th>
+                <th style="min-width:160px;">GHI CHÚ CHI PHÍ</th>
+              </tr>
+            </thead>
+            <tbody id="ktTbody">
+              <tr><td colspan="16" style="text-align:center; padding:28px; color:#64748b;">Bấm <strong>"🔄 Tải Từ TMS Gốc (30 Ngày)"</strong> để tải danh sách booking Nhập & Xuất kèm chi phí từ TMS gốc.</td></tr>
+            </tbody>
           </table>
         </div>
       </div>
@@ -1081,6 +1203,13 @@
     // Live TMS shipments for Tab 3
     let liveShipments = [];
 
+    // Kế Toán VS 30-day bookings & cost report state for Tab 4
+    let ktBookings = [];
+    let ktFilteredRows = [];
+    let ktPage = 1;
+    const KT_PAGE_SIZE = 100;
+    let ktInitializedDates = false;
+
     function getCarriers() {
       const list = appData.config?.carriers;
       return (Array.isArray(list) && list.length > 0) ? list : DEFAULT_CARRIERS;
@@ -1206,6 +1335,7 @@
       renderRoutesTable();
       renderWarehousesPage();
       if (currentTab === 'calculator') renderLivePricingTable();
+      if (currentTab === 'ketoanvs') renderKeToanVsTable();
 
       // Đồng bộ kỳ đang chọn làm kỳ áp dụng mặc định trên hệ thống
       try {
@@ -1232,6 +1362,7 @@
       renderRoutesTable();
       renderWarehousesPage();
       if (currentTab === 'calculator') renderLivePricingTable();
+      if (currentTab === 'ketoanvs') renderKeToanVsTable();
     }
 
     function rebuildMapsAndStats() {
@@ -1339,16 +1470,32 @@
       document.getElementById('tabBtnRoutes').classList.toggle('active', tab === 'routes');
       document.getElementById('tabBtnWarehouses').classList.toggle('active', tab === 'warehouses');
       document.getElementById('tabBtnCalculator').classList.toggle('active', tab === 'calculator');
+      const btnKt = document.getElementById('tabBtnKeToanVs');
+      if (btnKt) btnKt.classList.toggle('active', tab === 'ketoanvs');
 
       document.getElementById('panelRoutes').style.display = tab === 'routes' ? 'block' : 'none';
       document.getElementById('panelWarehouses').style.display = tab === 'warehouses' ? 'block' : 'none';
       document.getElementById('panelCalculator').style.display = tab === 'calculator' ? 'block' : 'none';
+      const panelKt = document.getElementById('panelKeToanVs');
+      if (panelKt) panelKt.style.display = tab === 'ketoanvs' ? 'block' : 'none';
 
       if (tab === 'calculator' && liveShipments.length === 0) {
         const today = new Date().toISOString().slice(0, 10);
         document.getElementById('calcDateInput').value = today;
         loadLiveShipmentsForPricing();
       }
+      if (tab === 'ketoanvs') {
+        initKeToanVsDatesIfNeeded();
+        if (ktBookings.length === 0) {
+          loadKeToanVsBookings(false);
+        } else {
+          renderKeToanVsTable();
+        }
+      }
+    }
+
+    function openKeToanVsTab() {
+      switchTab('ketoanvs');
     }
 
     // =========================================================================
@@ -1407,6 +1554,7 @@
 
     async function selectAndApplyPeriodFromModal(periodId) {
       await onChangePeriodSelect(periodId);
+      if (currentTab === 'ketoanvs') renderKeToanVsTable();
       renderSavedPeriodsInModal();
       updatePeriodFormulaPreview();
     }
@@ -2196,6 +2344,468 @@
           </tr>
         `;
       }).join('');
+    }
+
+    // =========================================================================
+    // TAB 4: KẾ TOÁN VS — TẢI BOOKING NHẬP XUẤT 30 NGÀY & REPORT CHI PHÍ
+    // =========================================================================
+    function initKeToanVsDatesIfNeeded() {
+      if (ktInitializedDates) return;
+      ktInitializedDates = true;
+      setKtQuickDays(30, false);
+    }
+
+    function setKtQuickDays(days = 30, autoLoad = true) {
+      const now = new Date();
+      const toStr = now.toISOString().slice(0, 10);
+      const fromDt = new Date(now.getTime() - days * 86400 * 1000);
+      const fromStr = fromDt.toISOString().slice(0, 10);
+      document.getElementById('ktFromDate').value = fromStr;
+      document.getElementById('ktToDate').value = toStr;
+      if (autoLoad) loadKeToanVsBookings(false);
+    }
+
+    function setKtQuickCycle() {
+      const now = new Date();
+      let y = now.getFullYear();
+      let m = now.getMonth() + 1;
+      const d = now.getDate();
+      let fromY = y, fromM = m - 1, toY = y, toM = m;
+      if (d >= 26) {
+        fromY = y; fromM = m;
+        toM = m + 1;
+        if (toM > 12) { toM = 1; toY = y + 1; }
+      } else {
+        if (fromM < 1) { fromM = 12; fromY = y - 1; }
+      }
+      const fromStr = `${fromY}-${String(fromM).padStart(2, '0')}-26`;
+      const toStr = `${toY}-${String(toM).padStart(2, '0')}-25`;
+      document.getElementById('ktFromDate').value = fromStr;
+      document.getElementById('ktToDate').value = toStr;
+      loadKeToanVsBookings(false);
+    }
+
+    function onKtDateInputChange() {
+      const f = document.getElementById('ktFromDate').value;
+      const t = document.getElementById('ktToDate').value;
+      if (f && t) loadKeToanVsBookings(false);
+    }
+
+    async function loadKeToanVsBookings(forceRefresh = false) {
+      initKeToanVsDatesIfNeeded();
+      const fromDate = document.getElementById('ktFromDate').value;
+      const toDate = document.getElementById('ktToDate').value;
+      const tbody = document.getElementById('ktTbody');
+      tbody.innerHTML = `<tr><td colspan="16" style="text-align:center; padding:32px; font-weight:700; color:#0f766e;">⏳ Đang tải toàn bộ Booking Nhập & Xuất từ ${fromDate} đến ${toDate} từ TMS Gốc và tổng hợp chi phí...</td></tr>`;
+      if (forceRefresh) {
+        showToast('⏳ Đang đồng bộ trực tiếp Booking & Chi phí 30 ngày từ TMS Gốc...', '#0f766e');
+      }
+
+      try {
+        const url = `/api/index.php?route=cuoc/ketoan-vs&fromDate=${encodeURIComponent(fromDate)}&toDate=${encodeURIComponent(toDate)}${forceRefresh ? '&refresh=1' : ''}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Không thể tải dữ liệu Kế Toán VS');
+        ktBookings = Array.isArray(data.bookings) ? data.bookings : [];
+        document.getElementById('cntKeToanVs').textContent = ktBookings.length.toLocaleString('vi-VN');
+        populateKtCarrierDropdown();
+        ktPage = 1;
+        renderKeToanVsTable();
+        showToast(`✅ Đã tải ${ktBookings.length.toLocaleString('vi-VN')} booking (${fromDate} ➔ ${toDate}) từ TMS gốc!`, '#16a34a');
+      } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="16" style="text-align:center; padding:28px; color:#dc2626; font-weight:700;">❌ Lỗi tải dữ liệu TMS: ${e.message}</td></tr>`;
+        showToast('Lỗi tải dữ liệu Kế Toán VS: ' + e.message, '#dc2626');
+      }
+    }
+
+    function populateKtCarrierDropdown() {
+      const sel = document.getElementById('ktCarrierFilter');
+      if (!sel) return;
+      const curr = sel.value;
+      const vendorSet = new Set(getCarriers());
+      ktBookings.forEach(it => {
+        const dv = String(it.donViVcPo || '').trim().toUpperCase();
+        if (dv) vendorSet.add(dv);
+      });
+      const sorted = [...vendorSet].sort((a, b) => a === 'VIETSUN' ? -1 : (b === 'VIETSUN' ? 1 : a.localeCompare(b)));
+      sel.innerHTML = `<option value="">🚛 Tất cả ĐVVT / Nhà xe (${sorted.length})</option>` +
+        sorted.map(v => `<option value="${v}">${v === 'VIETSUN' ? '⭐ VIETSUN (Xe nhà)' : '🚛 ' + v}</option>`).join('');
+      if ([...sel.options].some(o => o.value === curr)) sel.value = curr;
+    }
+
+    function computeKeToanRow(item) {
+      const { wh, route } = resolveWarehouseAndRouteForShipment(item);
+      const isException = wh && (wh.route_code === 'NGOAI-LE' || wh.match_confidence === 'EXCEPTION');
+      const is40 = Number(item.cont40Po || 0) > 0;
+      const sizeKey = is40 ? 'c40' : 'c20';
+      const carrierKey = resolveVendorCarrierKey(item.donViVcPo);
+
+      // Cước chuẩn Vietsun & Cước chuẩn theo ĐVVT trên bảng giá
+      const vsStdRate = isException
+        ? Number(wh.custom_rates?.[sizeKey] || wh.custom_rates?.c40 || wh.custom_rates?.c20 || 0)
+        : (route ? getRouteCarrierRate(route, 'VIETSUN', sizeKey) : 0);
+
+      let stdRateForCarrier = vsStdRate;
+      if (!isException && route && carrierKey) {
+        stdRateForCarrier = getRouteCarrierRate(route, carrierKey, sizeKey) || vsStdRate;
+      }
+
+      // Đơn giá trên TMS (donGia1ThucTraChoxePo = Đơn giá trả xe/Vendor; donGiaDebitPo = Đơn giá Debit KH)
+      const tmsVendorRate = Number(item.donGia1ThucTraChoxePo || item._debitRate || 0);
+      const tmsDebitKhRate = Number(item.donGiaDebitPo || 0);
+      const tmsEffectiveRate = tmsVendorRate > 0 ? tmsVendorRate : tmsDebitKhRate;
+
+      // Cước dùng để tính Tổng chi phí chuyến (Ưu tiên Đơn giá TMS nếu đã nhập, nếu chưa nhập thì lấy theo Bảng giá chuẩn)
+      const effectiveFreight = tmsEffectiveRate > 0 ? tmsEffectiveRate : stdRateForCarrier;
+
+      // Các khoản chi phí phát sinh từ TMS
+      const bocXep = Number(item._tmsBocXep !== undefined ? item._tmsBocXep : (item._chiHoBocXep || 0));
+      const veCauDuong = Number(item._veCauDuong || 0);
+      const cpKhac = Number(item._tmsCpKhac !== undefined ? item._tmsCpKhac : (item._cpKhac || 0));
+      const totalExpTms = bocXep + veCauDuong + cpKhac;
+      const driverExp = Number(item._driverPhatSinh || 0);
+
+      const grandTotal = effectiveFreight + totalExpTms;
+      const rateDiff = (tmsEffectiveRate > 0 && stdRateForCarrier > 0) ? (tmsEffectiveRate - stdRateForCarrier) : 0;
+
+      const noteParts = [];
+      if (item.ghiChuPo && item.ghiChuPo !== '.') noteParts.push(item.ghiChuPo);
+      if (item.notePo && item.notePo !== '.') noteParts.push(item.notePo);
+      if (item._driverExpDetail) noteParts.push(`TX báo: ${item._driverExpDetail}`);
+      else if (item._expenseNote) noteParts.push(item._expenseNote);
+
+      return {
+        item,
+        wh,
+        route,
+        isException,
+        is40,
+        carrierKey,
+        vsStdRate,
+        stdRateForCarrier,
+        tmsVendorRate,
+        tmsDebitKhRate,
+        tmsEffectiveRate,
+        effectiveFreight,
+        bocXep,
+        veCauDuong,
+        cpKhac,
+        totalExpTms,
+        driverExp,
+        grandTotal,
+        rateDiff,
+        combinedNote: noteParts.join(' | ')
+      };
+    }
+
+    function renderKeToanVsTable() {
+      const flow = document.getElementById('ktFlowFilter')?.value || 'ALL';
+      const size = document.getElementById('ktSizeFilter')?.value || 'ALL';
+      const carrierFilter = document.getElementById('ktCarrierFilter')?.value || '';
+      const costFilter = document.getElementById('ktCostFilter')?.value || 'ALL';
+      const q = normStr(document.getElementById('ktSearchInput')?.value || '');
+
+      let cntN = 0, cntX = 0, cnt20 = 0, cnt40 = 0, cntMatchedRoute = 0;
+      let sumStdFreight = 0;
+      let sumTmsRate = 0;
+      let sumTmsDebitKh = 0;
+      let sumBocXep = 0;
+      let sumVeCd = 0;
+      let sumCpKhac = 0;
+      let sumTotalExp = 0;
+      let sumDriverExp = 0;
+      let sumGrandTotal = 0;
+
+      const rows = [];
+      ktBookings.forEach(item => {
+        const xn = item.xuatNhapPo === 'X' ? 'X' : 'N';
+        if (flow !== 'ALL' && xn !== flow) return;
+        const is40 = Number(item.cont40Po || 0) > 0;
+        if (size === '20' && is40) return;
+        if (size === '40' && !is40) return;
+
+        const r = computeKeToanRow(item);
+        if (carrierFilter) {
+          const rawDv = normStr(item.donViVcPo);
+          const normFilter = normStr(carrierFilter);
+          if (r.carrierKey !== carrierFilter && rawDv !== normFilter && !rawDv.includes(normFilter)) return;
+        }
+
+        if (costFilter === 'HAS_EXP' && r.totalExpTms <= 0 && r.driverExp <= 0) return;
+        if (costFilter === 'HAS_TMS_RATE' && r.tmsEffectiveRate <= 0) return;
+        if (costFilter === 'NO_TMS_RATE' && r.tmsEffectiveRate > 0) return;
+        if (costFilter === 'RATE_DIFF' && Math.abs(r.rateDiff) <= 1000) return;
+        if (costFilter === 'UNMATCHED_ROUTE' && (r.route || r.isException)) return;
+
+        if (q) {
+          const hay = normStr([
+            item.idPo, item.codePo, item.soContPo, item.soSealPo,
+            item.tenKhachPo, item.khoNhanHangPo, item.diaChiNhanPo, item.tinhNhanPo,
+            item.donViVcPo, item.soXePo, item._driverName, item._driverPhone,
+            r.wh?.wh_code, r.route?.route_code, r.route?.dia_diem, r.combinedNote
+          ].join(' '));
+          if (!hay.includes(q)) return;
+        }
+
+        if (xn === 'X') cntX++; else cntN++;
+        if (is40) cnt40++; else cnt20++;
+        if (r.route || r.isException) cntMatchedRoute++;
+
+        sumStdFreight += r.stdRateForCarrier;
+        sumTmsRate += r.tmsEffectiveRate;
+        sumTmsDebitKh += r.tmsDebitKhRate;
+        sumBocXep += r.bocXep;
+        sumVeCd += r.veCauDuong;
+        sumCpKhac += r.cpKhac;
+        sumTotalExp += r.totalExpTms;
+        sumDriverExp += r.driverExp;
+        sumGrandTotal += r.grandTotal;
+
+        rows.push(r);
+      });
+
+      ktFilteredRows = rows;
+
+      // Update KPI Cards
+      document.getElementById('ktStatTotal').textContent = rows.length.toLocaleString('vi-VN');
+      document.getElementById('ktStatSubCount').textContent = `Nhập: ${cntN.toLocaleString('vi-VN')} • Xuất: ${cntX.toLocaleString('vi-VN')} | 20': ${cnt20.toLocaleString('vi-VN')} • 40': ${cnt40.toLocaleString('vi-VN')}`;
+      document.getElementById('ktStatVsStandard').textContent = fmtMoney(sumStdFreight) + ' đ';
+      document.getElementById('ktStatMatchedRoutes').textContent = `Đã nhận diện tuyến: ${cntMatchedRoute.toLocaleString('vi-VN')} / ${rows.length.toLocaleString('vi-VN')} chuyến`;
+      document.getElementById('ktStatTmsRate').textContent = fmtMoney(sumTmsRate) + ' đ';
+      document.getElementById('ktStatTmsDebitSub').textContent = `Tổng Debit KH trên TMS: ${fmtMoney(sumTmsDebitKh)} đ`;
+      document.getElementById('ktStatTotalExp').textContent = fmtMoney(sumTotalExp) + ' đ';
+      document.getElementById('ktStatExpBreakdown').textContent = `Bốc xếp: ${fmtMoney(sumBocXep)} • Vé CĐ: ${fmtMoney(sumVeCd)} • Khác: ${fmtMoney(sumCpKhac)}`;
+      document.getElementById('ktStatGrandTotal').textContent = fmtMoney(sumGrandTotal) + ' đ';
+      document.getElementById('ktStatDriverExpSub').textContent = `Phát sinh TX báo qua App: ${fmtMoney(sumDriverExp)} đ`;
+
+      const fromDate = document.getElementById('ktFromDate').value;
+      const toDate = document.getElementById('ktToDate').value;
+      document.getElementById('ktSummaryText').textContent =
+        `📊 Kết quả lọc (${fromDate} ➔ ${toDate}): ${rows.length.toLocaleString('vi-VN')} booking | Cước Bảng giá: ${fmtMoney(sumStdFreight)} đ | Đơn giá TMS: ${fmtMoney(sumTmsRate)} đ | Phát sinh: ${fmtMoney(sumTotalExp)} đ | Tổng chi phí: ${fmtMoney(sumGrandTotal)} đ`;
+
+      renderKeToanVsPage();
+    }
+
+    function renderKeToanVsPage() {
+      const totalPages = Math.max(1, Math.ceil(ktFilteredRows.length / KT_PAGE_SIZE));
+      if (ktPage > totalPages) ktPage = totalPages;
+      if (ktPage < 1) ktPage = 1;
+
+      const start = (ktPage - 1) * KT_PAGE_SIZE;
+      const pageItems = ktFilteredRows.slice(start, start + KT_PAGE_SIZE);
+
+      document.getElementById('ktPageInfo').textContent =
+        `Trang ${ktPage} / ${totalPages} (Hiển thị ${ktFilteredRows.length ? start + 1 : 0} - ${Math.min(start + KT_PAGE_SIZE, ktFilteredRows.length)} / ${ktFilteredRows.length} booking)`;
+      document.getElementById('btnPrevKt').disabled = ktPage <= 1;
+      document.getElementById('btnNextKt').disabled = ktPage >= totalPages;
+
+      const tbody = document.getElementById('ktTbody');
+      if (!pageItems.length) {
+        tbody.innerHTML = `<tr><td colspan="16" style="text-align:center; padding:28px; color:#64748b;">Không tìm thấy booking nào khớp điều kiện lọc.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = pageItems.map((r, idx) => {
+        const it = r.item;
+        const stt = start + idx + 1;
+        const dStr = it._tripDateIso || it.ngayTraHang || it.timeThucHien || '-';
+        const isXuat = it.xuatNhapPo === 'X';
+        const xnBadge = isXuat
+          ? `<span class="status-tag" style="background:#ffedd5; color:#c2410c;">📤 Xuất ${r.is40 ? "40'" : "20'"}</span>`
+          : `<span class="status-tag" style="background:#dcfce7; color:#15803d;">📥 Nhập ${r.is40 ? "40'" : "20'"}</span>`;
+
+        let whRouteHtml = `<span class="status-tag status-unmatched">⚠️ Chưa gán tuyến</span>`;
+        if (r.isException) {
+          whRouteHtml = `<div>${r.wh ? `<span class="wh-badge">${r.wh.wh_code}</span> ` : ''}<span class="code-badge" style="background:#f3e8ff; color:#6d28d9; border-color:#d8b4fe;">NGOAI-LE</span></div><div style="font-size:11px; color:#7c3aed; font-weight:700; margin-top:2px;">🟣 Kho Ngoại Lệ</div>`;
+        } else if (r.route) {
+          whRouteHtml = `<div>${r.wh ? `<span class="wh-badge">${r.wh.wh_code}</span> ` : ''}<span class="code-badge">${r.route.route_code}</span></div><div style="font-size:11px; color:#15803d; font-weight:600; margin-top:2px;">${r.route.dia_diem} (${r.route.tinh})</div>`;
+        } else if (r.wh) {
+          whRouteHtml = `<div><span class="wh-badge">${r.wh.wh_code}</span> <span class="status-tag status-unmatched">Chưa có tuyến</span></div>`;
+        }
+
+        const khStr = it._tyLeKetHop || it.hinhThucKHopPo || '';
+        const diffHtml = (r.tmsEffectiveRate > 0 && r.stdRateForCarrier > 0 && Math.abs(r.rateDiff) > 1000)
+          ? `<div style="font-size:10.5px; font-weight:700; color:${r.rateDiff > 0 ? '#dc2626' : '#0284c7'};">(${r.rateDiff > 0 ? '+' : ''}${fmtMoney(r.rateDiff)})</div>`
+          : '';
+
+        const debitKhHtml = (r.tmsDebitKhRate > 0 && r.tmsDebitKhRate !== r.tmsVendorRate)
+          ? `<div style="font-size:10.5px; color:#64748b;" title="Đơn giá Debit Khách hàng trên TMS">Debit KH: ${fmtMoney(r.tmsDebitKhRate)}</div>`
+          : '';
+
+        return `
+          <tr>
+            <td style="text-align:center; color:#64748b; font-weight:600;">${stt}</td>
+            <td style="font-weight:700; white-space:nowrap;">${dStr}</td>
+            <td>
+              <div style="font-family:monospace; font-weight:800; color:#334155; font-size:11.5px;">#${it.idPo || ''}${it.codePo ? ' / ' + it.codePo : ''}</div>
+              <div style="margin-top:2px;">${xnBadge}</div>
+            </td>
+            <td>
+              <div style="font-weight:800; color:#0f172a; font-family:monospace; font-size:13px;">${it.soContPo || '--'}</div>
+              ${it.soSealPo ? `<div style="font-size:11px; color:#475569;">Seal: <strong>${it.soSealPo}</strong></div>` : ''}
+            </td>
+            <td style="font-weight:600; color:#0f172a;">${it.tenKhachPo || '-'}</td>
+            <td>
+              <div style="font-weight:700; color:#0f172a;">${it.khoNhanHangPo || '-'}</div>
+              <div style="font-size:11.5px; color:#475569;">${it.diaChiNhanPo || ''} ${it.tinhNhanPo ? `(${it.tinhNhanPo})` : ''}</div>
+            </td>
+            <td>${whRouteHtml}</td>
+            <td>
+              <div style="font-weight:800; color:#0f3a6d;">${it.donViVcPo || '-'}</div>
+              <div style="font-size:12px; font-weight:700; color:#1d4ed8;">${it.soXePo || ''}</div>
+              ${it._driverName ? `<div style="font-size:11px; color:#334155;">👨‍✈️ ${it._driverName}</div>` : ''}
+            </td>
+            <td style="text-align:center; font-weight:700; color:#b45309;">${khStr || '-'}</td>
+            <td class="num num-vs">${fmtMoney(r.stdRateForCarrier)}</td>
+            <td class="num" style="color:#0369a1;">
+              <div>${fmtMoney(r.tmsEffectiveRate)}</div>
+              ${diffHtml}
+              ${debitKhHtml}
+            </td>
+            <td class="num" style="color:${r.bocXep > 0 ? '#0f766e' : '#94a3b8'};">${fmtMoney(r.bocXep)}</td>
+            <td class="num" style="color:${r.veCauDuong > 0 ? '#0f766e' : '#94a3b8'};">${fmtMoney(r.veCauDuong)}</td>
+            <td class="num" style="color:${r.cpKhac > 0 ? '#b45309' : '#94a3b8'};">${fmtMoney(r.cpKhac)}</td>
+            <td class="num" style="font-weight:800; color:#6d28d9; background:#faf5ff;">${fmtMoney(r.grandTotal)}</td>
+            <td style="font-size:11.5px; color:#334155; max-width:220px;">${r.combinedNote || '-'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function changeKtPage(delta) {
+      ktPage += delta;
+      renderKeToanVsPage();
+    }
+
+    async function exportKeToanVsExcel() {
+      if (!ktFilteredRows.length) {
+        showToast('Không có dữ liệu booking nào để xuất Report!', '#dc2626');
+        return;
+      }
+      try {
+        const fromDate = document.getElementById('ktFromDate').value;
+        const toDate = document.getElementById('ktToDate').value;
+        showToast('⏳ Đang khởi tạo file Excel Report Chi Phí Kế Toán VS...');
+
+        const wb = new ExcelJS.Workbook();
+        wb.creator = 'Vietsun TMS - Kế Toán VS';
+        wb.created = new Date();
+
+        // Sheet 1: Chi tiết Booking & Chi Phí
+        const ws1 = wb.addWorksheet('1. CHI TIET BOOKING & CHI PHI');
+        const headers1 = [
+          'STT', 'ID PO', 'MÃ BOOKING / CODE PO', 'NGÀY THỰC HIỆN', 'NHẬP / XUẤT', 'CỠ CONT',
+          'SỐ CONTAINER', 'SỐ SEAL', 'KHÁCH HÀNG', 'KHO ĐÓNG / TRẢ', 'ĐỊA CHỈ CHI TIẾT', 'TỈNH TMS',
+          'MÃ KHO', 'MÃ TUYẾN ĐƯỜNG', 'KHU VỰC / KCN', 'TỈNH (SAU SÁP NHẬP)',
+          'ĐƠN VỊ VẬN TẢI', 'SỐ XE', 'TÀI XẾ', 'SĐT TÀI XẾ', 'TỶ LỆ KẾT HỢP',
+          'CƯỚC CHUẨN VIETSUN', 'CƯỚC BẢNG GIÁ (THEO ĐVVT)', 'ĐƠN GIÁ VENDOR (TMS)', 'ĐƠN GIÁ DEBIT KH (TMS)',
+          'CHÊNH LỆCH GIÁ (TMS - BẢNG GIÁ)', 'CHI HỘ BỐC XẾP (TMS)', 'VÉ CẦU ĐƯỜNG (TMS)',
+          'PHÍ NEO XE / ĐƯỜNG CẤM / KHÁC (TMS)', 'TỔNG PHÁT SINH (TMS)', 'PHÁT SINH TÀI XẾ BÁO (APP)',
+          'TỔNG CỘNG CHI PHÍ (CƯỚC + PHÁT SINH)', 'GHI CHÚ TMS & CHI PHÍ'
+        ];
+        const hRow1 = ws1.addRow(headers1);
+        hRow1.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        hRow1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F3A6D' } };
+
+        // Tổng hợp theo ĐVVT cho Sheet 2
+        const byCarrier = {};
+
+        ktFilteredRows.forEach((r, idx) => {
+          const it = r.item;
+          const xn = it.xuatNhapPo === 'X' ? 'XUẤT' : 'NHẬP';
+          const sizeStr = r.is40 ? "40'" : "20'";
+          const dStr = it._tripDateIso || it.ngayTraHang || it.timeThucHien || '';
+          const dv = (it.donViVcPo || 'CHƯA GÁN ĐVVT').trim().toUpperCase();
+
+          if (!byCarrier[dv]) {
+            byCarrier[dv] = {
+              totalTrips: 0, nhap: 0, xuat: 0, c20: 0, c40: 0,
+              stdFreight: 0, tmsVendorRate: 0, tmsDebitKh: 0,
+              bocXep: 0, veCd: 0, cpKhac: 0, totalExp: 0, grandTotal: 0
+            };
+          }
+          const g = byCarrier[dv];
+          g.totalTrips++;
+          if (it.xuatNhapPo === 'X') g.xuat++; else g.nhap++;
+          if (r.is40) g.c40++; else g.c20++;
+          g.stdFreight += r.stdRateForCarrier;
+          g.tmsVendorRate += r.tmsVendorRate;
+          g.tmsDebitKh += r.tmsDebitKhRate;
+          g.bocXep += r.bocXep;
+          g.veCd += r.veCauDuong;
+          g.cpKhac += r.cpKhac;
+          g.totalExp += r.totalExpTms;
+          g.grandTotal += r.grandTotal;
+
+          ws1.addRow([
+            idx + 1,
+            it.idPo || '',
+            it.codePo || '',
+            dStr,
+            xn,
+            sizeStr,
+            it.soContPo || '',
+            it.soSealPo || '',
+            it.tenKhachPo || '',
+            it.khoNhanHangPo || '',
+            it.diaChiNhanPo || '',
+            it.tinhNhanPo || '',
+            r.wh ? r.wh.wh_code : '',
+            r.isException ? 'NGOAI-LE' : (r.route ? r.route.route_code : ''),
+            r.isException ? 'Kho Ngoại Lệ' : (r.route ? r.route.dia_diem : ''),
+            r.route ? r.route.tinh : (r.wh ? r.wh.tinh_tms : ''),
+            dv,
+            it.soXePo || '',
+            it._driverName || '',
+            it._driverPhone || '',
+            it._tyLeKetHop || it.hinhThucKHopPo || '',
+            r.vsStdRate,
+            r.stdRateForCarrier,
+            r.tmsVendorRate,
+            r.tmsDebitKhRate,
+            r.rateDiff,
+            r.bocXep,
+            r.veCauDuong,
+            r.cpKhac,
+            r.totalExpTms,
+            r.driverExp,
+            r.grandTotal,
+            r.combinedNote || ''
+          ]);
+        });
+
+        // Sheet 2: Tổng hợp Chi Phí theo Đơn Vị Vận Tải (ĐVVT)
+        const ws2 = wb.addWorksheet('2. TONG HOP THEO DVVT');
+        const hRow2 = ws2.addRow([
+          'STT', 'ĐƠN VỊ VẬN TẢI (ĐVVT)', 'TỔNG CHUYẾN', 'HÀNG NHẬP', 'HÀNG XUẤT', "CONT 20'", "CONT 40'",
+          'TỔNG CƯỚC BẢNG GIÁ', 'TỔNG ĐƠN GIÁ VENDOR (TMS)', 'TỔNG DEBIT KH (TMS)',
+          'CHI HỘ BỐC XẾP', 'VÉ CẦU ĐƯỜNG', 'NEO XE / ĐƯỜNG CẤM / KHÁC', 'TỔNG PHÁT SINH', 'TỔNG CỘNG CHI PHÍ'
+        ]);
+        hRow2.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        hRow2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
+
+        Object.entries(byCarrier)
+          .sort((a, b) => b[1].totalTrips - a[1].totalTrips)
+          .forEach(([dv, g], idx) => {
+            ws2.addRow([
+              idx + 1, dv, g.totalTrips, g.nhap, g.xuat, g.c20, g.c40,
+              g.stdFreight, g.tmsVendorRate, g.tmsDebitKh,
+              g.bocXep, g.veCd, g.cpKhac, g.totalExp, g.grandTotal
+            ]);
+          });
+
+        const buf = await wb.xlsx.writeBuffer();
+        const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `KETOAN_VS_REPORT_CHI_PHI_${fromDate}_den_${toDate}.xlsx`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('✅ Đã xuất file Excel Report Chi Phí Kế Toán VS thành công!', '#16a34a');
+      } catch (e) {
+        showToast('Lỗi xuất Excel Kế Toán VS: ' + e.message, '#dc2626');
+      }
     }
 
     // =========================================================================
