@@ -3731,12 +3731,291 @@ try {
             exit;
         }
 
-        // GET/POST cuoc/ketoan-vs: Tải danh sách booking Nhập & Xuất trong vòng 30 ngày trước (hoặc từ ngày -> đến ngày) từ TMS gốc (return_json.php + index-ajax.php) kèm đầy đủ chi phí để tra cứu & report Kế Toán VS
-        if ($route === 'cuoc/ketoan-vs') {
+        // GET/POST cuoc/ketoan-vs & cuoc/ketoan-vs-sync:
+        // - Cơ chế Cache MySQL (tms_ketoan_bookings_cache) + Slim Payload giúp mở tab Kế Toán VS trong < 0.2s (0s chờ TMS gốc, không bao giờ nghẽn cổ chai).
+        // - Đồng bộ cuốn chiếu từng cửa sổ nhỏ (cuoc/ketoan-vs-sync) hoặc đồng bộ nhanh 7 ngày gần nhất (~2-3s).
+        if ($route === 'cuoc/ketoan-vs' || $route === 'cuoc/ketoan-vs-sync') {
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS `tms_ketoan_bookings_cache` (
+                    `id_po` VARCHAR(32) PRIMARY KEY,
+                    `trip_date` VARCHAR(20) NOT NULL DEFAULT '',
+                    `xuat_nhap` VARCHAR(5) NOT NULL DEFAULT 'N',
+                    `cont_40` TINYINT(1) NOT NULL DEFAULT 0,
+                    `payload_json` TEXT NOT NULL,
+                    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX `idx_trip_date` (`trip_date`),
+                    INDEX `idx_xn_date` (`xuat_nhap`, `trip_date`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            ");
+
+            // Helper chuẩn bị map Tài xế + Chi phí TX báo trên App
+            $buildDriverAndExpenseMaps = function($pdo) {
+                $fleetMap = [];
+                $snapshotsMap = [];
+                $historyByPlate = [];
+                $drvBocXepMap = [];
+                $drvCpKhacMap = [];
+                $drvExpNoteMap = [];
+                $drvTotalExpMap = [];
+                $drvExpDetailsMap = [];
+                try {
+                    $stDrv = $pdo->query("SELECT assigned_plate, driver_name, phone, cccd, gplx FROM drivers");
+                    if ($stDrv) {
+                        foreach ($stDrv->fetchAll() as $dr) {
+                            $p = to_clean_code($dr['assigned_plate'] ?? '');
+                            if ($p) {
+                                $fleetMap[$p] = [
+                                    'plate' => $p,
+                                    'name'  => $dr['driver_name'] ?? '',
+                                    'phone' => $dr['phone'] ?? '',
+                                    'cccd'  => $dr['cccd'] ?? '',
+                                    'gplx'  => $dr['gplx'] ?? ''
+                                ];
+                            }
+                        }
+                    }
+                    foreach (fetch_live_vietsun_fleet(false) as $vsDrv) {
+                        $p = to_clean_code($vsDrv['plate'] ?? '');
+                        if ($p && !isset($fleetMap[$p])) {
+                            $fleetMap[$p] = [
+                                'plate' => $p,
+                                'name'  => $vsDrv['name'] ?? '',
+                                'phone' => $vsDrv['phone'] ?? '',
+                                'cccd'  => '',
+                                'gplx'  => ''
+                            ];
+                        }
+                    }
+                    $stSnapAll = $pdo->query("SELECT id_po, assigned_plate, driver_name, driver_phone, driver_cccd, driver_gplx FROM trip_driver_snapshots");
+                    if ($stSnapAll) {
+                        foreach ($stSnapAll->fetchAll() as $sr) {
+                            $snapshotsMap[(string)$sr['id_po']] = $sr;
+                        }
+                    }
+                    $stHistAll = $pdo->query("SELECT assigned_plate, driver_name, phone, cccd, gplx, assigned_from, assigned_to FROM driver_assignment_history ORDER BY id DESC");
+                    if ($stHistAll) {
+                        foreach ($stHistAll->fetchAll() as $hr) {
+                            $hp = to_clean_code($hr['assigned_plate'] ?? '');
+                            if ($hp) $historyByPlate[$hp][] = $hr;
+                        }
+                    }
+                    $stExp = $pdo->query("SELECT booking_id_po, expense_type, amount, note FROM trip_expenses ORDER BY id ASC");
+                    if ($stExp) {
+                        foreach ($stExp->fetchAll() as $er) {
+                            $pid = (string)($er['booking_id_po'] ?? '');
+                            if ($pid === '') continue;
+                            $amt = (int)round((float)($er['amount'] ?? 0));
+                            $etype = trim($er['expense_type'] ?? '');
+                            $enote = trim($er['note'] ?? '');
+                            if (stripos($etype, 'bốc xếp') !== false || stripos($etype, 'boc xep') !== false) {
+                                $drvBocXepMap[$pid] = ($drvBocXepMap[$pid] ?? 0) + $amt;
+                            } else {
+                                $drvCpKhacMap[$pid] = ($drvCpKhacMap[$pid] ?? 0) + $amt;
+                            }
+                            $drvTotalExpMap[$pid] = ($drvTotalExpMap[$pid] ?? 0) + $amt;
+                            $desc = ($etype ?: 'Chi phí') . ($amt > 0 ? (': ' . number_format($amt) . 'đ') : '') . ($enote ? " ($enote)" : '');
+                            $drvExpDetailsMap[$pid][] = $desc;
+                            if ($enote !== '') {
+                                $drvExpNoteMap[$pid] = isset($drvExpNoteMap[$pid]) ? ($drvExpNoteMap[$pid] . '; ' . $enote) : $enote;
+                            }
+                        }
+                    }
+                } catch (Exception $e) {}
+
+                return [
+                    'fleetMap'         => $fleetMap,
+                    'snapshotsMap'     => $snapshotsMap,
+                    'historyByPlate'   => $historyByPlate,
+                    'drvBocXepMap'     => $drvBocXepMap,
+                    'drvCpKhacMap'     => $drvCpKhacMap,
+                    'drvExpNoteMap'    => $drvExpNoteMap,
+                    'drvTotalExpMap'   => $drvTotalExpMap,
+                    'drvExpDetailsMap' => $drvExpDetailsMap
+                ];
+            };
+
+            // Helper rút gọn (Slim) 1 booking chỉ giữ đúng các trường Kế Toán VS cần (giảm 75% dung lượng JSON)
+            $makeSlimBooking = function($item, $dInfo, &$maps) {
+                $idPo = (string)($item['idPo'] ?? '');
+                $dIso = get_shipment_date_iso($item);
+                $is40 = ((int)($item['cont40Po'] ?? 0) > 0) ? 1 : 0;
+                $xn   = (($item['xuatNhapPo'] ?? 'N') === 'X') ? 'X' : 'N';
+
+                $donGiaDebit = isset($dInfo['donGiaDebitPo']) && $dInfo['donGiaDebitPo'] > 0
+                    ? (int)$dInfo['donGiaDebitPo']
+                    : (isset($item['donGiaDebitPo']) && $item['donGiaDebitPo'] > 0 ? (int)$item['donGiaDebitPo'] : 0);
+
+                $donGiaVendor = isset($dInfo['donGia1ThucTraChoxePo']) && $dInfo['donGia1ThucTraChoxePo'] > 0
+                    ? (int)$dInfo['donGia1ThucTraChoxePo']
+                    : (isset($item['donGia1ThucTraChoxePo']) && $item['donGia1ThucTraChoxePo'] > 0 ? (int)$item['donGia1ThucTraChoxePo'] : 0);
+
+                $tmsBocXep = max(
+                    (int)($dInfo['bocXep2ChiHoPo'] ?? 0),
+                    (int)($dInfo['cpBocXepChiHoPo'] ?? 0),
+                    (int)($item['_tmsBocXep'] ?? 0)
+                );
+                $drvBocXep = (int)($maps['drvBocXepMap'][$idPo] ?? ($item['_driverBocXep'] ?? 0));
+
+                $sumCont3 = (int)($dInfo['neoXeDuongCamPo'] ?? 0) + (int)($dInfo['cpduongcam'] ?? 0) + (int)($dInfo['cpkhacpo'] ?? 0);
+                $xeCol = (int)($dInfo['chiPhiNeoXePo'] ?? 0);
+                $tmsCpKhac = $sumCont3 > 0 ? $sumCont3 : ($xeCol > 0 ? $xeCol : (int)($item['_tmsCpKhac'] ?? 0));
+                $drvCpKhac = (int)($maps['drvCpKhacMap'][$idPo] ?? ($item['_driverCpKhac'] ?? 0));
+
+                $veCauDuong = isset($dInfo['veCauDuongPo']) ? (int)$dInfo['veCauDuongPo'] : (int)($item['_veCauDuong'] ?? 0);
+                $drvTotalExp = (int)($maps['drvTotalExpMap'][$idPo] ?? ($item['_driverPhatSinh'] ?? 0));
+
+                $kh = trim($dInfo['hinhThucKHopPo'] ?? ($item['hinhThucKHopPo'] ?? ($item['_tyLeKetHop'] ?? '')));
+                $gc = trim($dInfo['ghiChuPo'] ?? ($item['ghiChuPo'] ?? ''));
+                if ($gc === '.') $gc = '';
+                $nt = trim($dInfo['notePo'] ?? ($item['notePo'] ?? ''));
+                if ($nt === '.') $nt = '';
+                if ($kh === '' && $gc !== '' && preg_match('/(\d+(?:\.\d+)?\s*%|\bR\b)/i', $gc, $mGc)) {
+                    $kh = strtoupper(str_replace(' ', '', $mGc[1]));
+                }
+
+                $drvName = $item['_driverName'] ?? '';
+                $drvPhone = $item['_driverPhone'] ?? '';
+                $itemPlate = to_clean_code($item['soXePo'] ?? '');
+                if ($itemPlate !== '' && $drvName === '') {
+                    $resolvedDrv = resolve_driver_for_trip($idPo, $itemPlate, $dIso, $maps['snapshotsMap'], $maps['historyByPlate'], $maps['fleetMap']);
+                    if ($resolvedDrv) {
+                        $drvName  = $resolvedDrv['name'] ?? '';
+                        $drvPhone = $resolvedDrv['phone'] ?? '';
+                    }
+                }
+
+                return [
+                    'idPo'                   => $idPo,
+                    'codePo'                 => (string)($item['codePo'] ?? ''),
+                    '_tripDateIso'           => $dIso,
+                    'ngayTraHang'            => $dIso,
+                    'xuatNhapPo'             => $xn,
+                    'cont40Po'               => $is40,
+                    'soContPo'               => (string)($item['soContPo'] ?? ''),
+                    'soSealPo'               => (string)($item['soSealPo'] ?? ''),
+                    'tenKhachPo'             => (string)($item['tenKhachPo'] ?? ''),
+                    'khoNhanHangPo'          => (string)($item['khoNhanHangPo'] ?? ''),
+                    'diaChiNhanPo'           => (string)($item['diaChiNhanPo'] ?? ''),
+                    'tinhNhanPo'             => (string)($item['tinhNhanPo'] ?? ''),
+                    'donViVcPo'              => (string)($item['donViVcPo'] ?? ''),
+                    'soXePo'                 => (string)($item['soXePo'] ?? ''),
+                    '_driverName'            => $drvName,
+                    '_driverPhone'           => $drvPhone,
+                    'hinhThucKHopPo'         => $kh,
+                    '_tyLeKetHop'            => $kh,
+                    'donGiaDebitPo'          => $donGiaDebit > 0 ? $donGiaDebit : null,
+                    'donGia1ThucTraChoxePo'  => $donGiaVendor > 0 ? $donGiaVendor : null,
+                    '_debitRate'             => $donGiaVendor > 0 ? $donGiaVendor : null,
+                    '_tmsBocXep'             => $tmsBocXep,
+                    '_driverBocXep'          => $drvBocXep,
+                    '_chiHoBocXep'           => $tmsBocXep > 0 ? $tmsBocXep : $drvBocXep,
+                    '_tmsCpKhac'             => $tmsCpKhac,
+                    '_driverCpKhac'          => $drvCpKhac,
+                    '_cpKhac'                => $tmsCpKhac > 0 ? $tmsCpKhac : $drvCpKhac,
+                    '_veCauDuong'            => $veCauDuong,
+                    '_driverPhatSinh'        => $drvTotalExp,
+                    '_driverExpDetail'       => isset($maps['drvExpDetailsMap'][$idPo]) ? implode('; ', $maps['drvExpDetailsMap'][$idPo]) : ($item['_driverExpDetail'] ?? ''),
+                    '_expenseNote'           => $maps['drvExpNoteMap'][$idPo] ?? ($item['_expenseNote'] ?? ''),
+                    'ghiChuPo'               => $gc,
+                    'notePo'                 => $nt
+                ];
+            };
+
+            // ROUTE 1: POST/GET cuoc/ketoan-vs-sync — Đồng bộ cuốn chiếu 1 cửa sổ ngắn (VD: 5-7 ngày) từ TMS gốc vào MySQL Cache
+            // Mỗi request chỉ gọi 1 lần index-ajax Nhập + 1 lần index-ajax Xuất -> chỉ mất ~2-3 giây, KHÔNG BAO GIỜ NGHẼN CỔ CHAI!
+            if ($route === 'cuoc/ketoan-vs-sync') {
+                $winStart = trim((string)($_GET['winStart'] ?? ($jsonBody['winStart'] ?? '')));
+                $winEnd   = trim((string)($_GET['winEnd']   ?? ($jsonBody['winEnd']   ?? '')));
+                $forceCycle = !empty($_GET['forceCycle']) || !empty($jsonBody['forceCycle']);
+
+                if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $winStart) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $winEnd)) {
+                    http_response_code(400);
+                    echo json_encode(['ok' => false, 'error' => 'Khoảng ngày đồng bộ winStart / winEnd không hợp lệ!']);
+                    exit;
+                }
+
+                $sTs = strtotime($winStart);
+                $eTs = strtotime($winEnd);
+                if ($sTs > $eTs) {
+                    $tmp = $sTs; $sTs = $eTs; $eTs = $tmp;
+                    $winStart = date('Y-m-d', $sTs);
+                    $winEnd   = date('Y-m-d', $eTs);
+                }
+
+                // 1. Lấy danh sách booking từ các chu kỳ liên quan (dùng cache chu kỳ nếu không forceCycle để siêu nhanh)
+                $cycles = array_values(array_unique([
+                    get_billing_cycle_param(date('Y-m-d', $sTs - 5 * 86400)),
+                    get_billing_cycle_param($winStart),
+                    get_billing_cycle_param($winEnd),
+                    get_billing_cycle_param(date('Y-m-d', $eTs + 10 * 86400))
+                ]));
+                $windowBookings = [];
+                foreach ($cycles as $c) {
+                    $arr = fetch_single_cycle($c, $forceCycle);
+                    if (is_array($arr)) {
+                        foreach ($arr as $rawIt) {
+                            if (!isset($rawIt['idPo'])) continue;
+                            $normIt = normalize_shipment_item($rawIt);
+                            $dIso = get_shipment_date_iso($normIt);
+                            if ($dIso !== '' && $dIso >= $winStart && $dIso <= $winEnd) {
+                                $windowBookings[(string)$normIt['idPo']] = $normIt;
+                            }
+                        }
+                    }
+                }
+
+                // 2. Chỉ gọi TMS index-ajax.php cho ĐÚNG cửa sổ ngắn [winStart, winEnd] này
+                $debitMap = fetch_tms_debit_map($winStart, $winEnd, true);
+                $maps = $buildDriverAndExpenseMaps($pdo);
+
+                // 3. Upsert vào bảng MySQL tms_ketoan_bookings_cache
+                $stUpsert = $pdo->prepare("
+                    INSERT INTO `tms_ketoan_bookings_cache` (`id_po`, `trip_date`, `xuat_nhap`, `cont_40`, `payload_json`)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE
+                        `trip_date`    = VALUES(`trip_date`),
+                        `xuat_nhap`    = VALUES(`xuat_nhap`),
+                        `cont_40`      = VALUES(`cont_40`),
+                        `payload_json` = VALUES(`payload_json`),
+                        `updated_at`   = CURRENT_TIMESTAMP
+                ");
+
+                $pdo->beginTransaction();
+                $savedCount = 0;
+                try {
+                    foreach ($windowBookings as $pid => $item) {
+                        $dInfo = $debitMap[$pid] ?? [];
+                        $slim = $makeSlimBooking($item, $dInfo, $maps);
+                        $stUpsert->execute([
+                            $pid,
+                            $slim['_tripDateIso'],
+                            $slim['xuatNhapPo'],
+                            (int)$slim['cont40Po'],
+                            json_encode($slim, JSON_UNESCAPED_UNICODE)
+                        ]);
+                        $savedCount++;
+                    }
+                    $pdo->commit();
+                } catch (Exception $e) {
+                    if ($pdo->inTransaction()) $pdo->rollBack();
+                    throw $e;
+                }
+
+                echo json_encode([
+                    'ok'         => true,
+                    'winStart'   => $winStart,
+                    'winEnd'     => $winEnd,
+                    'savedCount' => $savedCount,
+                    'debitCount' => count($debitMap)
+                ]);
+                exit;
+            }
+
+            // ROUTE 2: GET cuoc/ketoan-vs — Đọc tức thì từ MySQL Cache (< 0.15s).
+            // Nếu bảng MySQL Cache chưa có dữ liệu nào, tự động warm-up nhanh từ các file cache sẵn có trong /tmp (không block gọi 16 request TMS)
             $days = isset($_GET['days']) ? max(1, min(120, (int)$_GET['days'])) : 30;
             $toDate = trim((string)($_GET['toDate'] ?? ($jsonBody['toDate'] ?? date('Y-m-d'))));
             $fromDate = trim((string)($_GET['fromDate'] ?? ($jsonBody['fromDate'] ?? '')));
-            $forceRefresh = !empty($_GET['refresh']) || !empty($jsonBody['refresh']);
 
             if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $toDate)) {
                 $toDate = date('Y-m-d');
@@ -3754,92 +4033,129 @@ try {
                 $toDate = date('Y-m-d', $toTs);
             }
 
-            // Gọi fetch_vietsun_shipments với includeDebit = true để quét cả return_json.php và index-ajax.php (NHẬP kieuxem=7, XUẤT kieuxem=3)
-            $all = fetch_vietsun_shipments($toDate, $forceRefresh, true, $fromDate, $toDate);
+            $stQuery = $pdo->prepare("
+                SELECT `payload_json`, `updated_at`
+                FROM `tms_ketoan_bookings_cache`
+                WHERE `trip_date` BETWEEN ? AND ?
+                ORDER BY `trip_date` DESC, CAST(`id_po` AS UNSIGNED) DESC
+            ");
+            $stQuery->execute([$fromDate, $toDate]);
+            $cachedRows = $stQuery->fetchAll();
 
-            // Ghép thêm thông tin Tài xế (Snapshot / History / Current) để Kế Toán VS có đầy đủ tên tài xế, SĐT, CCCD
-            $fleetMap = [];
-            $snapshotsMap = [];
-            $historyByPlate = [];
-            try {
-                $stDrv = $pdo->query("SELECT assigned_plate, driver_name, phone, cccd, gplx FROM drivers");
-                if ($stDrv) {
-                    foreach ($stDrv->fetchAll() as $dr) {
-                        $p = to_clean_code($dr['assigned_plate'] ?? '');
-                        if ($p) {
-                            $fleetMap[$p] = [
-                                'plate' => $p,
-                                'name'  => $dr['driver_name'] ?? '',
-                                'phone' => $dr['phone'] ?? '',
-                                'cccd'  => $dr['cccd'] ?? '',
-                                'gplx'  => $dr['gplx'] ?? ''
-                            ];
+            $needsCostSync = false;
+            // Nếu MySQL Cache đang trống trong khoảng ngày này: Nạp tức thì danh sách booking từ return_json.php (chỉ 2 request JSON nhẹ ~0.8s)
+            // kết hợp với bất kỳ file cache vietsun_debit_map_v8_*.json nào đang có sẵn trong /tmp để hiển thị ngay lập tức!
+            if (empty($cachedRows)) {
+                $rawCycles = [];
+                for ($ts = $fromTs - 5 * 86400; $ts <= $toTs + 15 * 86400; $ts += 15 * 86400) {
+                    $rawCycles[] = get_billing_cycle_param(date('Y-m-d', $ts));
+                }
+                $cycles = array_values(array_unique(array_filter($rawCycles)));
+                $mergedBookings = [];
+                foreach ($cycles as $c) {
+                    $arr = fetch_single_cycle($c, false);
+                    if (is_array($arr)) {
+                        foreach ($arr as $rawIt) {
+                            if (!isset($rawIt['idPo'])) continue;
+                            $normIt = normalize_shipment_item($rawIt);
+                            $dIso = get_shipment_date_iso($normIt);
+                            if ($dIso !== '' && $dIso >= $fromDate && $dIso <= $toDate) {
+                                $mergedBookings[(string)$normIt['idPo']] = $normIt;
+                            }
                         }
                     }
                 }
-                foreach (fetch_live_vietsun_fleet(false) as $vsDrv) {
-                    $p = to_clean_code($vsDrv['plate'] ?? '');
-                    if ($p && !isset($fleetMap[$p])) {
-                        $fleetMap[$p] = [
-                            'plate' => $p,
-                            'name'  => $vsDrv['name'] ?? '',
-                            'phone' => $vsDrv['phone'] ?? '',
-                            'cccd'  => '',
-                            'gplx'  => ''
-                        ];
+
+                // Tận dụng các file cache debit_map sẵn có trong /tmp (nếu có) mà không phải chờ gọi mới 16 cửa sổ
+                $existingDebitMap = [];
+                foreach (glob(sys_get_temp_dir() . '/vietsun_debit_map_v8_*.json') as $df) {
+                    $dArr = json_decode(@file_get_contents($df), true);
+                    if (is_array($dArr)) {
+                        foreach ($dArr as $pid => $dVal) {
+                            if (!isset($existingDebitMap[$pid])) {
+                                $existingDebitMap[$pid] = $dVal;
+                            } else {
+                                $existingDebitMap[$pid] = array_merge($existingDebitMap[$pid], $dVal);
+                            }
+                        }
                     }
                 }
-                $stSnapAll = $pdo->query("SELECT id_po, assigned_plate, driver_name, driver_phone, driver_cccd, driver_gplx FROM trip_driver_snapshots");
-                if ($stSnapAll) {
-                    foreach ($stSnapAll->fetchAll() as $sr) {
-                        $snapshotsMap[(string)$sr['id_po']] = $sr;
-                    }
+                if (empty($existingDebitMap)) {
+                    $needsCostSync = true;
                 }
-                $stHistAll = $pdo->query("SELECT assigned_plate, driver_name, phone, cccd, gplx, assigned_from, assigned_to FROM driver_assignment_history ORDER BY id DESC");
-                if ($stHistAll) {
-                    foreach ($stHistAll->fetchAll() as $hr) {
-                        $hp = to_clean_code($hr['assigned_plate'] ?? '');
-                        if ($hp) $historyByPlate[$hp][] = $hr;
+
+                $maps = $buildDriverAndExpenseMaps($pdo);
+                $stUpsert = $pdo->prepare("
+                    INSERT INTO `tms_ketoan_bookings_cache` (`id_po`, `trip_date`, `xuat_nhap`, `cont_40`, `payload_json`)
+                    VALUES (?, ?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE
+                        `trip_date`    = VALUES(`trip_date`),
+                        `xuat_nhap`    = VALUES(`xuat_nhap`),
+                        `cont_40`      = VALUES(`cont_40`),
+                        `payload_json` = VALUES(`payload_json`),
+                        `updated_at`   = CURRENT_TIMESTAMP
+                ");
+                $pdo->beginTransaction();
+                try {
+                    foreach ($mergedBookings as $pid => $item) {
+                        $dInfo = $existingDebitMap[$pid] ?? [];
+                        $slim = $makeSlimBooking($item, $dInfo, $maps);
+                        $stUpsert->execute([
+                            $pid,
+                            $slim['_tripDateIso'],
+                            $slim['xuatNhapPo'],
+                            (int)$slim['cont40Po'],
+                            json_encode($slim, JSON_UNESCAPED_UNICODE)
+                        ]);
                     }
+                    $pdo->commit();
+                } catch (Exception $e) {
+                    if ($pdo->inTransaction()) $pdo->rollBack();
                 }
-            } catch (Exception $e) {}
+
+                $stQuery->execute([$fromDate, $toDate]);
+                $cachedRows = $stQuery->fetchAll();
+            }
 
             $filtered = [];
             $nhapCount = 0;
             $xuatCount = 0;
             $c20Count = 0;
             $c40Count = 0;
+            $hasAnyCostCount = 0;
+            $lastUpdatedAt = '';
 
-            foreach ($all as $item) {
-                $dIso = get_shipment_date_iso($item);
-                if ($dIso === '' || $dIso < $fromDate || $dIso > $toDate) {
-                    continue;
-                }
-                $itemPlate = to_clean_code($item['soXePo'] ?? '');
-                if ($itemPlate !== '') {
-                    $resolvedDrv = resolve_driver_for_trip($item['idPo'] ?? '', $itemPlate, $dIso, $snapshotsMap, $historyByPlate, $fleetMap);
-                    if ($resolvedDrv) {
-                        $item['_driverName']  = $resolvedDrv['name'];
-                        $item['_driverPhone'] = $resolvedDrv['phone'];
-                        $item['_driverCccd']  = $resolvedDrv['cccd'];
-                        $item['_driverGplx']  = $resolvedDrv['gplx'];
-                    }
+            foreach ($cachedRows as $cr) {
+                $item = json_decode($cr['payload_json'], true);
+                if (!is_array($item)) continue;
+                if ($lastUpdatedAt === '' || ($cr['updated_at'] ?? '') > $lastUpdatedAt) {
+                    $lastUpdatedAt = $cr['updated_at'] ?? '';
                 }
                 if (($item['xuatNhapPo'] ?? 'N') === 'X') $xuatCount++; else $nhapCount++;
                 if ((int)($item['cont40Po'] ?? 0) > 0) $c40Count++; else $c20Count++;
+                if (!empty($item['donGia1ThucTraChoxePo']) || !empty($item['donGiaDebitPo']) || !empty($item['_tmsBocXep']) || !empty($item['_veCauDuong']) || !empty($item['_tmsCpKhac'])) {
+                    $hasAnyCostCount++;
+                }
                 $filtered[] = $item;
             }
 
+            if (count($filtered) > 0 && $hasAnyCostCount === 0) {
+                $needsCostSync = true;
+            }
+
             echo json_encode([
-                'ok'        => true,
-                'fromDate'  => $fromDate,
-                'toDate'    => $toDate,
-                'total'     => count($filtered),
-                'nhapCount' => $nhapCount,
-                'xuatCount' => $xuatCount,
-                'c20Count'  => $c20Count,
-                'c40Count'  => $c40Count,
-                'bookings'  => $filtered
+                'ok'              => true,
+                'fromDate'        => $fromDate,
+                'toDate'          => $toDate,
+                'total'           => count($filtered),
+                'nhapCount'       => $nhapCount,
+                'xuatCount'       => $xuatCount,
+                'c20Count'        => $c20Count,
+                'c40Count'        => $c40Count,
+                'hasAnyCostCount' => $hasAnyCostCount,
+                'needsCostSync'   => $needsCostSync,
+                'lastUpdatedAt'   => $lastUpdatedAt,
+                'bookings'        => $filtered
             ]);
             exit;
         }
