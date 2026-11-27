@@ -875,7 +875,11 @@
 
       <div style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
         <div id="ktSummaryText" style="font-size:12.5px; font-weight:700; color:#0f3a6d;"></div>
-        <div style="display:flex; align-items:center; gap:8px;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <div class="mode-switch" title="Chuyển giữa chế độ Đầy đủ 23 cột CHI PHÍ VẬN CHUYỂN PHÍA NAM (như TMS Gốc) và chế độ Bảng Tóm Tắt">
+            <button class="mode-btn active" id="ktModeFullBtn" onclick="setKtViewMode('full')">📋 Đầy Đủ 23 Cột Chi Phí (Chuẩn TMS Gốc)</button>
+            <button class="mode-btn" id="ktModeCompactBtn" onclick="setKtViewMode('compact')">⚡ Tóm Tắt Gọn</button>
+          </div>
           <span id="ktPageInfo" style="font-size:12px; color:#475569; font-weight:600;"></span>
           <button class="btn btn-sm btn-light" id="btnPrevKt" onclick="changeKtPage(-1)">⬅ Trang trước</button>
           <button class="btn btn-sm btn-light" id="btnNextKt" onclick="changeKtPage(1)">Trang tiếp ➡</button>
@@ -883,30 +887,11 @@
       </div>
 
       <div class="table-card">
-        <div class="table-scroll" style="max-height:70vh;">
-          <table>
-            <thead>
-              <tr>
-                <th style="width:42px; text-align:center;">STT</th>
-                <th style="width:88px;">NGÀY</th>
-                <th style="width:90px;">MÃ PO / LOẠI</th>
-                <th style="width:120px;">SỐ CONT / SEAL</th>
-                <th style="min-width:155px;">KHÁCH HÀNG</th>
-                <th style="min-width:230px;">KHO ĐÓNG / TRẢ & ĐỊA CHỈ</th>
-                <th style="min-width:170px;">MÃ KHO & TUYẾN ĐƯỜNG</th>
-                <th style="min-width:135px;">ĐVVT / SỐ XE / TÀI XẾ</th>
-                <th style="width:70px; text-align:center;">KẾT HỢP</th>
-                <th style="width:110px; text-align:right; background:#15803d;">CƯỚC BẢNG GIÁ</th>
-                <th style="width:110px; text-align:right; background:#0369a1;">ĐƠN GIÁ TMS</th>
-                <th style="width:95px; text-align:right; background:#0f766e;">BỐC XẾP</th>
-                <th style="width:95px; text-align:right; background:#0f766e;">VÉ CẦU ĐƯỜNG</th>
-                <th style="width:95px; text-align:right; background:#0f766e;">NEO / ĐC / KHÁC</th>
-                <th style="width:115px; text-align:right; background:#6d28d9;">TỔNG CHI PHÍ</th>
-                <th style="min-width:160px;">GHI CHÚ CHI PHÍ</th>
-              </tr>
-            </thead>
+        <div class="table-scroll" style="max-height:72vh;">
+          <table id="ktTable">
+            <thead id="ktThead"></thead>
             <tbody id="ktTbody">
-              <tr><td colspan="16" style="text-align:center; padding:28px; color:#64748b;">Bấm <strong>"🔄 Tải Từ TMS Gốc (30 Ngày)"</strong> để tải danh sách booking Nhập & Xuất kèm chi phí từ TMS gốc.</td></tr>
+              <tr><td colspan="33" style="text-align:center; padding:28px; color:#64748b;">Bấm <strong>"🔄 Đồng Bộ TMS Đầy Đủ (Cuốn Chiếu)"</strong> để tải danh sách booking Nhập & Xuất kèm đầy đủ 23 cột chi phí từ TMS gốc.</td></tr>
             </tbody>
           </table>
         </div>
@@ -2441,6 +2426,14 @@
 
     let ktIsSyncing = false;
     let ktLastUpdatedAt = '';
+    let ktViewMode = 'full'; // 'full' (Đầy đủ 23 cột CHI PHÍ VẬN CHUYỂN PHÍA NAM chuẩn TMS Gốc) | 'compact' (Bảng tóm tắt gọn)
+
+    function setKtViewMode(mode) {
+      ktViewMode = mode;
+      document.getElementById('ktModeFullBtn')?.classList.toggle('active', mode === 'full');
+      document.getElementById('ktModeCompactBtn')?.classList.toggle('active', mode === 'compact');
+      renderKeToanVsPage();
+    }
 
     async function loadKeToanVsBookings(autoSyncIfMissingCost = false) {
       initKeToanVsDatesIfNeeded();
@@ -2473,7 +2466,7 @@
       }
     }
 
-    function buildSyncWindowsClient(startIso, endIso, stepDays = 6) {
+    function buildSyncWindowsClient(startIso, endIso, stepDays = 4) {
       const sTs = new Date(startIso + 'T00:00:00').getTime();
       const eTs = new Date(endIso + 'T00:00:00').getTime();
       if (isNaN(sTs) || isNaN(eTs) || sTs > eTs) return [[startIso, endIso]];
@@ -2506,7 +2499,7 @@
         syncFrom = new Date(recentFromTs).toISOString().slice(0, 10);
       }
 
-      const windows = buildSyncWindowsClient(syncFrom, syncTo, 6);
+      const windows = buildSyncWindowsClient(syncFrom, syncTo, 4);
       if (!windows.length) return;
 
       ktIsSyncing = true;
@@ -2604,26 +2597,50 @@
         stdRateForCarrier = getRouteCarrierRate(route, carrierKey, sizeKey) || vsStdRate;
       }
 
-      // Đơn giá trên TMS (donGia1ThucTraChoxePo = Đơn giá trả xe/Vendor; donGiaDebitPo = Đơn giá Debit KH)
-      const tmsVendorRate = Number(item.donGia1ThucTraChoxePo || item._debitRate || 0);
+      // Đầy đủ 23 trường CHI PHÍ VẬN CHUYỂN PHÍA NAM từ TMS gốc (cv=5)
+      const bocXep1GnChi = Number(item.bocXep1GnChiPo || 0);
+      const bocXep2ChiHo = Number(item.bocXep2ChiHoPo !== undefined ? item.bocXep2ChiHoPo : (item._tmsBocXep || 0));
       const tmsDebitKhRate = Number(item.donGiaDebitPo || 0);
-      const tmsEffectiveRate = tmsVendorRate > 0 ? tmsVendorRate : tmsDebitKhRate;
+      const donGiaChuaVat = Number(item.donGiaChuaVatPo || 0);
+      const tongCpKhac = Number(item.tongcpkhac !== undefined ? item.tongcpkhac : (item._tmsCpKhac || 0));
+      const veCauDuongDebit = Number(item.veCauDuongPo !== undefined ? item.veCauDuongPo : (item._veCauDuong || 0));
 
-      // Cước dùng để tính Tổng chi phí chuyến (Ưu tiên Đơn giá TMS nếu đã nhập, nếu chưa nhập thì lấy theo Bảng giá chuẩn)
+      const chiPhiGnkdNewThu = Number(item.chiPhiGnkdPo || 0);
+      const chiPhiGnkd = Number(item.phiGnkdKtoan || 0);
+      const chiPhiGnkdThucTe = Number(item.phiGnkdThu || 0);
+      const nhanVienGnkd = String(item.nhanVienGnkdPo || 'Không').trim() || 'Không';
+      const phiHandling = Number(item.phiHandlingPo || 0);
+      const canTruViPham = Number(item.canTruViPhanPo || 0);
+      const chiHoNangCont = Number(item.chiHoNangContPo || 0);
+      const chiHoHaCont = Number(item.chiHoHaContPo || 0);
+
+      const cpBocXepChiHoXe = Number(item.cpBocXepChiHoPo !== undefined ? item.cpBocXepChiHoPo : bocXep2ChiHo);
+      const tmsVendorRate = Number(item.donGia1ThucTraChoxePo || item._debitRate || 0);
+      const doanGia1ChuaVat = Number(item.doanGia1ChuaVATpo || 0);
+      const chiPhiNeoXe = Number(item.chiPhiNeoXePo !== undefined ? item.chiPhiNeoXePo : tongCpKhac);
+      const vecauDuongXe = Number(item.vecauDuong1Po !== undefined ? item.vecauDuong1Po : veCauDuongDebit);
+      const ghiChuKeToan = String(item.ghiChuKeToanPo || '').trim();
+      const chenhLechKetHop = Number(item.chenhlechkethop || 0);
+      const soTienTraXe = Number(item.sotientraxe || tmsVendorRate || 0);
+      const vatPo = Number(item.vatPo !== undefined ? item.vatPo : 8);
+      const donGiaPhuLuc = Number(item.donGIaPhuLuc || 0);
+
+      const tmsEffectiveRate = tmsVendorRate > 0 ? tmsVendorRate : tmsDebitKhRate;
       const effectiveFreight = tmsEffectiveRate > 0 ? tmsEffectiveRate : stdRateForCarrier;
 
-      // Các khoản chi phí phát sinh từ TMS
-      const bocXep = Number(item._tmsBocXep !== undefined ? item._tmsBocXep : (item._chiHoBocXep || 0));
-      const veCauDuong = Number(item._veCauDuong || 0);
-      const cpKhac = Number(item._tmsCpKhac !== undefined ? item._tmsCpKhac : (item._cpKhac || 0));
-      const totalExpTms = bocXep + veCauDuong + cpKhac;
+      // Các khoản chi phí phát sinh tổng hợp
+      const bocXep = Math.max(bocXep2ChiHo, cpBocXepChiHoXe, bocXep1GnChi);
+      const veCauDuong = Math.max(veCauDuongDebit, vecauDuongXe);
+      const cpKhac = Math.max(tongCpKhac, chiPhiNeoXe);
+      const totalExpTms = bocXep + veCauDuong + cpKhac + chiPhiGnkdThucTe + phiHandling + chiHoNangCont + chiHoHaCont - canTruViPham;
       const driverExp = Number(item._driverPhatSinh || 0);
 
       const grandTotal = effectiveFreight + totalExpTms;
       const rateDiff = (tmsEffectiveRate > 0 && stdRateForCarrier > 0) ? (tmsEffectiveRate - stdRateForCarrier) : 0;
 
       const noteParts = [];
-      if (item.ghiChuPo && item.ghiChuPo !== '.') noteParts.push(item.ghiChuPo);
+      if (ghiChuKeToan && ghiChuKeToan !== '.') noteParts.push(ghiChuKeToan);
+      if (item.ghiChuPo && item.ghiChuPo !== '.' && item.ghiChuPo !== ghiChuKeToan) noteParts.push(item.ghiChuPo);
       if (item.notePo && item.notePo !== '.') noteParts.push(item.notePo);
       if (item._driverExpDetail) noteParts.push(`TX báo: ${item._driverExpDetail}`);
       else if (item._expenseNote) noteParts.push(item._expenseNote);
@@ -2637,8 +2654,32 @@
         carrierKey,
         vsStdRate,
         stdRateForCarrier,
-        tmsVendorRate,
+        // 23 trường chi tiết CHI PHÍ VẬN CHUYỂN PHÍA NAM
+        bocXep1GnChi,
+        bocXep2ChiHo,
         tmsDebitKhRate,
+        donGiaChuaVat,
+        tongCpKhac,
+        veCauDuongDebit,
+        chiPhiGnkdNewThu,
+        chiPhiGnkd,
+        chiPhiGnkdThucTe,
+        nhanVienGnkd,
+        phiHandling,
+        canTruViPham,
+        chiHoNangCont,
+        chiHoHaCont,
+        cpBocXepChiHoXe,
+        tmsVendorRate,
+        doanGia1ChuaVat,
+        chiPhiNeoXe,
+        vecauDuongXe,
+        ghiChuKeToan,
+        chenhLechKetHop,
+        soTienTraXe,
+        vatPo,
+        donGiaPhuLuc,
+        // Tổng hợp
         tmsEffectiveRate,
         effectiveFreight,
         bocXep,
@@ -2666,6 +2707,7 @@
       let sumBocXep = 0;
       let sumVeCd = 0;
       let sumCpKhac = 0;
+      let sumGnkdHandling = 0;
       let sumTotalExp = 0;
       let sumDriverExp = 0;
       let sumGrandTotal = 0;
@@ -2685,7 +2727,7 @@
           if (r.carrierKey !== carrierFilter && rawDv !== normFilter && !rawDv.includes(normFilter)) return;
         }
 
-        if (costFilter === 'HAS_EXP' && r.totalExpTms <= 0 && r.driverExp <= 0) return;
+        if (costFilter === 'HAS_EXP' && r.bocXep <= 0 && r.veCauDuong <= 0 && r.cpKhac <= 0 && r.chiPhiGnkdThucTe <= 0 && r.chiHoNangCont <= 0 && r.chiHoHaCont <= 0 && r.driverExp <= 0) return;
         if (costFilter === 'HAS_TMS_RATE' && r.tmsEffectiveRate <= 0) return;
         if (costFilter === 'NO_TMS_RATE' && r.tmsEffectiveRate > 0) return;
         if (costFilter === 'RATE_DIFF' && Math.abs(r.rateDiff) <= 1000) return;
@@ -2696,7 +2738,7 @@
             item.idPo, item.codePo, item.soContPo, item.soSealPo,
             item.tenKhachPo, item.khoNhanHangPo, item.diaChiNhanPo, item.tinhNhanPo,
             item.donViVcPo, item.soXePo, item._driverName, item._driverPhone,
-            r.wh?.wh_code, r.route?.route_code, r.route?.dia_diem, r.combinedNote
+            r.nhanVienGnkd, r.wh?.wh_code, r.route?.route_code, r.route?.dia_diem, r.combinedNote
           ].join(' '));
           if (!hay.includes(q)) return;
         }
@@ -2711,6 +2753,7 @@
         sumBocXep += r.bocXep;
         sumVeCd += r.veCauDuong;
         sumCpKhac += r.cpKhac;
+        sumGnkdHandling += (r.chiPhiGnkdThucTe + r.phiHandling + r.chiHoNangCont + r.chiHoHaCont);
         sumTotalExp += r.totalExpTms;
         sumDriverExp += r.driverExp;
         sumGrandTotal += r.grandTotal;
@@ -2728,7 +2771,7 @@
       document.getElementById('ktStatTmsRate').textContent = fmtMoney(sumTmsRate) + ' đ';
       document.getElementById('ktStatTmsDebitSub').textContent = `Tổng Debit KH trên TMS: ${fmtMoney(sumTmsDebitKh)} đ`;
       document.getElementById('ktStatTotalExp').textContent = fmtMoney(sumTotalExp) + ' đ';
-      document.getElementById('ktStatExpBreakdown').textContent = `Bốc xếp: ${fmtMoney(sumBocXep)} • Vé CĐ: ${fmtMoney(sumVeCd)} • Khác: ${fmtMoney(sumCpKhac)}`;
+      document.getElementById('ktStatExpBreakdown').textContent = `Bốc xếp: ${fmtMoney(sumBocXep)} • Neo/ĐC: ${fmtMoney(sumCpKhac)} • GNKĐ/H.ling: ${fmtMoney(sumGnkdHandling)}`;
       document.getElementById('ktStatGrandTotal').textContent = fmtMoney(sumGrandTotal) + ' đ';
       document.getElementById('ktStatDriverExpSub').textContent = `Phát sinh TX báo qua App: ${fmtMoney(sumDriverExp)} đ`;
 
@@ -2754,9 +2797,77 @@
       document.getElementById('btnPrevKt').disabled = ktPage <= 1;
       document.getElementById('btnNextKt').disabled = ktPage >= totalPages;
 
+      const thead = document.getElementById('ktThead');
       const tbody = document.getElementById('ktTbody');
+
+      if (ktViewMode === 'full') {
+        thead.innerHTML = `
+          <tr>
+            <th rowspan="2" style="width:40px; text-align:center;">STT</th>
+            <th rowspan="2" style="width:82px;">NGÀY</th>
+            <th rowspan="2" style="width:88px;">ID CONT / LOẠI</th>
+            <th rowspan="2" style="width:115px;">SỐ CONT / SEAL</th>
+            <th rowspan="2" style="min-width:140px;">KHÁCH HÀNG</th>
+            <th rowspan="2" style="min-width:210px;">KHO ĐÓNG - TRẢ & ĐỊA CHỈ</th>
+            <th rowspan="2" style="min-width:155px;">MÃ KHO & TUYẾN (BẢNG GIÁ)</th>
+            <th rowspan="2" style="min-width:125px;">SỐ XE / ĐVVT / TÀI XẾ</th>
+            <th rowspan="2" style="width:72px; text-align:center;">HÌNH THỨC KẾT HỢP</th>
+            <th rowspan="2" style="width:105px; text-align:right; background:#14532d;">CƯỚC BẢNG GIÁ 2026</th>
+            <th colspan="14" style="text-align:center; background:#15803d; color:#fff; font-size:11.5px; letter-spacing:0.3px;">CHI PHÍ VẬN CHUYỂN PHÍA NAM (KHỐI DEBIT / GNKĐ / HANDLING / CHI HỘ)</th>
+            <th colspan="8" style="text-align:center; background:#0369a1; color:#fff; font-size:11.5px; letter-spacing:0.3px;">THỰC TRẢ CHO XE / VENDOR & CHÊNH LỆCH KẾT HỢP</th>
+            <th rowspan="2" style="width:95px; text-align:right; background:#475569;">GIÁ PHỤ LỤC</th>
+          </tr>
+          <tr class="sub-head">
+            <th style="background:#166534; text-align:right;">BỐC XẾP GN CHI</th>
+            <th style="background:#166534; text-align:right; color:#fef08a;">BỐC XẾP XE CHI</th>
+            <th style="background:#166534; text-align:right; color:#fef08a;">ĐƠN GIÁ DEBIT</th>
+            <th style="background:#166534; text-align:right;">ĐƠN GIÁ CHƯA VAT</th>
+            <th style="background:#166534; text-align:right; color:#fef08a;">NEO XE, ĐC, KHÁC</th>
+            <th style="background:#166534; text-align:right; color:#fef08a;">VÉ CẦU ĐƯỜNG</th>
+            <th style="background:#166534; text-align:right;">CP GNKD NEW (Thu)</th>
+            <th style="background:#166534; text-align:right;">CHI PHÍ GNKĐ</th>
+            <th style="background:#166534; text-align:right;">CP GNKD THỰC TẾ</th>
+            <th style="background:#166534; text-align:center;">NHÂN VIÊN GNKĐ</th>
+            <th style="background:#166534; text-align:right;">PHÍ HANDLING</th>
+            <th style="background:#166534; text-align:right;">CẤN TRỪ VI PHẠM</th>
+            <th style="background:#166534; text-align:right;">CHI HỘ NÂNG CONT</th>
+            <th style="background:#166534; text-align:right;">CHI HỘ HẠ CONT</th>
+            <th style="background:#075985; text-align:right; color:#fde047;">BỐC XẾP XE CHI</th>
+            <th style="background:#075985; text-align:right; color:#fde047;">ĐƠN GIÁ THỰC TRẢ XE</th>
+            <th style="background:#075985; text-align:right;">ĐƠN GIÁ CHƯA VAT</th>
+            <th style="background:#075985; text-align:right; color:#fde047;">CP NEO XE/ĐC, KHÁC</th>
+            <th style="background:#075985; text-align:right; color:#fde047;">VÉ CẦU ĐƯỜNG</th>
+            <th style="background:#075985; text-align:left; min-width:130px;">GHI CHÚ KẾ TOÁN</th>
+            <th style="background:#075985; text-align:right;">CHÊNH LỆCH KẾT HỢP</th>
+            <th style="background:#075985; text-align:right; color:#fef08a;">SỐ TIỀN TRẢ XE CÓ VAT</th>
+          </tr>
+        `;
+      } else {
+        thead.innerHTML = `
+          <tr>
+            <th style="width:42px; text-align:center;">STT</th>
+            <th style="width:88px;">NGÀY</th>
+            <th style="width:90px;">MÃ PO / LOẠI</th>
+            <th style="width:120px;">SỐ CONT / SEAL</th>
+            <th style="min-width:155px;">KHÁCH HÀNG</th>
+            <th style="min-width:230px;">KHO ĐÓNG / TRẢ & ĐỊA CHỈ</th>
+            <th style="min-width:170px;">MÃ KHO & TUYẾN ĐƯỜNG</th>
+            <th style="min-width:135px;">ĐVVT / SỐ XE / TÀI XẾ</th>
+            <th style="width:70px; text-align:center;">KẾT HỢP</th>
+            <th style="width:110px; text-align:right; background:#15803d;">CƯỚC BẢNG GIÁ</th>
+            <th style="width:110px; text-align:right; background:#0369a1;">ĐƠN GIÁ TMS</th>
+            <th style="width:95px; text-align:right; background:#0f766e;">BỐC XẾP</th>
+            <th style="width:95px; text-align:right; background:#0f766e;">VÉ CẦU ĐƯỜNG</th>
+            <th style="width:95px; text-align:right; background:#0f766e;">NEO / ĐC / KHÁC</th>
+            <th style="width:115px; text-align:right; background:#6d28d9;">TỔNG CHI PHÍ</th>
+            <th style="min-width:160px;">GHI CHÚ CHI PHÍ</th>
+          </tr>
+        `;
+      }
+
       if (!pageItems.length) {
-        tbody.innerHTML = `<tr><td colspan="16" style="text-align:center; padding:28px; color:#64748b;">Không tìm thấy booking nào khớp điều kiện lọc.</td></tr>`;
+        const colSpan = ktViewMode === 'full' ? 33 : 16;
+        tbody.innerHTML = `<tr><td colspan="${colSpan}" style="text-align:center; padding:28px; color:#64748b;">Không tìm thấy booking nào khớp điều kiện lọc.</td></tr>`;
         return;
       }
 
@@ -2782,6 +2893,66 @@
         const diffHtml = (r.tmsEffectiveRate > 0 && r.stdRateForCarrier > 0 && Math.abs(r.rateDiff) > 1000)
           ? `<div style="font-size:10.5px; font-weight:700; color:${r.rateDiff > 0 ? '#dc2626' : '#0284c7'};">(${r.rateDiff > 0 ? '+' : ''}${fmtMoney(r.rateDiff)})</div>`
           : '';
+
+        if (ktViewMode === 'full') {
+          return `
+            <tr>
+              <td style="text-align:center; color:#64748b; font-weight:600;">${stt}</td>
+              <td style="font-weight:700; white-space:nowrap;">${dStr}</td>
+              <td>
+                <div style="font-family:monospace; font-weight:800; color:#334155; font-size:11.5px;">#${it.idPo || ''}${it.chuHangPo ? ' • ' + it.chuHangPo : ''}</div>
+                <div style="margin-top:2px;">${xnBadge}</div>
+              </td>
+              <td>
+                <div style="font-weight:800; color:#0f172a; font-family:monospace; font-size:13px;">${it.soContPo || '--'}</div>
+                ${it.soSealPo ? `<div style="font-size:11px; color:#475569;">Seal: <strong>${it.soSealPo}</strong></div>` : ''}
+              </td>
+              <td style="font-weight:600; color:#0f172a;">${it.tenKhachPo || '-'}</td>
+              <td>
+                <div style="font-weight:700; color:#0f172a;">${it.khoNhanHangPo || '-'}</div>
+                <div style="font-size:11.5px; color:#475569;">${it.diaChiNhanPo || ''} ${it.tinhNhanPo ? `(${it.tinhNhanPo})` : ''}</div>
+              </td>
+              <td>${whRouteHtml}</td>
+              <td>
+                <div style="font-size:12.5px; font-weight:800; color:#1d4ed8;">${it.soXePo || '--'}</div>
+                <div style="font-weight:700; color:#0f3a6d; font-size:11.5px;">${it.donViVcPo || '-'}</div>
+                ${it._driverName ? `<div style="font-size:10.5px; color:#334155;">👨‍✈️ ${it._driverName}</div>` : ''}
+              </td>
+              <td style="text-align:center; font-weight:700; color:#b45309;">${khStr || '-'}</td>
+              <td class="num num-vs">${fmtMoney(r.stdRateForCarrier)}</td>
+
+              <!-- 14 cột Khối Debit / GNKĐ / Handling / Chi hộ -->
+              <td class="num">${fmtMoney(r.bocXep1GnChi)}</td>
+              <td class="num" style="color:${r.bocXep2ChiHo > 0 ? '#dc2626' : '#94a3b8'};">${fmtMoney(r.bocXep2ChiHo)}</td>
+              <td class="num" style="color:#15803d; font-weight:700;">${fmtMoney(r.tmsDebitKhRate)}</td>
+              <td class="num">${fmtMoney(r.donGiaChuaVat)}</td>
+              <td class="num" style="color:${r.tongCpKhac > 0 ? '#dc2626' : '#94a3b8'};">${fmtMoney(r.tongCpKhac)}</td>
+              <td class="num" style="color:${r.veCauDuongDebit > 0 ? '#0f766e' : '#94a3b8'};">${fmtMoney(r.veCauDuongDebit)}</td>
+              <td class="num">${fmtMoney(r.chiPhiGnkdNewThu)}</td>
+              <td class="num">${fmtMoney(r.chiPhiGnkd)}</td>
+              <td class="num">${fmtMoney(r.chiPhiGnkdThucTe)}</td>
+              <td style="text-align:center; font-weight:600; color:${r.nhanVienGnkd !== 'Không' ? '#b91c1c' : '#64748b'};">${r.nhanVienGnkd}</td>
+              <td class="num">${fmtMoney(r.phiHandling)}</td>
+              <td class="num" style="color:${r.canTruViPham > 0 ? '#dc2626' : '#94a3b8'};">${fmtMoney(r.canTruViPham)}</td>
+              <td class="num">${fmtMoney(r.chiHoNangCont)}</td>
+              <td class="num">${fmtMoney(r.chiHoHaCont)}</td>
+
+              <!-- 8 cột Thực trả cho xe & Chênh lệch kết hợp -->
+              <td class="num" style="background:#f0f9ff; color:${r.cpBocXepChiHoXe > 0 ? '#dc2626' : '#94a3b8'};">${fmtMoney(r.cpBocXepChiHoXe)}</td>
+              <td class="num" style="background:#f0f9ff; color:#0369a1; font-weight:800;">
+                <div>${fmtMoney(r.tmsVendorRate)}</div>
+                ${diffHtml}
+              </td>
+              <td class="num" style="background:#f0f9ff;">${fmtMoney(r.doanGia1ChuaVat)}</td>
+              <td class="num" style="background:#f0f9ff; color:${r.chiPhiNeoXe > 0 ? '#dc2626' : '#94a3b8'};">${fmtMoney(r.chiPhiNeoXe)}</td>
+              <td class="num" style="background:#f0f9ff; color:${r.vecauDuongXe > 0 ? '#0369a1' : '#94a3b8'};">${fmtMoney(r.vecauDuongXe)}</td>
+              <td style="background:#f0f9ff; font-size:11.5px; color:#334155;">${r.combinedNote || '-'}</td>
+              <td class="num" style="background:#f0f9ff; color:#b91c1c;">${fmtMoney(r.chenhLechKetHop)}</td>
+              <td class="num" style="background:#faf5ff; color:#6d28d9; font-weight:800;">${fmtMoney(r.soTienTraXe || r.grandTotal)}</td>
+              <td class="num">${fmtMoney(r.donGiaPhuLuc)}</td>
+            </tr>
+          `;
+        }
 
         const debitKhHtml = (r.tmsDebitKhRate > 0 && r.tmsDebitKhRate !== r.tmsVendorRate)
           ? `<div style="font-size:10.5px; color:#64748b;" title="Đơn giá Debit Khách hàng trên TMS">Debit KH: ${fmtMoney(r.tmsDebitKhRate)}</div>`
@@ -2846,17 +3017,24 @@
         wb.creator = 'Vietsun TMS - Kế Toán VS';
         wb.created = new Date();
 
-        // Sheet 1: Chi tiết Booking & Chi Phí
+        // Sheet 1: Chi tiết Booking & Đầy đủ 23 Cột CHI PHÍ VẬN CHUYỂN PHÍA NAM (Chuẩn TMS Gốc)
         const ws1 = wb.addWorksheet('1. CHI TIET BOOKING & CHI PHI');
         const headers1 = [
-          'STT', 'ID PO', 'MÃ BOOKING / CODE PO', 'NGÀY THỰC HIỆN', 'NHẬP / XUẤT', 'CỠ CONT',
-          'SỐ CONTAINER', 'SỐ SEAL', 'KHÁCH HÀNG', 'KHO ĐÓNG / TRẢ', 'ĐỊA CHỈ CHI TIẾT', 'TỈNH TMS',
-          'MÃ KHO', 'MÃ TUYẾN ĐƯỜNG', 'KHU VỰC / KCN', 'TỈNH (SAU SÁP NHẬP)',
-          'ĐƠN VỊ VẬN TẢI', 'SỐ XE', 'TÀI XẾ', 'SĐT TÀI XẾ', 'TỶ LỆ KẾT HỢP',
-          'CƯỚC CHUẨN VIETSUN', 'CƯỚC BẢNG GIÁ (THEO ĐVVT)', 'ĐƠN GIÁ VENDOR (TMS)', 'ĐƠN GIÁ DEBIT KH (TMS)',
-          'CHÊNH LỆCH GIÁ (TMS - BẢNG GIÁ)', 'CHI HỘ BỐC XẾP (TMS)', 'VÉ CẦU ĐƯỜNG (TMS)',
-          'PHÍ NEO XE / ĐƯỜNG CẤM / KHÁC (TMS)', 'TỔNG PHÁT SINH (TMS)', 'PHÁT SINH TÀI XẾ BÁO (APP)',
-          'TỔNG CỘNG CHI PHÍ (CƯỚC + PHÁT SINH)', 'GHI CHÚ TMS & CHI PHÍ'
+          'STT', 'ID CONT', 'MÃ BOOKING / CODE PO', 'TÀU', 'CHUYẾN', 'NGÀY ĐÓNG/TRẢ',
+          'KHÁCH HÀNG', 'KHO ĐÓNG - TRẢ HÀNG', 'ĐỊA CHỈ', 'TỈNH TMS', 'X/N', 'CHỦ HÀNG',
+          'SỐ CONT', 'SỐ SEAL', '20', '40', 'NƠI LẤY', 'NƠI HẠ',
+          'MÃ KHO (2026)', 'MÃ TUYẾN ĐƯỜNG', 'KHU VỰC / KCN', 'TỈNH (SAU SÁP NHẬP)',
+          'SỐ XE', 'TÀI XẾ', 'SĐT TÀI XẾ', 'ĐƠN VỊ VẬN CHUYỂN', 'HÌNH THỨC KẾT HỢP',
+          'CƯỚC CHUẨN VIETSUN (BẢNG GIÁ)', 'CƯỚC BẢNG GIÁ (THEO ĐVVT)',
+          // 23 cột CHI PHÍ VẬN CHUYỂN PHÍA NAM trên TMS Gốc
+          'BỐC XẾP GIAO NHẬN CHI', 'BỐC XẾP XE CHI (DEBIT)', 'ĐƠN GIÁ DEBIT', 'ĐƠN GIÁ CHƯA VAT',
+          'NEO XE, ĐƯỜNG CẤM, KHÁC', 'VÉ CẦU ĐƯỜNG (DEBIT)',
+          'CP GNKD NEW (Thu)', 'CHI PHÍ GNKĐ', 'CHI PHÍ GNKD THỰC TẾ', 'NHÂN VIÊN GNKĐ',
+          'PHÍ HANDLING', 'CẤN TRỪ TIỀN VI PHẠM', 'CHI HỘ NÂNG CONT', 'CHI HỘ HẠ CONT',
+          'BỐC XẾP XE CHI (TRẢ XE)', 'ĐƠN GIÁ THỰC TRẢ CHO XE', 'ĐƠN GIÁ CHƯA BAO GỒM VAT',
+          'CHI PHÍ NEO XE/ĐƯỜNG CẤM, KHÁC', 'VÉ CẦU ĐƯỜNG (TRẢ XE)',
+          'GHI CHÚ KẾ TOÁN', 'CHÊNH LỆCH KẾT HỢP', 'SỐ TIỀN TRẢ CHO XE CÓ VAT', '%VAT', 'GIÁ PHỤ LỤC',
+          'CHÊNH LỆCH (THỰC TRẢ TMS - BẢNG GIÁ)', 'TỔNG CỘNG CHI PHÍ'
         ];
         const hRow1 = ws1.addRow(headers1);
         hRow1.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -2867,8 +3045,7 @@
 
         ktFilteredRows.forEach((r, idx) => {
           const it = r.item;
-          const xn = it.xuatNhapPo === 'X' ? 'XUẤT' : 'NHẬP';
-          const sizeStr = r.is40 ? "40'" : "20'";
+          const xn = it.xuatNhapPo === 'X' ? 'X' : 'N';
           const dStr = it._tripDateIso || it.ngayTraHang || it.timeThucHien || '';
           const dv = (it.donViVcPo || 'CHƯA GÁN ĐVVT').trim().toUpperCase();
 
@@ -2876,7 +3053,9 @@
             byCarrier[dv] = {
               totalTrips: 0, nhap: 0, xuat: 0, c20: 0, c40: 0,
               stdFreight: 0, tmsVendorRate: 0, tmsDebitKh: 0,
-              bocXep: 0, veCd: 0, cpKhac: 0, totalExp: 0, grandTotal: 0
+              bocXepGn: 0, bocXepXe: 0, veCd: 0, cpKhac: 0,
+              gnkdThucTe: 0, handling: 0, canTru: 0, nangHa: 0,
+              totalExp: 0, grandTotal: 0
             };
           }
           const g = byCarrier[dv];
@@ -2886,9 +3065,14 @@
           g.stdFreight += r.stdRateForCarrier;
           g.tmsVendorRate += r.tmsVendorRate;
           g.tmsDebitKh += r.tmsDebitKhRate;
-          g.bocXep += r.bocXep;
+          g.bocXepGn += r.bocXep1GnChi;
+          g.bocXepXe += r.bocXep;
           g.veCd += r.veCauDuong;
           g.cpKhac += r.cpKhac;
+          g.gnkdThucTe += r.chiPhiGnkdThucTe;
+          g.handling += r.phiHandling;
+          g.canTru += r.canTruViPham;
+          g.nangHa += (r.chiHoNangCont + r.chiHoHaCont);
           g.totalExp += r.totalExpTms;
           g.grandTotal += r.grandTotal;
 
@@ -2896,36 +3080,59 @@
             idx + 1,
             it.idPo || '',
             it.codePo || '',
+            it.tauPo || '',
+            it.chuyenPo || '',
             dStr,
-            xn,
-            sizeStr,
-            it.soContPo || '',
-            it.soSealPo || '',
             it.tenKhachPo || '',
             it.khoNhanHangPo || '',
             it.diaChiNhanPo || '',
             it.tinhNhanPo || '',
+            xn,
+            it.chuHangPo || '',
+            it.soContPo || '',
+            it.soSealPo || '',
+            r.is40 ? 0 : 1,
+            r.is40 ? 1 : 0,
+            it.noiLayContPo || '',
+            it.noiHaContPo || '',
             r.wh ? r.wh.wh_code : '',
             r.isException ? 'NGOAI-LE' : (r.route ? r.route.route_code : ''),
             r.isException ? 'Kho Ngoại Lệ' : (r.route ? r.route.dia_diem : ''),
             r.route ? r.route.tinh : (r.wh ? r.wh.tinh_tms : ''),
-            dv,
             it.soXePo || '',
             it._driverName || '',
             it._driverPhone || '',
+            dv,
             it._tyLeKetHop || it.hinhThucKHopPo || '',
             r.vsStdRate,
             r.stdRateForCarrier,
-            r.tmsVendorRate,
+            // 23 cột CHI PHÍ VẬN CHUYỂN PHÍA NAM
+            r.bocXep1GnChi,
+            r.bocXep2ChiHo,
             r.tmsDebitKhRate,
+            r.donGiaChuaVat,
+            r.tongCpKhac,
+            r.veCauDuongDebit,
+            r.chiPhiGnkdNewThu,
+            r.chiPhiGnkd,
+            r.chiPhiGnkdThucTe,
+            r.nhanVienGnkd,
+            r.phiHandling,
+            r.canTruViPham,
+            r.chiHoNangCont,
+            r.chiHoHaCont,
+            r.cpBocXepChiHoXe,
+            r.tmsVendorRate,
+            r.doanGia1ChuaVat,
+            r.chiPhiNeoXe,
+            r.vecauDuongXe,
+            r.combinedNote || '',
+            r.chenhLechKetHop,
+            r.soTienTraXe || r.tmsVendorRate,
+            r.vatPo,
+            r.donGiaPhuLuc,
             r.rateDiff,
-            r.bocXep,
-            r.veCauDuong,
-            r.cpKhac,
-            r.totalExpTms,
-            r.driverExp,
-            r.grandTotal,
-            r.combinedNote || ''
+            r.grandTotal
           ]);
         });
 
@@ -2933,8 +3140,10 @@
         const ws2 = wb.addWorksheet('2. TONG HOP THEO DVVT');
         const hRow2 = ws2.addRow([
           'STT', 'ĐƠN VỊ VẬN TẢI (ĐVVT)', 'TỔNG CHUYẾN', 'HÀNG NHẬP', 'HÀNG XUẤT', "CONT 20'", "CONT 40'",
-          'TỔNG CƯỚC BẢNG GIÁ', 'TỔNG ĐƠN GIÁ VENDOR (TMS)', 'TỔNG DEBIT KH (TMS)',
-          'CHI HỘ BỐC XẾP', 'VÉ CẦU ĐƯỜNG', 'NEO XE / ĐƯỜNG CẤM / KHÁC', 'TỔNG PHÁT SINH', 'TỔNG CỘNG CHI PHÍ'
+          'TỔNG CƯỚC BẢNG GIÁ', 'TỔNG ĐƠN GIÁ THỰC TRẢ XE (TMS)', 'TỔNG ĐƠN GIÁ DEBIT KH (TMS)',
+          'BỐC XẾP GN CHI', 'BỐC XẾP XE CHI', 'NEO XE / ĐƯỜNG CẤM / KHÁC', 'VÉ CẦU ĐƯỜNG',
+          'CP GNKD THỰC TẾ', 'PHÍ HANDLING', 'CHI HỘ NÂNG / HẠ CONT', 'CẤN TRỪ VI PHẠM',
+          'TỔNG PHÁT SINH', 'TỔNG CỘNG CHI PHÍ'
         ]);
         hRow2.font = { bold: true, color: { argb: 'FFFFFFFF' } };
         hRow2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } };
@@ -2945,7 +3154,9 @@
             ws2.addRow([
               idx + 1, dv, g.totalTrips, g.nhap, g.xuat, g.c20, g.c40,
               g.stdFreight, g.tmsVendorRate, g.tmsDebitKh,
-              g.bocXep, g.veCd, g.cpKhac, g.totalExp, g.grandTotal
+              g.bocXepGn, g.bocXepXe, g.cpKhac, g.veCd,
+              g.gnkdThucTe, g.handling, g.nangHa, g.canTru,
+              g.totalExp, g.grandTotal
             ]);
           });
 

@@ -915,18 +915,30 @@ function parse_tms_ajax_debit_html($html, &$map) {
     if (!$html) return;
     $numFields = [
         'donGiaDebitPo',
+        'donGiaChuaVatPo',
         'donGia1ThucTraChoxePo',
+        'doanGia1ChuaVATpo',
         'donGIaPhuLuc',
+        'bocXep1GnChiPo',
         'bocXep2ChiHoPo',
         'cpBocXepChiHoPo',
-        'bocXep1GnChiPo',
         'veCauDuongPo',
+        'vecauDuong1Po',
+        'tongcpkhac',
         'neoXeDuongCamPo',
         'chiPhiNeoXePo',
         'cpduongcam',
         'cpkhacpo',
+        'chiPhiGnkdPo',
+        'phiGnkdKtoan',
+        'phiGnkdThu',
+        'phiHandlingPo',
+        'canTruViPhanPo',
         'chiHoNangContPo',
         'chiHoHaContPo',
+        'chenhlechkethop',
+        'sotientraxe',
+        'vatPo',
         'tienCuocPo',
         'cuocVanChuyenPo'
     ];
@@ -934,15 +946,18 @@ function parse_tms_ajax_debit_html($html, &$map) {
         if (preg_match_all('/id="' . $prefix . '(\d+)"[^>]*value="([^"]*)"/i', $html, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $m) {
                 $id = $m[1];
-                $num = (int)preg_replace('/[^0-9]/', '', $m[2]);
+                $rawNumStr = trim($m[2]);
+                $isNeg = (strpos($rawNumStr, '-') !== false);
+                $num = (int)preg_replace('/[^0-9]/', '', $rawNumStr);
+                if ($isNeg && $num > 0) $num = -$num;
                 if (!isset($map[$id])) $map[$id] = [];
-                if ($num > 0 || !isset($map[$id][$prefix])) {
+                if ($num !== 0 || !isset($map[$id][$prefix])) {
                     $map[$id][$prefix] = $num;
                 }
             }
         }
     }
-    $strFields = ['ghiChuPo', 'hinhThucKHopPo', 'notePo'];
+    $strFields = ['ghiChuPo', 'ghiChuKeToanPo', 'hinhThucKHopPo', 'notePo'];
     foreach ($strFields as $prefix) {
         if (preg_match_all('/id="' . $prefix . '(\d+)"[^>]*value="([^"]*)"/i', $html, $matches, PREG_SET_ORDER)) {
             foreach ($matches as $m) {
@@ -953,6 +968,24 @@ function parse_tms_ajax_debit_html($html, &$map) {
                     $map[$id][$prefix] = $val;
                 }
             }
+        }
+    }
+    // Parse NHÂN VIÊN GNKĐ (uses data-id="...<<|ID<<|nhanVienGnkdPo<<|...")
+    if (preg_match_all('/value="([^"]*)"[^>]*data-id="[^"]*<<\|(\d+)<<\|nhanVienGnkdPo<<\|/i', $html, $gnkdMatches, PREG_SET_ORDER)) {
+        foreach ($gnkdMatches as $gm) {
+            $id = $gm[2];
+            $val = html_entity_decode(trim($gm[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            if (!isset($map[$id])) $map[$id] = [];
+            if ($val !== '' || !isset($map[$id]['nhanVienGnkdPo'])) {
+                $map[$id]['nhanVienGnkdPo'] = $val;
+            }
+        }
+    }
+    // Parse CHECK Kế toán (a-trangThaiKtoan-ID)
+    if (preg_match_all('/id="a-trangThaiKtoan-(\d+)"[^>]*checked/i', $html, $chkMatches)) {
+        foreach ($chkMatches[1] as $id) {
+            if (!isset($map[$id])) $map[$id] = [];
+            $map[$id]['trangThaiKtoan'] = 1;
         }
     }
 }
@@ -1051,6 +1084,48 @@ function build_date_windows($startDate, $endDate, $windowDays = 10) {
         $cur = $winEnd + 86400;
     }
     return $windows;
+}
+
+// Lấy đầy đủ 23 cột CHI PHÍ VẬN CHUYỂN PHÍA NAM cho cả Hàng Nhập và Hàng Xuất chỉ trong 1 chế độ cv=5 duy nhất (không cần đổi kieuXemTrucking trên TMS!)
+function fetch_tms_ketoan_cv5_map($startDate, $endDate) {
+    global $COOKIE_FILE;
+    if (!file_exists($COOKIE_FILE)) {
+        vietsun_login();
+    }
+    $userString = 'trucking14<<|7<<|a0b923820d<<|1<<|0.0.0.0.0.0.1.0.1.1.0.1.0.1.';
+    $map = [];
+    // cv=5 có LIMIT 1500 dòng (~250 dòng/ngày => cửa sổ 4 ngày ~1000 dòng, an toàn tuyệt đối dưới trần 1500)
+    $windows = build_date_windows($startDate, $endDate, 4);
+    $retriedLogin = false;
+    foreach ($windows as $win) {
+        $html5 = call_tms_post('index-ajax.php', [
+            'userString' => $userString,
+            'cv'         => 5,
+            'idxem'      => 0,
+            'kieuxem'    => 0,
+            'loaiload'   => 4,
+            'startDate'  => $win[0],
+            'endDate'    => $win[1],
+            'widthmh'    => 1920
+        ]);
+        if (!$retriedLogin && strpos($html5, 'donGiaDebitPo') === false && strpos($html5, 'phiHandlingPo') === false) {
+            $retriedLogin = true;
+            vietsun_login();
+            $html5 = call_tms_post('index-ajax.php', [
+                'userString' => $userString,
+                'cv'         => 5,
+                'idxem'      => 0,
+                'kieuxem'    => 0,
+                'loaiload'   => 4,
+                'startDate'  => $win[0],
+                'endDate'    => $win[1],
+                'widthmh'    => 1920
+            ]);
+        }
+        parse_tms_ajax_debit_html($html5, $map);
+        $html5 = null;
+    }
+    return $map;
 }
 
 function fetch_tms_debit_map($startDate, $endDate, $forceRefresh = false) {
@@ -3834,34 +3909,61 @@ try {
                 ];
             };
 
-            // Helper rút gọn (Slim) 1 booking chỉ giữ đúng các trường Kế Toán VS cần (giảm 75% dung lượng JSON)
+            // Helper rút gọn (Slim) 1 booking kèm ĐẦY ĐỦ 23 cột CHI PHÍ VẬN CHUYỂN PHÍA NAM của Kế Toán VS
             $makeSlimBooking = function($item, $dInfo, &$maps) {
                 $idPo = (string)($item['idPo'] ?? '');
                 $dIso = get_shipment_date_iso($item);
                 $is40 = ((int)($item['cont40Po'] ?? 0) > 0) ? 1 : 0;
                 $xn   = (($item['xuatNhapPo'] ?? 'N') === 'X') ? 'X' : 'N';
 
-                $donGiaDebit = isset($dInfo['donGiaDebitPo']) && $dInfo['donGiaDebitPo'] > 0
+                // 1. Nhóm Chi phí / Doanh thu Debit (Cột Xanh lá trên TMS cv=5)
+                $bocXep1GnChi  = (int)($dInfo['bocXep1GnChiPo'] ?? ($item['bocXep1GnChiPo'] ?? 0));
+                $bocXep2ChiHo  = (int)($dInfo['bocXep2ChiHoPo'] ?? ($item['bocXep2ChiHoPo'] ?? 0));
+                $donGiaDebit   = isset($dInfo['donGiaDebitPo']) && $dInfo['donGiaDebitPo'] > 0
                     ? (int)$dInfo['donGiaDebitPo']
                     : (isset($item['donGiaDebitPo']) && $item['donGiaDebitPo'] > 0 ? (int)$item['donGiaDebitPo'] : 0);
+                $donGiaChuaVat = (int)($dInfo['donGiaChuaVatPo'] ?? ($item['donGiaChuaVatPo'] ?? 0));
+                $tongCpKhac    = (int)($dInfo['tongcpkhac'] ?? ($item['tongcpkhac'] ?? 0));
+                $veCauDuong    = isset($dInfo['veCauDuongPo']) ? (int)$dInfo['veCauDuongPo'] : (int)($item['_veCauDuong'] ?? 0);
 
-                $donGiaVendor = isset($dInfo['donGia1ThucTraChoxePo']) && $dInfo['donGia1ThucTraChoxePo'] > 0
+                // 2. Nhóm GNKĐ, Handling, Cấn trừ, Nâng/Hạ
+                $chiPhiGnkd    = (int)($dInfo['chiPhiGnkdPo'] ?? ($item['chiPhiGnkdPo'] ?? 0)); // CP GNKD NEW (Thu)
+                $phiGnkdKtoan  = (int)($dInfo['phiGnkdKtoan'] ?? ($item['phiGnkdKtoan'] ?? 0)); // CHI PHÍ GNKĐ
+                $phiGnkdThu    = (int)($dInfo['phiGnkdThu'] ?? ($item['phiGnkdThu'] ?? 0));     // CHI PHÍ GNKD THỰC TẾ
+                $nhanVienGnkd  = trim((string)($dInfo['nhanVienGnkdPo'] ?? ($item['nhanVienGnkdPo'] ?? '')));
+                $phiHandling   = (int)($dInfo['phiHandlingPo'] ?? ($item['phiHandlingPo'] ?? 0));
+                $canTruViPham  = (int)($dInfo['canTruViPhanPo'] ?? ($item['canTruViPhanPo'] ?? 0));
+                $chiHoNangCont = (int)($dInfo['chiHoNangContPo'] ?? ($item['chiHoNangContPo'] ?? 0));
+                $chiHoHaCont   = (int)($dInfo['chiHoHaContPo'] ?? ($item['chiHoHaContPo'] ?? 0));
+
+                // 3. Nhóm Thực trả cho xe / Vendor (Cột Hồng/Xanh nhạt trên TMS cv=5)
+                $cpBocXepChiHo = (int)($dInfo['cpBocXepChiHoPo'] ?? ($item['cpBocXepChiHoPo'] ?? 0));
+                $donGiaVendor  = isset($dInfo['donGia1ThucTraChoxePo']) && $dInfo['donGia1ThucTraChoxePo'] > 0
                     ? (int)$dInfo['donGia1ThucTraChoxePo']
                     : (isset($item['donGia1ThucTraChoxePo']) && $item['donGia1ThucTraChoxePo'] > 0 ? (int)$item['donGia1ThucTraChoxePo'] : 0);
+                $doanGia1ChuaVat = (int)($dInfo['doanGia1ChuaVATpo'] ?? ($item['doanGia1ChuaVATpo'] ?? 0));
+                $chiPhiNeoXe   = (int)($dInfo['chiPhiNeoXePo'] ?? ($item['chiPhiNeoXePo'] ?? 0));
+                $vecauDuong1   = (int)($dInfo['vecauDuong1Po'] ?? ($item['vecauDuong1Po'] ?? 0));
+                $ghiChuKeToan  = trim((string)($dInfo['ghiChuKeToanPo'] ?? ($item['ghiChuKeToanPo'] ?? '')));
+                $chenhLechKH   = (int)($dInfo['chenhlechkethop'] ?? ($item['chenhlechkethop'] ?? 0));
+                $soTienTraXe   = (int)($dInfo['sotientraxe'] ?? ($item['sotientraxe'] ?? 0));
+                $vatPo         = isset($dInfo['vatPo']) ? (int)$dInfo['vatPo'] : (isset($item['vatPo']) ? (int)$item['vatPo'] : 8);
+                $donGiaPhuLuc  = (int)($dInfo['donGIaPhuLuc'] ?? ($item['donGIaPhuLuc'] ?? 0));
+                $trangThaiKtoan = !empty($dInfo['trangThaiKtoan']) ? 1 : (!empty($item['trangThaiKtoan']) ? 1 : 0);
 
-                $tmsBocXep = max(
-                    (int)($dInfo['bocXep2ChiHoPo'] ?? 0),
-                    (int)($dInfo['cpBocXepChiHoPo'] ?? 0),
-                    (int)($item['_tmsBocXep'] ?? 0)
-                );
+                // Tổng hợp tương thích ngược cho các trường cũ
+                $tmsBocXep = max($bocXep2ChiHo, $cpBocXepChiHo, (int)($item['_tmsBocXep'] ?? 0));
                 $drvBocXep = (int)($maps['drvBocXepMap'][$idPo] ?? ($item['_driverBocXep'] ?? 0));
 
                 $sumCont3 = (int)($dInfo['neoXeDuongCamPo'] ?? 0) + (int)($dInfo['cpduongcam'] ?? 0) + (int)($dInfo['cpkhacpo'] ?? 0);
-                $xeCol = (int)($dInfo['chiPhiNeoXePo'] ?? 0);
-                $tmsCpKhac = $sumCont3 > 0 ? $sumCont3 : ($xeCol > 0 ? $xeCol : (int)($item['_tmsCpKhac'] ?? 0));
+                $tmsCpKhac = $tongCpKhac > 0 ? $tongCpKhac : ($chiPhiNeoXe > 0 ? $chiPhiNeoXe : ($sumCont3 > 0 ? $sumCont3 : (int)($item['_tmsCpKhac'] ?? 0)));
                 $drvCpKhac = (int)($maps['drvCpKhacMap'][$idPo] ?? ($item['_driverCpKhac'] ?? 0));
 
-                $veCauDuong = isset($dInfo['veCauDuongPo']) ? (int)$dInfo['veCauDuongPo'] : (int)($item['_veCauDuong'] ?? 0);
+                if ($tongCpKhac === 0 && $tmsCpKhac > 0) $tongCpKhac = $tmsCpKhac;
+                if ($chiPhiNeoXe === 0 && $tmsCpKhac > 0) $chiPhiNeoXe = $tmsCpKhac;
+                if ($bocXep2ChiHo === 0 && $tmsBocXep > 0) $bocXep2ChiHo = $tmsBocXep;
+                if ($cpBocXepChiHo === 0 && $tmsBocXep > 0) $cpBocXepChiHo = $tmsBocXep;
+                $effVeCd = max($veCauDuong, $vecauDuong1);
                 $drvTotalExp = (int)($maps['drvTotalExpMap'][$idPo] ?? ($item['_driverPhatSinh'] ?? 0));
 
                 $kh = trim($dInfo['hinhThucKHopPo'] ?? ($item['hinhThucKHopPo'] ?? ($item['_tyLeKetHop'] ?? '')));
@@ -3890,6 +3992,9 @@ try {
                     '_tripDateIso'           => $dIso,
                     'ngayTraHang'            => $dIso,
                     'xuatNhapPo'             => $xn,
+                    'chuHangPo'              => (string)($item['chuHangPo'] ?? ''),
+                    'tauPo'                  => (string)($item['tauPo'] ?? ''),
+                    'chuyenPo'               => (string)($item['chuyenPo'] ?? ''),
                     'cont40Po'               => $is40,
                     'soContPo'               => (string)($item['soContPo'] ?? ''),
                     'soSealPo'               => (string)($item['soSealPo'] ?? ''),
@@ -3897,14 +4002,41 @@ try {
                     'khoNhanHangPo'          => (string)($item['khoNhanHangPo'] ?? ''),
                     'diaChiNhanPo'           => (string)($item['diaChiNhanPo'] ?? ''),
                     'tinhNhanPo'             => (string)($item['tinhNhanPo'] ?? ''),
+                    'noiLayContPo'           => (string)($item['noiLayContPo'] ?? ''),
+                    'noiHaContPo'            => (string)(($item['noiHaContPo'] ?? '') ?: ($item['cangDiPo'] ?? ($item['cangDenPo'] ?? ''))),
                     'donViVcPo'              => (string)($item['donViVcPo'] ?? ''),
                     'soXePo'                 => (string)($item['soXePo'] ?? ''),
                     '_driverName'            => $drvName,
                     '_driverPhone'           => $drvPhone,
                     'hinhThucKHopPo'         => $kh,
                     '_tyLeKetHop'            => $kh,
+                    // Đầy đủ 23 cột CHI PHÍ VẬN CHUYỂN PHÍA NAM (cv=5)
+                    'trangThaiKtoan'         => $trangThaiKtoan,
+                    'bocXep1GnChiPo'         => $bocXep1GnChi,
+                    'bocXep2ChiHoPo'         => $bocXep2ChiHo,
                     'donGiaDebitPo'          => $donGiaDebit > 0 ? $donGiaDebit : null,
+                    'donGiaChuaVatPo'        => $donGiaChuaVat,
+                    'tongcpkhac'             => $tongCpKhac,
+                    'veCauDuongPo'           => $veCauDuong,
+                    'chiPhiGnkdPo'           => $chiPhiGnkd,
+                    'phiGnkdKtoan'           => $phiGnkdKtoan,
+                    'phiGnkdThu'             => $phiGnkdThu,
+                    'nhanVienGnkdPo'         => $nhanVienGnkd,
+                    'phiHandlingPo'          => $phiHandling,
+                    'canTruViPhanPo'         => $canTruViPham,
+                    'chiHoNangContPo'        => $chiHoNangCont,
+                    'chiHoHaContPo'          => $chiHoHaCont,
+                    'cpBocXepChiHoPo'        => $cpBocXepChiHo,
                     'donGia1ThucTraChoxePo'  => $donGiaVendor > 0 ? $donGiaVendor : null,
+                    'doanGia1ChuaVATpo'      => $doanGia1ChuaVat,
+                    'chiPhiNeoXePo'          => $chiPhiNeoXe,
+                    'vecauDuong1Po'          => $vecauDuong1,
+                    'ghiChuKeToanPo'         => $ghiChuKeToan,
+                    'chenhlechkethop'        => $chenhLechKH,
+                    'sotientraxe'            => $soTienTraXe,
+                    'vatPo'                  => $vatPo,
+                    'donGIaPhuLuc'           => $donGiaPhuLuc,
+                    // Trường tổng hợp
                     '_debitRate'             => $donGiaVendor > 0 ? $donGiaVendor : null,
                     '_tmsBocXep'             => $tmsBocXep,
                     '_driverBocXep'          => $drvBocXep,
@@ -3912,7 +4044,7 @@ try {
                     '_tmsCpKhac'             => $tmsCpKhac,
                     '_driverCpKhac'          => $drvCpKhac,
                     '_cpKhac'                => $tmsCpKhac > 0 ? $tmsCpKhac : $drvCpKhac,
-                    '_veCauDuong'            => $veCauDuong,
+                    '_veCauDuong'            => $effVeCd,
                     '_driverPhatSinh'        => $drvTotalExp,
                     '_driverExpDetail'       => isset($maps['drvExpDetailsMap'][$idPo]) ? implode('; ', $maps['drvExpDetailsMap'][$idPo]) : ($item['_driverExpDetail'] ?? ''),
                     '_expenseNote'           => $maps['drvExpNoteMap'][$idPo] ?? ($item['_expenseNote'] ?? ''),
@@ -3964,8 +4096,9 @@ try {
                     }
                 }
 
-                // 2. Chỉ gọi TMS index-ajax.php cho ĐÚNG cửa sổ ngắn [winStart, winEnd] này
-                $debitMap = fetch_tms_debit_map($winStart, $winEnd, true);
+                // 2. Gọi trực tiếp chế độ cv=5 (CHI PHÍ VẬN CHUYỂN PHÍA NAM) cho ĐÚNG cửa sổ ngắn [winStart, winEnd]
+                // Lấy cả Hàng Nhập & Hàng Xuất + đầy đủ 23 cột chi phí chỉ trong 1 lần gọi (không cần đổi kieuXemTrucking trên TMS!)
+                $debitMap = fetch_tms_ketoan_cv5_map($winStart, $winEnd);
                 $maps = $buildDriverAndExpenseMaps($pdo);
 
                 // 3. Upsert vào bảng MySQL tms_ketoan_bookings_cache
@@ -4114,6 +4247,7 @@ try {
             $c20Count = 0;
             $c40Count = 0;
             $hasAnyCostCount = 0;
+            $hasNewCv5SchemaCount = 0;
             $lastUpdatedAt = '';
 
             $stFast = $pdo->prepare("
@@ -4138,11 +4272,14 @@ try {
                     || strpos($pJson, '"_tmsCpKhac":0') === false) {
                     $hasAnyCostCount++;
                 }
+                if (strpos($pJson, '"phiHandlingPo"') !== false) {
+                    $hasNewCv5SchemaCount++;
+                }
                 $jsonFragments[] = $pJson;
             }
 
             $totalCount = count($jsonFragments);
-            if ($totalCount > 0 && $hasAnyCostCount === 0) {
+            if ($totalCount > 0 && ($hasAnyCostCount === 0 || $hasNewCv5SchemaCount < ($totalCount * 0.5))) {
                 $needsCostSync = true;
             }
 
