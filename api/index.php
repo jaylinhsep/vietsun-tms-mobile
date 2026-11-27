@@ -1054,7 +1054,7 @@ function build_date_windows($startDate, $endDate, $windowDays = 10) {
 function fetch_tms_debit_map($startDate, $endDate, $forceRefresh = false) {
     global $COOKIE_FILE;
     $safeKey = preg_replace('/[^0-9\-]/', '', $startDate . '_' . $endDate);
-    $cacheFile = sys_get_temp_dir() . '/vietsun_debit_map_v7_' . $safeKey . '.json';
+    $cacheFile = sys_get_temp_dir() . '/vietsun_debit_map_v8_' . $safeKey . '.json';
     // Cache bảng giá 2 ngày (48 giờ = 172800s) theo yêu cầu để giảm tải máy chủ và mở tab siêu tốc
     if (!$forceRefresh && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 172800)) {
         $cached = json_decode(file_get_contents($cacheFile), true);
@@ -1190,7 +1190,7 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false, $inc
     $cacheType = $includeDebit ? 'full' : 'nodbt';
     $rangeSuffix = ($fromTs && $toTs) ? ('_' . date('Ymd', $fromTs) . '_' . date('Ymd', $toTs)) : '';
     $cacheDateKey = date('Y-m-d', $baseTs) . $rangeSuffix;
-    $cacheFile = sys_get_temp_dir() . "/vietsun_shipments_v7_{$cacheType}_{$cacheDateKey}.json";
+    $cacheFile = sys_get_temp_dir() . "/vietsun_shipments_v8_{$cacheType}_{$cacheDateKey}.json";
     $cacheTtl = 60;
 
     $merged = null;
@@ -1297,12 +1297,13 @@ function fetch_vietsun_shipments($targetDate = null, $forceRefresh = false, $inc
         $item['_driverBocXep'] = $drvBocXep;
         $item['_chiHoBocXep'] = $tmsBocXep > 0 ? $tmsBocXep : $drvBocXep;
 
-        // Chi phí phát sinh khác (Neo xe, đường cấm, nâng hạ, phí khác...)
-        $tmsCpKhac = (int)($dInfo['cpkhacpo'] ?? 0)
-            + max((int)($dInfo['neoXeDuongCamPo'] ?? 0), (int)($dInfo['chiPhiNeoXePo'] ?? 0))
+        // Chi phí phát sinh khác: Chỉ lấy tổng của 3 dòng [PHÍ NEO XE (neoXeDuongCamPo) + ĐƯỜNG CẤM (cpduongcam) + PHÍ KHÁC (cpkhacpo)]
+        // hoặc cột gộp [NEO XE, ĐC - XE (chiPhiNeoXePo)]. Tuyệt đối KHÔNG cộng dồn cả hai để tránh bị nhân đôi!
+        $sumCont3 = (int)($dInfo['neoXeDuongCamPo'] ?? 0)
             + (int)($dInfo['cpduongcam'] ?? 0)
-            + (int)($dInfo['chiHoNangContPo'] ?? 0)
-            + (int)($dInfo['chiHoHaContPo'] ?? 0);
+            + (int)($dInfo['cpkhacpo'] ?? 0);
+        $xeCol = (int)($dInfo['chiPhiNeoXePo'] ?? 0);
+        $tmsCpKhac = $sumCont3 > 0 ? $sumCont3 : $xeCol;
         $drvCpKhac = (int)($drvCpKhacMap[(string)$idPo] ?? 0);
         $item['_tmsCpKhac'] = $tmsCpKhac;
         $item['_driverCpKhac'] = $drvCpKhac;
