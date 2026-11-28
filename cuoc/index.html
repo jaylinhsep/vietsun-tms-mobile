@@ -569,7 +569,7 @@
       </div>
     </div>
     <div class="top-actions">
-      <button class="btn" style="background:linear-gradient(135deg,#0f766e 0%,#0d9488 100%);color:#fff;box-shadow:0 2px 8px rgba(13,148,136,0.35);" onclick="openKeToanVsTab()">📊 Kế Toán VS (30 Ngày)</button>
+      <button class="btn" style="background:linear-gradient(135deg,#0f766e 0%,#0d9488 100%);color:#fff;box-shadow:0 2px 8px rgba(13,148,136,0.35);" onclick="openKeToanVsTab()">📊 Kế Toán VS (Lưu Trữ 6 Tháng)</button>
       <button class="btn btn-purple" onclick="openVendorModal()">🚛 Thêm Vendor & Áp Nhanh Giá</button>
       <button class="btn btn-warning" onclick="openRouteModal()">➕ Thêm Mã Tuyến</button>
       <button class="btn btn-success" onclick="openWarehouseModal()">🏭 Thêm Mã Kho</button>
@@ -618,8 +618,8 @@
           ⚡ 3. Tra Cứu & Áp Giá Cước Chuyến Hàng (Live TMS)
         </button>
         <button class="tab-btn" id="tabBtnKeToanVs" onclick="switchTab('ketoanvs')" style="border:1.5px solid #0d9488; color:#0f766e;">
-          📊 4. Kế Toán VS (Booking & Report Chi Phí 30 Ngày)
-          <span class="tab-count" id="cntKeToanVs" style="background:#ccfbf1;color:#0f766e;">30d</span>
+          📊 4. Kế Toán VS (Lưu Trữ 6 Tháng & Report 23 Cột Chi Phí)
+          <span class="tab-count" id="cntKeToanVs" style="background:#ccfbf1;color:#0f766e;">6M</span>
         </button>
       </div>
 
@@ -824,8 +824,13 @@
           <input type="date" id="ktFromDate" class="input" style="font-weight:700;" onchange="onKtDateInputChange()" />
           <span style="font-weight:700; color:#64748b;">➔</span>
           <input type="date" id="ktToDate" class="input" style="font-weight:700;" onchange="onKtDateInputChange()" />
-          <button class="btn btn-sm btn-light" onclick="setKtQuickDays(30)" title="Lấy 30 ngày gần nhất">30 ngày trước</button>
+          <button class="btn btn-sm btn-light" onclick="setKtQuickDays(30)" title="Xem 30 ngày gần nhất">1 Tháng</button>
+          <button class="btn btn-sm btn-light" onclick="setKtQuickDays(90)" title="Xem 3 tháng gần nhất (90 ngày)">3 Tháng</button>
+          <button class="btn btn-sm" style="background:#ccfbf1; color:#0f766e; border:1px solid #14b8a6; font-weight:800;" onclick="setKtQuickDays(180)" title="Xem toàn bộ 6 tháng gần nhất (180 ngày) từ MySQL Server">⭐ 6 Tháng (180d)</button>
           <button class="btn btn-sm btn-light" onclick="setKtQuickCycle()" title="Lấy theo chu kỳ kế toán 26 tháng trước -> 25 tháng này">Kỳ 26➔25</button>
+          <select id="ktMonthQuickSelect" class="select" onchange="onKtQuickMonthSelect(this.value)" style="font-weight:700; color:#0f766e; border-color:#5eead4;" title="Chọn nhanh từng tháng hoặc kỳ kế toán trong 6 tháng gần nhất">
+            <option value="">🗓️ Chọn nhanh Tháng...</option>
+          </select>
 
           <select id="ktFlowFilter" class="select" onchange="renderKeToanVsTable()">
             <option value="ALL">🔄 Cả Nhập & Xuất</option>
@@ -856,8 +861,9 @@
         </div>
 
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-          <button class="btn" style="background:#0284c7; color:#fff;" id="btnKtSync7d" onclick="syncKeToanVsChunked(7)" title="Chỉ đồng bộ 7 ngày gần nhất từ TMS gốc (Siêu nhanh ~2-3 giây, không nghẽn cổ chai)">⚡ Đồng Bộ Nhanh 7 Ngày (~2s)</button>
-          <button class="btn" style="background:#0d9488; color:#fff;" id="btnKtSync30d" onclick="syncKeToanVsChunked(0)" title="Đồng bộ cuốn chiếu từng tuần từ TMS gốc có thanh tiến trình, không treo máy chủ">🔄 Đồng Bộ TMS Đầy Đủ (Cuốn Chiếu)</button>
+          <button class="btn" style="background:#0284c7; color:#fff;" id="btnKtSync7d" onclick="syncKeToanVsChunked(7)" title="Chỉ đồng bộ 7 ngày gần nhất từ TMS gốc (Siêu nhanh ~2-3 giây, không nghẽn cổ chai)">⚡ Làm Mới 7 Ngày (~2s)</button>
+          <button class="btn" style="background:#0d9488; color:#fff;" id="btnKtSync30d" onclick="syncKeToanVsChunked(0)" title="Đồng bộ cuốn chiếu khoảng ngày đang chọn từ TMS gốc về MySQL">🔄 Đồng Bộ Kỳ Đang Chọn</button>
+          <button class="btn" style="background:#7c3aed; color:#fff;" id="btnKtSync180d" onclick="syncKeToanVsSixMonths()" title="Tải và lưu toàn bộ 6 tháng gần nhất (180 ngày ~18MB) từ TMS gốc về MySQL Server của bạn">🗄️ Tải Lưu 6 Tháng Về Server</button>
           <button class="btn btn-success" onclick="exportKeToanVsExcel()">📥 Xuất Excel Report Chi Phí</button>
         </div>
       </div>
@@ -2395,7 +2401,51 @@
       const fromStr = fromDt.toISOString().slice(0, 10);
       document.getElementById('ktFromDate').value = fromStr;
       document.getElementById('ktToDate').value = toStr;
+      const mSel = document.getElementById('ktMonthQuickSelect');
+      if (mSel) mSel.value = '';
       if (autoLoad) loadKeToanVsBookings(false);
+    }
+
+    function populateKtQuickMonths() {
+      const sel = document.getElementById('ktMonthQuickSelect');
+      if (!sel || sel.options.length > 1) return;
+      const now = new Date();
+      let html = `<option value="">🗓️ Chọn nhanh Tháng (6 Tháng)...</option>`;
+      for (let i = 0; i < 8; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const y = d.getFullYear();
+        const m = d.getMonth() + 1;
+        const lastDay = new Date(y, m, 0).getDate();
+        const fCal = `${y}-${String(m).padStart(2, '0')}-01`;
+        const tCal = `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+        // Kỳ kế toán 26 tháng trước -> 25 tháng này
+        let py = y, pm = m - 1;
+        if (pm < 1) { pm = 12; py = y - 1; }
+        const fCyc = `${py}-${String(pm).padStart(2, '0')}-26`;
+        const tCyc = `${y}-${String(m).padStart(2, '0')}-25`;
+        html += `<option value="${fCal}|${tCal}">📅 Tháng ${String(m).padStart(2, '0')}/${y} (01/${String(m).padStart(2, '0')} ➔ ${lastDay}/${String(m).padStart(2, '0')})</option>`;
+        html += `<option value="${fCyc}|${tCyc}">🧾 Kỳ KT T${String(m).padStart(2, '0')}/${y} (26/${String(pm).padStart(2, '0')} ➔ 25/${String(m).padStart(2, '0')})</option>`;
+      }
+      sel.innerHTML = html;
+    }
+
+    function onKtQuickMonthSelect(val) {
+      if (!val || !val.includes('|')) return;
+      const [f, t] = val.split('|');
+      document.getElementById('ktFromDate').value = f;
+      document.getElementById('ktToDate').value = t;
+      loadKeToanVsBookings(false);
+    }
+
+    async function syncKeToanVsSixMonths() {
+      const now = new Date();
+      const toStr = now.toISOString().slice(0, 10);
+      const fromDt = new Date(now.getTime() - 180 * 86400 * 1000);
+      const fromStr = fromDt.toISOString().slice(0, 10);
+      document.getElementById('ktFromDate').value = fromStr;
+      document.getElementById('ktToDate').value = toStr;
+      await loadKeToanVsBookings(false);
+      await syncKeToanVsChunked(0);
     }
 
     function setKtQuickCycle() {
@@ -2426,6 +2476,9 @@
 
     let ktIsSyncing = false;
     let ktLastUpdatedAt = '';
+    let ktDbTotalCached = 0;
+    let ktDbMinDate = '';
+    let ktDbMaxDate = '';
     let ktViewMode = 'full'; // 'full' (Đầy đủ 23 cột CHI PHÍ VẬN CHUYỂN PHÍA NAM chuẩn TMS Gốc) | 'compact' (Bảng tóm tắt gọn)
 
     function setKtViewMode(mode) {
@@ -2437,11 +2490,12 @@
 
     async function loadKeToanVsBookings(autoSyncIfMissingCost = false) {
       initKeToanVsDatesIfNeeded();
+      populateKtQuickMonths();
       const fromDate = document.getElementById('ktFromDate').value;
       const toDate = document.getElementById('ktToDate').value;
       const tbody = document.getElementById('ktTbody');
       if (ktBookings.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="16" style="text-align:center; padding:28px; font-weight:700; color:#0f766e;">⚡ Đang đọc dữ liệu Booking (${fromDate} ➔ ${toDate}) từ bộ nhớ đệm MySQL...</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="33" style="text-align:center; padding:28px; font-weight:700; color:#0f766e;">⚡ Đang đọc dữ liệu Booking (${fromDate} ➔ ${toDate}) từ bộ nhớ đệm MySQL...</td></tr>`;
       }
 
       try {
@@ -2451,17 +2505,20 @@
         if (!data.ok) throw new Error(data.error || 'Không thể tải dữ liệu Kế Toán VS');
         ktBookings = Array.isArray(data.bookings) ? data.bookings : [];
         ktLastUpdatedAt = data.lastUpdatedAt || '';
+        ktDbTotalCached = Number(data.dbTotalCached || ktBookings.length);
+        ktDbMinDate = data.dbMinDate || '';
+        ktDbMaxDate = data.dbMaxDate || '';
         document.getElementById('cntKeToanVs').textContent = ktBookings.length.toLocaleString('vi-VN');
         populateKtCarrierDropdown();
         ktPage = 1;
         renderKeToanVsTable();
 
-        // Nếu mở lần đầu mà trong cache chưa từng quét chi phí index-ajax -> tự động chạy đồng bộ cuốn chiếu mượt mà
+        // Nếu mở lần đầu hoặc chọn khoảng ngày cũ chưa có trong MySQL Cache -> tự động chạy đồng bộ cuốn chiếu mượt mà
         if ((data.needsCostSync || autoSyncIfMissingCost) && !ktIsSyncing) {
           syncKeToanVsChunked(0);
         }
       } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="16" style="text-align:center; padding:28px; color:#dc2626; font-weight:700;">❌ Lỗi tải dữ liệu: ${e.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="33" style="text-align:center; padding:28px; color:#dc2626; font-weight:700;">❌ Lỗi tải dữ liệu: ${e.message}</td></tr>`;
         showToast('Lỗi tải dữ liệu Kế Toán VS: ' + e.message, '#dc2626');
       }
     }
@@ -2509,20 +2566,28 @@
       const pBar = document.getElementById('ktSyncProgressBar');
       const btn7 = document.getElementById('btnKtSync7d');
       const btn30 = document.getElementById('btnKtSync30d');
+      const btn180 = document.getElementById('btnKtSync180d');
       if (btn7) btn7.disabled = true;
       if (btn30) btn30.disabled = true;
+      if (btn180) btn180.disabled = true;
       if (pBox) pBox.style.display = 'block';
 
       let totalSynced = 0;
+      const fetchedCycleEnds = new Set();
       try {
         for (let i = 0; i < windows.length; i++) {
           const [wStart, wEnd] = windows[i];
           const pct = Math.round((i / windows.length) * 100);
           if (pTitle) {
-            pTitle.textContent = `⏳ Đang tải từ TMS Gốc đợt ${i + 1}/${windows.length}: Ngày ${wStart} ➔ ${wEnd} (Không nghẽn cổ chai)...`;
+            pTitle.textContent = `⏳ Đang tải lưu từ TMS Gốc đợt ${i + 1}/${windows.length}: Ngày ${wStart} ➔ ${wEnd} (Đã lưu ${totalSynced.toLocaleString('vi-VN')} booking)...`;
           }
           if (pPct) pPct.textContent = `${pct}%`;
-          if (pBar) pBar.style.width = `${Math.max(8, pct)}%`;
+          if (pBar) pBar.style.width = `${Math.max(5, pct)}%`;
+
+          // Chỉ forceCycle ở đợt đầu tiên hoặc khi lùi qua 1 chu kỳ kế toán mới chưa làm mới trong phiên này
+          const curMonthKey = wEnd.slice(0, 7);
+          const shouldForceCycle = (i === 0);
+          fetchedCycleEnds.add(curMonthKey);
 
           const res = await fetch('/api/index.php?route=cuoc/ketoan-vs-sync', {
             method: 'POST',
@@ -2530,35 +2595,41 @@
             body: JSON.stringify({
               winStart: wStart,
               winEnd: wEnd,
-              forceCycle: i === 0 // Chỉ làm mới file JSON chu kỳ ở đợt đầu tiên, các đợt sau dùng luôn file chu kỳ vừa tải
+              forceCycle: shouldForceCycle
             })
           });
           const data = await res.json();
           if (data.ok) {
             totalSynced += Number(data.savedCount || 0);
           }
-          // Cập nhật bảng hiển thị ngay sau mỗi đợt để người dùng xem được luôn mà không phải chờ xong cả 30 ngày
-          const qRes = await fetch(`/api/index.php?route=cuoc/ketoan-vs&fromDate=${encodeURIComponent(uiFromDate)}&toDate=${encodeURIComponent(uiToDate)}`);
-          const qData = await qRes.json();
-          if (qData.ok && Array.isArray(qData.bookings)) {
-            ktBookings = qData.bookings;
-            ktLastUpdatedAt = qData.lastUpdatedAt || '';
-            document.getElementById('cntKeToanVs').textContent = ktBookings.length.toLocaleString('vi-VN');
-            populateKtCarrierDropdown();
-            renderKeToanVsTable();
+          // Cập nhật bảng hiển thị sau mỗi 2 đợt (hoặc đợt đầu/cuối) để giao diện mượt mà ngay cả khi đồng bộ 6 tháng (45 đợt)
+          if (i === 0 || i === windows.length - 1 || (i + 1) % 2 === 0) {
+            const qRes = await fetch(`/api/index.php?route=cuoc/ketoan-vs&fromDate=${encodeURIComponent(uiFromDate)}&toDate=${encodeURIComponent(uiToDate)}`);
+            const qData = await qRes.json();
+            if (qData.ok && Array.isArray(qData.bookings)) {
+              ktBookings = qData.bookings;
+              ktLastUpdatedAt = qData.lastUpdatedAt || '';
+              ktDbTotalCached = Number(qData.dbTotalCached || ktBookings.length);
+              ktDbMinDate = qData.dbMinDate || '';
+              ktDbMaxDate = qData.dbMaxDate || '';
+              document.getElementById('cntKeToanVs').textContent = ktBookings.length.toLocaleString('vi-VN');
+              populateKtCarrierDropdown();
+              renderKeToanVsTable();
+            }
           }
         }
 
-        if (pTitle) pTitle.textContent = `✅ Đã đồng bộ hoàn tất 100% (${totalSynced.toLocaleString('vi-VN')} booking từ ${syncFrom} ➔ ${syncTo}) vào MySQL Cache!`;
+        if (pTitle) pTitle.textContent = `✅ Đã đồng bộ hoàn tất 100% (${totalSynced.toLocaleString('vi-VN')} booking từ ${syncFrom} ➔ ${syncTo}) vào MySQL Server!`;
         if (pPct) pPct.textContent = '100%';
         if (pBar) pBar.style.width = '100%';
-        showToast(`✅ Đồng bộ hoàn tất ${totalSynced.toLocaleString('vi-VN')} booking từ TMS gốc!`, '#16a34a');
+        showToast(`✅ Đồng bộ hoàn tất ${totalSynced.toLocaleString('vi-VN')} booking từ TMS gốc vào MySQL!`, '#16a34a');
       } catch (e) {
         showToast('Lỗi trong quá trình đồng bộ cuốn chiếu: ' + e.message, '#dc2626');
       } finally {
         ktIsSyncing = false;
         if (btn7) btn7.disabled = false;
         if (btn30) btn30.disabled = false;
+        if (btn180) btn180.disabled = false;
         setTimeout(() => {
           if (!ktIsSyncing && pBox) pBox.style.display = 'none';
         }, 2800);
@@ -2777,9 +2848,12 @@
 
       const fromDate = document.getElementById('ktFromDate').value;
       const toDate = document.getElementById('ktToDate').value;
-      const syncTimeNote = ktLastUpdatedAt ? ` • 🕒 Cập nhật Cache: ${ktLastUpdatedAt}` : '';
+      const dbArchiveNote = ktDbTotalCached > 0
+        ? ` • 🗄️ Kho lưu trữ MySQL: ${ktDbTotalCached.toLocaleString('vi-VN')} booking (${ktDbMinDate} ➔ ${ktDbMaxDate})`
+        : '';
+      const syncTimeNote = ktLastUpdatedAt ? ` • 🕒 Cập nhật: ${ktLastUpdatedAt}` : '';
       document.getElementById('ktSummaryText').textContent =
-        `📊 Kết quả lọc (${fromDate} ➔ ${toDate}): ${rows.length.toLocaleString('vi-VN')} booking | Cước Bảng giá: ${fmtMoney(sumStdFreight)} đ | Đơn giá TMS: ${fmtMoney(sumTmsRate)} đ | Phát sinh: ${fmtMoney(sumTotalExp)} đ | Tổng chi phí: ${fmtMoney(sumGrandTotal)} đ${syncTimeNote}`;
+        `📊 Đang xem (${fromDate} ➔ ${toDate}): ${rows.length.toLocaleString('vi-VN')} booking | Cước Bảng giá: ${fmtMoney(sumStdFreight)} đ | Đơn giá TMS: ${fmtMoney(sumTmsRate)} đ | Phát sinh: ${fmtMoney(sumTotalExp)} đ | Tổng: ${fmtMoney(sumGrandTotal)} đ${dbArchiveNote}${syncTimeNote}`;
 
       renderKeToanVsPage();
     }

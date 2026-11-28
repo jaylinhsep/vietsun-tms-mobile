@@ -4075,12 +4075,11 @@ try {
                 }
 
                 // 1. Lấy danh sách booking từ các chu kỳ liên quan (dùng cache chu kỳ nếu không forceCycle để siêu nhanh)
-                $cycles = array_values(array_unique([
-                    get_billing_cycle_param(date('Y-m-d', $sTs - 5 * 86400)),
-                    get_billing_cycle_param($winStart),
-                    get_billing_cycle_param($winEnd),
-                    get_billing_cycle_param(date('Y-m-d', $eTs + 10 * 86400))
-                ]));
+                $rawWinCycles = [];
+                for ($ts = $sTs - 5 * 86400; $ts <= $eTs + 15 * 86400; $ts += 15 * 86400) {
+                    $rawWinCycles[] = get_billing_cycle_param(date('Y-m-d', $ts));
+                }
+                $cycles = array_values(array_unique(array_filter($rawWinCycles)));
                 $windowBookings = [];
                 foreach ($cycles as $c) {
                     $arr = fetch_single_cycle($c, $forceCycle);
@@ -4144,9 +4143,8 @@ try {
                 exit;
             }
 
-            // ROUTE 2: GET cuoc/ketoan-vs — Đọc tức thì từ MySQL Cache (< 0.15s).
-            // Nếu bảng MySQL Cache chưa có dữ liệu nào, tự động warm-up nhanh từ các file cache sẵn có trong /tmp (không block gọi 16 request TMS)
-            $days = isset($_GET['days']) ? max(1, min(120, (int)$_GET['days'])) : 30;
+            // ROUTE 2: GET cuoc/ketoan-vs — Đọc tức thì từ MySQL Cache (< 0.15s), hỗ trợ lưu trữ dài hạn 6 tháng - 1 năm (366 ngày).
+            $days = isset($_GET['days']) ? max(1, min(366, (int)$_GET['days'])) : 30;
             $toDate = trim((string)($_GET['toDate'] ?? ($jsonBody['toDate'] ?? date('Y-m-d'))));
             $fromDate = trim((string)($_GET['fromDate'] ?? ($jsonBody['fromDate'] ?? '')));
 
@@ -4167,11 +4165,16 @@ try {
             }
 
             $cntExisting = (int)$pdo->query("SELECT COUNT(*) FROM `tms_ketoan_bookings_cache` WHERE `trip_date` BETWEEN " . $pdo->quote($fromDate) . " AND " . $pdo->quote($toDate))->fetchColumn();
+            $stDbStats = $pdo->query("SELECT COUNT(*) AS total_cached, MIN(`trip_date`) AS min_date, MAX(`trip_date`) AS max_date FROM `tms_ketoan_bookings_cache`")->fetch();
+            $dbTotalCached = (int)($stDbStats['total_cached'] ?? 0);
+            $dbMinDate = (string)($stDbStats['min_date'] ?? '');
+            $dbMaxDate = (string)($stDbStats['max_date'] ?? '');
 
             $needsCostSync = false;
-            // Nếu MySQL Cache đang trống trong khoảng ngày này: Nạp tức thì danh sách booking từ return_json.php (chỉ 2 request JSON nhẹ ~0.8s)
-            // kết hợp với bất kỳ file cache vietsun_debit_map_v8_*.json nào đang có sẵn trong /tmp để hiển thị ngay lập tức!
-            if ($cntExisting === 0) {
+            $rangeDays = max(1, (int)round(($toTs - $fromTs) / 86400) + 1);
+            // Nếu MySQL Cache đang trống trong khoảng ngày ngắn (<= 45 ngày): Nạp tức thì danh sách booking từ return_json.php
+            // Với khoảng ngày dài (VD: 6 tháng), không gọi đồng bộ 6 chu kỳ trong GET để tránh chờ lâu mà để giao diện chạy thanh tiến trình cuốn chiếu
+            if ($cntExisting === 0 && $rangeDays <= 45) {
                 $rawCycles = [];
                 for ($ts = $fromTs - 5 * 86400; $ts <= $toTs + 15 * 86400; $ts += 15 * 86400) {
                     $rawCycles[] = get_billing_cycle_param(date('Y-m-d', $ts));
@@ -4279,7 +4282,11 @@ try {
             }
 
             $totalCount = count($jsonFragments);
-            if ($totalCount > 0 && ($hasAnyCostCount === 0 || $hasNewCv5SchemaCount < ($totalCount * 0.5))) {
+            // Kiểm tra xem khoảng ngày người dùng chọn đã có đủ dữ liệu ở đầu kỳ chưa (VD: khi người dùng mở rộng từ 1 tháng lên 6 tháng)
+            $minInRange = (string)$pdo->query("SELECT MIN(`trip_date`) FROM `tms_ketoan_bookings_cache` WHERE `trip_date` BETWEEN " . $pdo->quote($fromDate) . " AND " . $pdo->quote($toDate))->fetchColumn();
+            $isMissingOlderDays = ($minInRange === '' || (strtotime($minInRange) - $fromTs) > 7 * 86400);
+
+            if ($totalCount === 0 || $hasAnyCostCount === 0 || $hasNewCv5SchemaCount < ($totalCount * 0.5) || $isMissingOlderDays) {
                 $needsCostSync = true;
             }
 
@@ -4293,6 +4300,9 @@ try {
                 . ',"c40Count":' . $c40Count
                 . ',"hasAnyCostCount":' . $hasAnyCostCount
                 . ',"needsCostSync":' . ($needsCostSync ? 'true' : 'false')
+                . ',"dbTotalCached":' . $dbTotalCached
+                . ',"dbMinDate":' . json_encode($dbMinDate)
+                . ',"dbMaxDate":' . json_encode($dbMaxDate)
                 . ',"lastUpdatedAt":' . json_encode($lastUpdatedAt)
                 . ',"bookings":[' . implode(',', $jsonFragments) . ']}';
             exit;
